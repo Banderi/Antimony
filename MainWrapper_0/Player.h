@@ -5,10 +5,9 @@
 
 class Player : public Character
 {
-
+protected:
 
 public:
-
 
 	Player();
 };

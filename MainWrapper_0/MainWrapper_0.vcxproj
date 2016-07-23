@@ -101,6 +101,7 @@
     <ClCompile Include="Character.cpp" />
     <ClCompile Include="Controls.cpp" />
     <ClCompile Include="DebugWin.cpp" />
+    <ClCompile Include="Entity.cpp" />
     <ClCompile Include="FBX.cpp" />
     <ClCompile Include="Frame.cpp" />
     <ClCompile Include="Geometry.cpp" />
@@ -116,6 +117,7 @@
     <ClInclude Include="Controls.h" />
     <ClInclude Include="DebugWin.h" />
     <ClInclude Include="DirectX11.h" />
+    <ClInclude Include="Entity.h" />
     <ClInclude Include="FBX.h" />
     <ClInclude Include="Frame.h" />
     <ClInclude Include="Geometry.h" />

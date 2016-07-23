@@ -3,7 +3,7 @@
 
 #include <Windows.h>
 
-bool handle(HRESULT *hOut, DWORD facing, HRESULT hr);
+bool Handle(HRESULT *hOut, DWORD facing, HRESULT hr);
 
 #define HRH_MAIN_INITD3D 0
 #define HRH_MAIN_REGHID 1

@@ -28,10 +28,10 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	CreateMainWindow(hInstance);
 	ShowWindow(hWnd, nCmdShow);
 
-	if (!handle(&hr, HRH_MAIN_INITD3D, InitD3D(hWnd)))
+	if (!Handle(&hr, HRH_MAIN_INITD3D, InitD3D(hWnd)))
 		return 0;
 
-	if (!handle(&hr, HRH_MAIN_REGHID, InitControls()))
+	if (!Handle(&hr, HRH_MAIN_REGHID, InitControls()))
 		return 0;
 
 
@@ -322,7 +322,7 @@ HRESULT InitD3D(HWND hWnd)
 	D3D_FEATURE_LEVEL featurelevel = D3D_FEATURE_LEVEL_11_0;
 
 	// Create the swapchain
-	if (!handle(&hr, HRH_SWAPCHAIN_CREATE, D3D11CreateDeviceAndSwapChain(
+	if (!Handle(&hr, HRH_SWAPCHAIN_CREATE, D3D11CreateDeviceAndSwapChain(
 		NULL,
 		D3D_DRIVER_TYPE_HARDWARE,
 		NULL,
@@ -353,7 +353,7 @@ HRESULT InitD3D(HWND hWnd)
 	txd.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 	txd.CPUAccessFlags = 0;
 	txd.MiscFlags = 0;
-	if (!handle(&hr, HRH_DEPTHSTENCIL_TEXTURE, dev->CreateTexture2D(&txd, NULL, &pDepthStencilBufferTexture)))
+	if (!Handle(&hr, HRH_DEPTHSTENCIL_TEXTURE, dev->CreateTexture2D(&txd, NULL, &pDepthStencilBufferTexture)))
 		return hr;
 
 	// Fill depth stencil description
@@ -373,10 +373,10 @@ HRESULT InitD3D(HWND hWnd)
 	//dsd.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
 	//dsd.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
 	//dsd.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-	if (!handle(&hr, HRH_DEPTHSTENCIL_STATE, dev->CreateDepthStencilState(&dsd, &depthstencil_enabled)))
+	if (!Handle(&hr, HRH_DEPTHSTENCIL_STATE, dev->CreateDepthStencilState(&dsd, &depthstencil_enabled)))
 		return hr;
 	dsd.DepthEnable = false;
-	if (!handle(&hr, HRH_DEPTHSTENCIL_STATE, dev->CreateDepthStencilState(&dsd, &depthstencil_disabled)))
+	if (!Handle(&hr, HRH_DEPTHSTENCIL_STATE, dev->CreateDepthStencilState(&dsd, &depthstencil_disabled)))
 		return hr;
 	devcon->OMSetDepthStencilState(depthstencil_enabled, 1);
 
@@ -384,13 +384,13 @@ HRESULT InitD3D(HWND hWnd)
 	dsvd.Format = txd.Format;
 	dsvd.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	dsvd.Texture2D.MipSlice = 0;
-	if (!handle(&hr, HRH_DEPTHSTENCIL_VIEW, dev->CreateDepthStencilView(pDepthStencilBufferTexture, &dsvd, &depthstencilview)))
+	if (!Handle(&hr, HRH_DEPTHSTENCIL_VIEW, dev->CreateDepthStencilView(pDepthStencilBufferTexture, &dsvd, &depthstencilview)))
 		return hr;
 
 	// Render target setup
-	if (!handle(&hr, HRH_SWAPCHAIN_SURFACEBUFFER, swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBufferTexture)))
+	if (!Handle(&hr, HRH_SWAPCHAIN_SURFACEBUFFER, swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBufferTexture)))
 		return hr;
-	if (!handle(&hr, HRH_RENDERTARGET_CREATE, dev->CreateRenderTargetView(pBackBufferTexture, NULL, &targettview))) // use the back buffer address to create the render target
+	if (!Handle(&hr, HRH_RENDERTARGET_CREATE, dev->CreateRenderTargetView(pBackBufferTexture, NULL, &targettview))) // use the back buffer address to create the render target
 		return hr;
 	pBackBufferTexture->Release();
 	pBackBufferTexture = NULL;
@@ -407,7 +407,7 @@ HRESULT InitD3D(HWND hWnd)
 	rzd.MultisampleEnable = false;
 	rzd.ScissorEnable = false;
 	rzd.SlopeScaledDepthBias = 0.0f;
-	if (!handle(&hr, HRH_RASTERIZER_STATE, dev->CreateRasterizerState(&rzd, &rasterizerstate)))
+	if (!Handle(&hr, HRH_RASTERIZER_STATE, dev->CreateRasterizerState(&rzd, &rasterizerstate)))
 		return hr;
 	//devcon->RSSetState(rasterizerstate);
 
@@ -476,16 +476,16 @@ HRESULT InitShaders()
 
 	ID3D10Blob *blob = nullptr;
 
-	if (!handle(&hr, HRH_SHADER_COMPILE, D3DX11CompileFromFileW(L".\\Shaders\\shader.hlsl", 0, 0, "VShader", "vs_4_0", 0, 0, 0, &blob, 0, 0)))
+	if (!Handle(&hr, HRH_SHADER_COMPILE, D3DX11CompileFromFileW(L".\\Shaders\\shader.hlsl", 0, 0, "VShader", "vs_4_0", 0, 0, 0, &blob, 0, 0)))
 		return hr;
-	if (!handle(&hr, HRH_SHADER_CREATE, dev->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &pVShader))) // create the VS
+	if (!Handle(&hr, HRH_SHADER_CREATE, dev->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &pVShader))) // create the VS
 		return hr;	
-	if (!handle(&hr, HRH_SHADER_INPUTLAYOUT, dev->CreateInputLayout(ied, 2, blob->GetBufferPointer(), blob->GetBufferSize(), &pLayout))) // create an input layout from the VS
+	if (!Handle(&hr, HRH_SHADER_INPUTLAYOUT, dev->CreateInputLayout(ied, 2, blob->GetBufferPointer(), blob->GetBufferSize(), &pLayout))) // create an input layout from the VS
 		return hr;	
 
-	if (!handle(&hr, HRH_SHADER_COMPILE, D3DX11CompileFromFileW(L".\\Shaders\\shader.hlsl", 0, 0, "PShader", "ps_4_0", 0, 0, 0, &blob, 0, 0)))
+	if (!Handle(&hr, HRH_SHADER_COMPILE, D3DX11CompileFromFileW(L".\\Shaders\\shader.hlsl", 0, 0, "PShader", "ps_4_0", 0, 0, 0, &blob, 0, 0)))
 		return hr;	
-	if (!handle(&hr, HRH_SHADER_CREATE, dev->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &pPShader))) // create the PS
+	if (!Handle(&hr, HRH_SHADER_CREATE, dev->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &pPShader))) // create the PS
 		return hr;
 
 	//hr = LoadShader(L".\\Shaders\\toon3_cel.hlsl", pCelVS, pCelPS, &vs_blob, &ps_blob);
@@ -507,17 +507,17 @@ HRESULT InitGraphics()
 	bd.ByteWidth = sizeof(VERTEX) * 64;
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	if (!handle(&hr, HRH_GRAPHICS_VERTEXBUFFER, dev->CreateBuffer(&bd, NULL, &pVertexBuffer)))
+	if (!Handle(&hr, HRH_GRAPHICS_VERTEXBUFFER, dev->CreateBuffer(&bd, NULL, &pVertexBuffer)))
 		return hr;
 
 	bd.ByteWidth = sizeof(D3DXMATRIX) * 3;
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	if (!handle(&hr, HRH_GRAPHICS_CONSTANTBUFFER, dev->CreateBuffer(&bd, NULL, &pConstantBuffer)))
+	if (!Handle(&hr, HRH_GRAPHICS_CONSTANTBUFFER, dev->CreateBuffer(&bd, NULL, &pConstantBuffer)))
 		return hr;
 
 	bd.ByteWidth = sizeof(UINT) * 64;
 	bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	if (!handle(&hr, HRH_GRAPHICS_INDEXBUFFER, dev->CreateBuffer(&bd, NULL, &pIndexBuffer)))
+	if (!Handle(&hr, HRH_GRAPHICS_INDEXBUFFER, dev->CreateBuffer(&bd, NULL, &pIndexBuffer)))
 		return hr;
 
 	UINT stride = sizeof(VERTEX);

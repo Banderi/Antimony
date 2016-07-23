@@ -29,48 +29,6 @@ void Camera::update(float delta)
 	//ph = asinf(dir.y);
 }
 
-void Camera::lock()
-{
-	free = false;
-}
-void Camera::unlock()
-{
-	free = true;
-}
-bool Camera::isfree()
-{
-	return free;
-}
-
-void Camera::moveToPoint(vec3 dest, float r)
-{
-	if (r != -1)
-	{
-		response = r;
-		pos_dest = dest;
-	}
-	else
-	{
-		response = 0;
-		pos = dest;
-		pos_dest = dest;
-	}
-}
-void Camera::lookAtPoint(vec3 dest, float r)
-{
-	if (r != -1)
-	{
-		response = r;
-		lookat_dest = dest;
-	}
-	else
-	{
-		response = 0;
-		lookat = dest;
-		lookat_dest = dest;
-	}
-}
-
 void Camera::rotate(bool angle, float accelaration)
 {
 	if (angle == 0)
@@ -104,15 +62,6 @@ void Camera::setFriction(float f)
 float Camera::getFriction()
 {
 	return friction;
-}
-
-vec3 Camera::getPos()
-{
-	return pos;
-}
-vec3 Camera::getLookAt()
-{
-	return lookat;
 }
 
 Camera::Camera()

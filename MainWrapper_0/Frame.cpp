@@ -187,7 +187,7 @@ HRESULT PresentFrame()
 void PlayerControls(Keys* khandle, float delta)
 {
 	float speed = .3f;
-	if (keys.sprint.press > 0)
+	if (khandle->sprint.press > 0)
 		speed = .6f;
 
 	vec3 mov = vec3(0, 0, 0);
@@ -241,8 +241,8 @@ void CameraControls(Mouse* mhandle, float delta)
 
 	if (camera.isfree())
 	{
-		camera.lookAtPoint(player.getPos() + height + eye, .15);
-		camera.moveToPoint(player.getPos() + height - eye * zoom, .145);
+		camera.lookAtPoint(player.getPos() + height + eye, .725);
+		camera.moveToPoint(player.getPos() + height - eye * zoom, .725);
 	}
 
 	// reset camera

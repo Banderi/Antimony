@@ -6,7 +6,7 @@
 #include "DebugWin.h"
 #include "Warnings.h"
 
-bool handle(HRESULT *hOut, DWORD facing, HRESULT hr)
+bool Handle(HRESULT *hOut, DWORD facing, HRESULT hr)
 {
 	*hOut = hr;
 
