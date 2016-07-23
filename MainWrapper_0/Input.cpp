@@ -153,45 +153,36 @@ Mouse::Mouse()
 
 void Keys::Update(RAWKEYBOARD rkeys)
 {
-	//vec3 mov = vec3( 0, 0, 0 );
-	//float theta = camera.getAngle(th);
+	USHORT vk = rkeys.VKey;
 
 	if (rkeys.Message == WM_KEYDOWN)
 	{
-		if (rkeys.VKey == forward.vkey)
-			UpdateKeyPress(&forward, true);
-		if (rkeys.VKey == backward.vkey)
-			UpdateKeyPress(&backward, true);
-		if (rkeys.VKey == left.vkey)
-			UpdateKeyPress(&left, true);
-		if (rkeys.VKey == right.vkey)
-			UpdateKeyPress(&right, true);
+		UpdateKeyPress(vk, &forward, true);
+		UpdateKeyPress(vk, &backward, true);
+		UpdateKeyPress(vk, &left, true);
+		UpdateKeyPress(vk, &right, true);
+
+		UpdateKeyPress(vk, &sprint, true);
+		UpdateKeyPress(vk, &jump, true);
+		UpdateKeyPress(vk, &action, true);
 	}
 	else if (rkeys.Message == WM_KEYUP)
 	{
-		if (rkeys.VKey == forward.vkey)
-			UpdateKeyPress(&forward, false);
-		if (rkeys.VKey == backward.vkey)
-			UpdateKeyPress(&backward, false);
-		if (rkeys.VKey == left.vkey)
-			UpdateKeyPress(&left, false);
-		if (rkeys.VKey == right.vkey)
-			UpdateKeyPress(&right, false);
+		UpdateKeyPress(vk, &forward, false);
+		UpdateKeyPress(vk, &backward, false);
+		UpdateKeyPress(vk, &left, false);
+		UpdateKeyPress(vk, &right, false);
+
+		UpdateKeyPress(vk, &sprint, false);
+		UpdateKeyPress(vk, &jump, false);
+		UpdateKeyPress(vk, &action, false);
 	}
-
-	/*if (rkeys.VKey == forward.vkey)
-		mov = mov + vec3(cosf(theta), 0, sinf(theta));
-	if (rkeys.VKey == backward.vkey)
-		mov = mov + vec3(-cosf(theta), 0, -sinf(theta));
-	if (rkeys.VKey == left.vkey)
-		mov = mov + vec3(-sinf(theta), 0, cosf(theta));
-	if (rkeys.VKey == right.vkey)
-		mov = mov + vec3(sinf(theta), 0, -cosf(theta));*/
-
-	//player.moveToPoint(player.getPos() + mov * 0.25, -1);
 }
-void Keys::UpdateKeyPress(KEY* key, char down)
+void Keys::UpdateKeyPress(USHORT vk, KEY* key, char down)
 {
+	if (key->vkey != vk && down != -1)
+		return;
+
 	if (down == 1)
 	{
 		key->press = 1;
@@ -214,28 +205,22 @@ void Keys::UpdateKeyPress(KEY* key, char down)
 }
 void Keys::Reset()
 {
-	//KEY* key = &forward;
-	//switch (key->press)
-	//{
-	//	case 1:
-	//	{
-	//		key->press = 2;
-	//		break;
-	//	}
-	//	case 3:
-	//	{
-	//		key->press = 0;
-	//		key->time = -1;
-	//		break;
-	//	}
-	//	default:
-	//		break;
-	//}
+	UpdateKeyPress(NULL,  &forward, -1);
+	UpdateKeyPress(NULL, &backward, -1);
+	UpdateKeyPress(NULL, &left, -1);
+	UpdateKeyPress(NULL, &right, -1);
 
-	UpdateKeyPress(&forward, -1);
-	UpdateKeyPress(&backward, -1);
-	UpdateKeyPress(&left, -1);
-	UpdateKeyPress(&right, -1);
+	UpdateKeyPress(NULL, &sprint, -1);
+	UpdateKeyPress(NULL, &jump, -1);
+	UpdateKeyPress(NULL, &action, -1);
+}
+void Keys::SetKey(KEY *key, unsigned short vk)
+{
+	key->vkey = vk;
+}
+unsigned short Keys::GetKey(KEY *key)
+{
+	return key->vkey;
 }
 Keys::Keys()
 {

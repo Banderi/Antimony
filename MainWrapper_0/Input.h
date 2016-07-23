@@ -75,9 +75,15 @@ public:
 	KEY left;
 	KEY right;
 
+	KEY sprint;
+	KEY jump;
+	KEY action;
+
 	void Update(RAWKEYBOARD rkeys);
-	void UpdateKeyPress(KEY *key, char down);
+	void UpdateKeyPress(USHORT vk, KEY *key, char down);
 	void Reset();
+	void SetKey(KEY *key, unsigned short vk);
+	unsigned short GetKey(KEY *key);
 
 	Keys();
 };

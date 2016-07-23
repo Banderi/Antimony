@@ -21,7 +21,7 @@ D3D11_INPUT_ELEMENT_DESC ied_VS_OUTPUT[] =
 	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 };
 
-mat mIdentity, mWorld, mView, mProj;
+mat mIdentity, mTemp, mTemp2, mWorld, mView, mProj;
 vec3 origin = vec3(0, 0, 0);
 
 mat TransposeMatrix(mat mIn)

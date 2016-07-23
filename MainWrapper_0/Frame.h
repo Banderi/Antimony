@@ -13,7 +13,13 @@ extern HRESULT hr;
 extern IDXGISwapChain *swapchain;
 extern ID3D11Device *dev;
 extern ID3D11DeviceContext *devcon;
-extern ID3D11RenderTargetView *backbuffer;
+
+extern ID3D11RenderTargetView *targettview;
+extern ID3D11DepthStencilView *depthstencilview;
+
+extern ID3D11RasterizerState *rasterizerstate;
+extern ID3D11DepthStencilState *depthstencil_enabled;
+extern ID3D11DepthStencilState *depthstencil_disabled;
 
 extern ID3D11VertexShader *pVShader, *pCelVS, *pOutlineVS;
 extern ID3D11PixelShader *pPShader, *pCelPS, *pOutlinePS;
@@ -48,8 +54,13 @@ HRESULT RenderFrameDX11(float delta);
 HRESULT PrepareFrame();
 HRESULT PresentFrame();
 
-void UpdatePlayer(Keys* khandle, float delta);
-void UpdateCamera(Mouse* mhandle, float delta);
+void PlayerControls(Keys* khandle, float delta);
+void CameraControls(Mouse* mhandle, float delta);
 HRESULT SetView(mat *world, mat *view, mat *proj);
+
+void SetDepthBufferState(bool state);
+
+#define ON true
+#define OFF false
 
 #endif

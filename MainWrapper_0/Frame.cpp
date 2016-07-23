@@ -9,6 +9,7 @@
 #include "Window.h"
 #include "Frame.h"
 #include "DebugWin.h"
+#include "Controls.h"
 
 #pragma comment (lib, "Shlwapi.lib")
 
@@ -19,7 +20,13 @@ HRESULT hr;
 IDXGISwapChain *swapchain;
 ID3D11Device *dev;
 ID3D11DeviceContext *devcon;
-ID3D11RenderTargetView *backbuffer;
+
+ID3D11RenderTargetView *targettview;
+ID3D11DepthStencilView *depthstencilview;
+
+ID3D11RasterizerState *rasterizerstate;
+ID3D11DepthStencilState *depthstencil_enabled;
+ID3D11DepthStencilState *depthstencil_disabled;
 
 ID3D11VertexShader *pVShader, *pCelVS, *pOutlineVS;
 ID3D11PixelShader *pPShader, *pCelPS, *pOutlinePS;
@@ -67,8 +74,8 @@ HRESULT RenderFrameDX9(float delta)
 HRESULT RenderFrameDX11(float delta)
 {
 	PrepareFrame();
-	UpdatePlayer(&keys, delta);
-	UpdateCamera(&mouse, delta); // --> updates into mView
+	PlayerControls(&keys, delta);
+	CameraControls(&mouse, delta); // --> updates into mView
 
 	devcon->IASetInputLayout(pLayout);
 	devcon->VSSetShader(pVShader, 0, 0);
@@ -78,12 +85,6 @@ HRESULT RenderFrameDX11(float delta)
 
 	static float r = 0.3;
 
-	/*VERTEX vertices[] =
-	{
-		{ r*(float)cos(-(D3DX_PI / 6)), r*(float)sin(-(D3DX_PI / 6)), 0.0f, color(1.0, 0.0, 0.0, 1.0) },
-		{ r*(float)cos((D3DX_PI / 2)), r*(float)sin((D3DX_PI / 2)), 0.0f, color(0.0, 1.0, 0.0, 1.0) },
-		{ r*(float)cos(7 * (D3DX_PI / 6)), r*(float)sin(7 * (D3DX_PI / 6)), 0.0f, color(0.0, 0.0, 1.0, 1.0) }
-	};*/	
 	VERTEX vertices[] =
 	{
 		{ -r, -r, -r, color(1.0, 1.0, 1.0, 1.0) },	//			7 o
@@ -135,20 +136,34 @@ HRESULT RenderFrameDX11(float delta)
 	};
 	FillBuffer<UINT[]>(dev, devcon, &pIndexBuffer, indices, sizeof(indices));
 
+	//
+
+	//SetDepthBufferState(OFF);
+
+	mWorld = mIdentity;
+	SetView(&mWorld, &mView, &mProj);
+	devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+	devcon->DrawIndexed(14, 36, 0); // axis
+
+	//SetDepthBufferState(ON);
+
 	static float h = 0;
 	h += 0.5f * D3DX_PI * delta;
 	if (h >= 2 * D3DX_PI)
 		h = 0;
 	D3DXMatrixRotationY(&mWorld, h);
+	D3DXMatrixScaling(&mTemp, 0.5, 0.5, 0.5);
+	mWorld = mTemp * mWorld;
+	D3DXMatrixTranslation(&mTemp, 0, 1, 0);
+	SetView(&(mTemp * mWorld), &mView, &mProj);
+	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	devcon->DrawIndexed(36, 0, 0); // rotating cube
 
-	SetView(&mWorld, &mView, &mProj);
-	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);	
-	devcon->DrawIndexed(36, 0, 0);
-
-	mWorld = mIdentity;
-	SetView(&mWorld, &mView, &mProj);
-	devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-	devcon->DrawIndexed(14, 36, 0);
+	D3DXMatrixTranslation(&mWorld, player.getPos().x, player.getPos().y + .3, player.getPos().z);
+	D3DXMatrixScaling(&mTemp, 0.4, 1, 0.4);
+	SetView(&(mTemp * mWorld), &mView, &mProj);
+	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	devcon->DrawIndexed(36, 0, 0); // player cube
 
 	//
 
@@ -157,7 +172,8 @@ HRESULT RenderFrameDX11(float delta)
 
 HRESULT PrepareFrame()
 {
-	devcon->ClearRenderTargetView(backbuffer, color(0.0f, 0.2f, 0.4f, 1.0f));
+	devcon->ClearRenderTargetView(targettview, color(0.0f, 0.2f, 0.4f, 0.0f));
+	devcon->ClearDepthStencilView(depthstencilview, D3D11_CLEAR_DEPTH, 1.0f, 0);
 	return S_OK;
 }
 HRESULT PresentFrame()
@@ -168,36 +184,43 @@ HRESULT PresentFrame()
 		return swapchain->Present(0, 0);
 }
 
-void UpdatePlayer(Keys* khandle, float delta)
+void PlayerControls(Keys* khandle, float delta)
 {
+	float speed = .3f;
+	if (keys.sprint.press > 0)
+		speed = .6f;
+
 	vec3 mov = vec3(0, 0, 0);
-	float theta = camera.getAngle(th);
+	float th = camera.getAngle(theta);
 
 	if (khandle->forward.press > 0)
-		mov = mov + vec3(cosf(theta), 0, sinf(theta));
+		mov = mov + vec3(cosf(th), 0, sinf(th));
 	if (khandle->backward.press > 0)
-		mov = mov + vec3(-cosf(theta), 0, -sinf(theta));
+		mov = mov + vec3(-cosf(th), 0, -sinf(th));
 	if (khandle->left.press > 0)
-		mov = mov + vec3(-sinf(theta), 0, cosf(theta));
+		mov = mov + vec3(-sinf(th), 0, cosf(th));
 	if (khandle->right.press > 0)
-		mov = mov + vec3(sinf(theta), 0, -cosf(theta));
+		mov = mov + vec3(sinf(th), 0, -cosf(th));
 
-	player.moveToPoint(player.getPos() + mov * 3 * delta, -1);
+	D3DXVec3Normalize(&mov, &mov);
+
+	player.moveToPoint(player.getPos() + mov * speed, .1);
+
+	player.update(delta);
 }
-void UpdateCamera(Mouse* mhandle, float delta)
+void CameraControls(Mouse* mhandle, float delta)
 {
 	vec3 eye = origin;
-	float slide = 0.004, radius = 1;
-	static float
-		theta = D3DX_PI / 2, // horizontal
-		phi = D3DX_PI / 2, // vertical
-		zoom = 0;
+	float slide = 0.004 * mSensibility, radius = 1;
+	static float zoom = 1.2;
+	static float _theta = D3DX_PI / 2;
+	static float _phi = D3DX_PI / 2;
 
 	// camera rotation
 	if (mhandle->GetButtonState(rightbutton) == 0)
 	{
-		theta -= slide * mhandle->GetCoord(xcoord).vel;
-		phi += slide * mhandle->GetCoord(ycoord).vel;
+		_theta -= (slide * mhandle->GetCoord(xcoord).vel) * (1 + 100 * delta);
+		_phi += (slide * mhandle->GetCoord(ycoord).vel) * (1 + 100 * delta);
 	}
 	else // zoom
 		zoom += float(mhandle->GetCoord(ycoord).vel) * 0.005;
@@ -205,30 +228,33 @@ void UpdateCamera(Mouse* mhandle, float delta)
 
 	if (zoom < 0)
 		zoom = 0;
-	if (phi >= D3DX_PI - 0.001)
-		phi = D3DX_PI - 0.001;
-	if (phi <= 0.001)
-		phi = 0.001;
+	if (_phi >= D3DX_PI - 0.001)
+		_phi = D3DX_PI - 0.001;
+	if (_phi <= 0.001)
+		_phi = 0.001;
 
-	eye.x = (radius + zoom * zoom) * cosf(theta) * sinf(phi);
-	eye.y = (radius + zoom * zoom) * cosf(phi);
-	eye.z = (radius + zoom * zoom) * sinf(theta) * sinf(phi);
+	eye.x = (radius + zoom * zoom) * cosf(_theta) * sinf(_phi);
+	eye.y = (radius + zoom * zoom) * cosf(_phi);
+	eye.z = (radius + zoom * zoom) * sinf(_theta) * sinf(_phi);
 
-	vec3 h = vec3(0, 0.45, 0);
+	vec3 height = vec3(0, 0.75, 0);
+
+	if (camera.isfree())
+	{
+		camera.lookAtPoint(player.getPos() + height + eye, .15);
+		camera.moveToPoint(player.getPos() + height - eye * zoom, .145);
+	}
 
 	// reset camera
 	if (mhandle->GetButtonState(middlebutton) > 0)
 	{
+		camera.lock();
 		camera.lookAtPoint(origin, .15);
-
-		/*theta = D3DX_PI / 2;
-		phi = D3DX_PI / 2;*/
 	}
+	else if (!camera.isfree())
+		camera.unlock();
 
-	camera.lookAtPoint(player.getPos() + h + eye, .5);
-	camera.moveToPoint(player.getPos() + h - eye, .5);
-	camera.setAngle(theta, phi);
-
+	camera.update(delta);
 	D3DXMatrixLookAtLH(&mView, &(camera.getPos()), &camera.getLookAt(), &vec3(0, 1, 0));
 }
 HRESULT SetView(mat *world, mat *view, mat *proj)
@@ -240,4 +266,12 @@ HRESULT SetView(mat *world, mat *view, mat *proj)
 	matrices.projection = TransposeMatrix(*proj);
 
 	return FillBuffer(dev, devcon, &pConstantBuffer, &matrices, sizeof(MatrixBufferType));
+}
+
+void SetDepthBufferState(bool state)
+{
+	if (state == true)
+		devcon->OMSetDepthStencilState(depthstencil_enabled, 1);
+	else
+		devcon->OMSetDepthStencilState(depthstencil_disabled, 1);
 }

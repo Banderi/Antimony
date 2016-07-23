@@ -3,23 +3,41 @@
 
 #include "DirectX11.h"
 
-#define th 0
-#define ph 1
+#define theta 0
+#define phi 1
 
 class Camera
 {
-	vec3 pos;
-	vec3 lookat;
-	float theta;
-	float phi;
+	bool free;
+	vec3 pos, pos_dest;
+	vec3 lookat, lookat_dest;
+	float response;
+	float friction;
+	float th, th_vel;
+	float ph, ph_vel;
+	float quake;
 
 public:
-	void moveToPoint(vec3 dest, float response);
-	void lookAtPoint(vec3 dest, float response);
-	void setAngle(float t, float p);
+	void update(float delta);
+	
+	void lock();
+	void unlock();
+	bool isfree();
+
+	void moveToPoint(vec3 dest, float r);
+	void lookAtPoint(vec3 dest, float r);
+
+	void rotate(bool angle, float acceleration);
+	void setAngles(float t, float p);
+	float getAngle(bool angle);
+
+	void setFriction(float f);
+	float getFriction();
+
+	void addQuake(float q);
+
 	vec3 getPos();
-	vec3 getLookAt();
-	float getAngle(bool a);
+	vec3 getLookAt();	
 
 	Camera();
 };

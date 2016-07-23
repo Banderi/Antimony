@@ -33,7 +33,7 @@ extern D3D11_INPUT_ELEMENT_DESC ied[];
 extern D3D11_INPUT_ELEMENT_DESC ied_VS_INPUT[];
 extern D3D11_INPUT_ELEMENT_DESC ied_VS_OUTPUT[];
 
-extern mat mIdentity, mWorld, mView, mProj;
+extern mat mIdentity, mTemp, mTemp2, mWorld, mView, mProj;
 extern vec3 origin;
 
 template <typename T> HRESULT FillBuffer(ID3D11Device *dev, ID3D11DeviceContext *devcon, ID3D11Buffer **ppOut, T pIn, UINT vSize)
