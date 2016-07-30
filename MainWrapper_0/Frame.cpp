@@ -148,19 +148,19 @@ HRESULT RenderFrameDX11(float delta)
 	//SetDepthBufferState(ON);
 
 	static float h = 0;
-	h += 0.5f * D3DX_PI * delta;
-	if (h >= 2 * D3DX_PI)
+	h += 0.5f * DX_PI * delta;
+	if (h >= 2 * DX_PI)
 		h = 0;
-	D3DXMatrixRotationY(&mWorld, h);
-	D3DXMatrixScaling(&mTemp, 0.5, 0.5, 0.5);
+	mWorld = XMMatrixRotationY(h);
+	mTemp = XMMatrixScaling(0.5, 0.5, 0.5);
 	mWorld = mTemp * mWorld;
-	D3DXMatrixTranslation(&mTemp, 0, 1, 0);
+	mTemp = XMMatrixTranslation(0, 1, 0);
 	SetView(&(mTemp * mWorld), &mView, &mProj);
 	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	devcon->DrawIndexed(36, 0, 0); // rotating cube
 
-	D3DXMatrixTranslation(&mWorld, player.getPos().x, player.getPos().y + .3, player.getPos().z);
-	D3DXMatrixScaling(&mTemp, 0.4, 1, 0.4);
+	mWorld = XMMatrixTranslationFromVector(player.getPos() + float3(0, 0.3, 0));
+	mTemp = XMMatrixScaling(0.4, 1, 0.4);
 	SetView(&(mTemp * mWorld), &mView, &mProj);
 	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	devcon->DrawIndexed(36, 0, 0); // player cube
@@ -172,7 +172,7 @@ HRESULT RenderFrameDX11(float delta)
 
 HRESULT PrepareFrame()
 {
-	devcon->ClearRenderTargetView(targettview, color(0.0f, 0.2f, 0.4f, 0.0f));
+	devcon->ClearRenderTargetView(targettview, RGBA{ 0.0f, 0.2f, 0.4f, 0.0f });
 	devcon->ClearDepthStencilView(depthstencilview, D3D11_CLEAR_DEPTH, 1.0f, 0);
 	return S_OK;
 }
@@ -186,41 +186,41 @@ HRESULT PresentFrame()
 
 void PlayerControls(Keys* khandle, float delta)
 {
-	float speed = .3f;
-	if (khandle->sprint.press > 0)
-		speed = .6f;
+	float speed = 2;
+	if (khandle->sprint.press > unpressed)
+		speed = 4;
 
-	vec3 mov = vec3(0, 0, 0);
+	float3 mov = float3(0, 0, 0);
 	float th = camera.getAngle(theta);
 
 	if (khandle->forward.press > 0)
-		mov = mov + vec3(cosf(th), 0, sinf(th));
+		mov = mov + float3(cosf(th), 0, sinf(th));
 	if (khandle->backward.press > 0)
-		mov = mov + vec3(-cosf(th), 0, -sinf(th));
+		mov = mov + float3(-cosf(th), 0, -sinf(th));
 	if (khandle->left.press > 0)
-		mov = mov + vec3(-sinf(th), 0, cosf(th));
+		mov = mov + float3(-sinf(th), 0, cosf(th));
 	if (khandle->right.press > 0)
-		mov = mov + vec3(sinf(th), 0, -cosf(th));
+		mov = mov + float3(sinf(th), 0, -cosf(th));
 
-	D3DXVec3Normalize(&mov, &mov);
+	mov = XMVector3Normalize(mov);
 
-	player.moveToPoint(player.getPos() + mov * speed, .1);
+	player.moveToPoint(player.getPosDest() + mov * speed * delta, 20);
 
 	player.update(delta);
 }
 void CameraControls(Mouse* mhandle, float delta)
 {
-	vec3 eye = origin;
-	float slide = 0.004 * mSensibility, radius = 1;
+	float3 eye = origin;
+	float slide = 0.005 * mSensibility, radius = 1;
 	static float zoom = 1.2;
-	static float _theta = D3DX_PI / 2;
-	static float _phi = D3DX_PI / 2;
+	static float _theta = DX_PI / 2;
+	static float _phi = DX_PI / 2;
 
 	// camera rotation
-	if (mhandle->GetButtonState(rightbutton) == 0)
+	if (mhandle->GetButtonState(rightbutton) == unpressed)
 	{
-		_theta -= (slide * mhandle->GetCoord(xcoord).vel) * (1 + 100 * delta);
-		_phi += (slide * mhandle->GetCoord(ycoord).vel) * (1 + 100 * delta);
+		_theta -= slide * mhandle->GetCoord(xcoord).vel;
+		_phi += slide * mhandle->GetCoord(ycoord).vel;
 	}
 	else // zoom
 		zoom += float(mhandle->GetCoord(ycoord).vel) * 0.005;
@@ -228,8 +228,8 @@ void CameraControls(Mouse* mhandle, float delta)
 
 	if (zoom < 0)
 		zoom = 0;
-	if (_phi >= D3DX_PI - 0.001)
-		_phi = D3DX_PI - 0.001;
+	if (_phi >= DX_PI - 0.001)
+		_phi = DX_PI - 0.001;
 	if (_phi <= 0.001)
 		_phi = 0.001;
 
@@ -237,16 +237,16 @@ void CameraControls(Mouse* mhandle, float delta)
 	eye.y = (radius + zoom * zoom) * cosf(_phi);
 	eye.z = (radius + zoom * zoom) * sinf(_theta) * sinf(_phi);
 
-	vec3 height = vec3(0, 0.75, 0);
+	float3 height = float3(0, 0.75, 0);
 
 	if (camera.isfree())
 	{
-		camera.lookAtPoint(player.getPos() + height + eye, .725);
-		camera.moveToPoint(player.getPos() + height - eye * zoom, .725);
+		camera.lookAtPoint(player.getPos() + height + eye, 15);
+		camera.moveToPoint(player.getPos() + height - eye * zoom, 15);
 	}
 
 	// reset camera
-	if (mhandle->GetButtonState(middlebutton) > 0)
+	if (mhandle->GetButtonState(middlebutton) == held)
 	{
 		camera.lock();
 		camera.lookAtPoint(origin, .15);
@@ -255,7 +255,8 @@ void CameraControls(Mouse* mhandle, float delta)
 		camera.unlock();
 
 	camera.update(delta);
-	D3DXMatrixLookAtLH(&mView, &(camera.getPos()), &camera.getLookAt(), &vec3(0, 1, 0));
+
+	mView = XMMatrixLookAtLH(camera.getPos(), camera.getLookAt(), float3(0, 1, 0));
 }
 HRESULT SetView(mat *world, mat *view, mat *proj)
 {

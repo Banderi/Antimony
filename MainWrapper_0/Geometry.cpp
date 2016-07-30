@@ -22,11 +22,11 @@ D3D11_INPUT_ELEMENT_DESC ied_VS_OUTPUT[] =
 };
 
 mat mIdentity, mTemp, mTemp2, mWorld, mView, mProj;
-vec3 origin = vec3(0, 0, 0);
+float3 origin = float3(0, 0, 0);
 
-mat TransposeMatrix(mat mIn)
+mat TransposeMatrix(const mat &mIn)
 {
 	mat mTemp;
-	D3DXMatrixTranspose(&mTemp, &mIn);
+	mTemp = XMMatrixTranspose(mIn);
 	return mTemp;
 }

@@ -1,7 +1,7 @@
 #ifndef GEOMETRY_H
 #define GEOMETRY_H
 
-#include "DirectX11.h"
+#include "DirectX.h"
 
 struct MatrixBufferType
 {
@@ -16,17 +16,17 @@ struct VERTEX
 };
 struct VS_INPUT
 {
-	vec4 Position;
-	vec3 Normal;
-	vec2 TextureCoordinate;
+	float4 Position;
+	float3 Normal;
+	float2 TextureCoordinate;
 	mat BlendWeights;
 	mat BlendIndices;
 };
 struct VS_OUTPUT
 {
-	vec4 Position;	
-	vec2 TextureCoordinate;
-	vec3 Normal;
+	float4 Position;
+	float2 TextureCoordinate;
+	float3 Normal;
 };
 
 extern D3D11_INPUT_ELEMENT_DESC ied[];
@@ -34,7 +34,7 @@ extern D3D11_INPUT_ELEMENT_DESC ied_VS_INPUT[];
 extern D3D11_INPUT_ELEMENT_DESC ied_VS_OUTPUT[];
 
 extern mat mIdentity, mTemp, mTemp2, mWorld, mView, mProj;
-extern vec3 origin;
+extern float3 origin;
 
 template <typename T> HRESULT FillBuffer(ID3D11Device *dev, ID3D11DeviceContext *devcon, ID3D11Buffer **ppOut, T pIn, UINT vSize)
 {
@@ -49,7 +49,7 @@ template <typename T> HRESULT FillBuffer(ID3D11Device *dev, ID3D11DeviceContext 
 
 	return S_OK;
 }
-mat TransposeMatrix(mat mIn);
+mat TransposeMatrix(const mat &mIn);
 
 
 

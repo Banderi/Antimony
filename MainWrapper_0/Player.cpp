@@ -3,8 +3,8 @@
 
 Player::Player()
 {
-	pos = vec3(0, 0, 0);
-	lookat = vec3(0, 0, 0);
+	pos = float3(0, 0, 0);
+	lookat = float3(0, 0, 0);
 }
 
 Player player;

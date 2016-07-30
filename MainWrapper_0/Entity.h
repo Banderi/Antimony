@@ -1,26 +1,30 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
-#include "DirectX11.h"
+#include "DirectX.h"
 
 class Entity
 {
 protected:
 	bool free;
-	vec3 pos, pos_dest;
-	vec3 lookat, lookat_dest;
+	float3 pos, pos_dest;
+	float3 lookat, lookat_dest;
 	float response;
 
 public:
+	void updatePos(float delta);
+
 	void lock();
 	void unlock();
 	bool isfree();
 
-	void moveToPoint(vec3 dest, float r);
-	void lookAtPoint(vec3 dest, float r);
+	void moveToPoint(float3 dest, float r);
+	void lookAtPoint(float3 dest, float r);
 
-	vec3 getPos();
-	vec3 getLookAt();
+	float3 getPos();
+	float3 getPosDest();
+	float3 getLookAt();
+	float3 getLookAtDest();
 };
 
 #endif

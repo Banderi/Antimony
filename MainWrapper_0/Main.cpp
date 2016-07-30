@@ -44,6 +44,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	MSG msg;
 	bool run = 1;
 
+	player.moveToPoint(float3(0, 0, -3), -1);
+
 	WriteToConsole(L"Entering main loop...\n");
 	camera.unlock();
 
@@ -81,7 +83,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 			*/
 
 		delta = timer.GetDelta();
-		RenderFrameDX11(delta);
+		RenderFrameDX11(delta * 1);
 
 	#ifdef _DEBUG
 		Log();
@@ -466,8 +468,6 @@ HRESULT LoadStartingFiles()
 	if (FAILED(hr))
 		return hr;
 
-	player.moveToPoint(vec3(0, 0, -3), -1);
-
 	return S_OK;
 }
 HRESULT InitShaders()
@@ -476,14 +476,14 @@ HRESULT InitShaders()
 
 	ID3D10Blob *blob = nullptr;
 
-	if (!Handle(&hr, HRH_SHADER_COMPILE, D3DX11CompileFromFileW(L".\\Shaders\\shader.hlsl", 0, 0, "VShader", "vs_4_0", 0, 0, 0, &blob, 0, 0)))
+	if (!Handle(&hr, HRH_SHADER_COMPILE, D3DCompileFromFile(L".\\Shaders\\shader.hlsl", 0, 0, "VShader", "vs_4_0", 0, 0, &blob, 0)))
 		return hr;
 	if (!Handle(&hr, HRH_SHADER_CREATE, dev->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &pVShader))) // create the VS
 		return hr;	
 	if (!Handle(&hr, HRH_SHADER_INPUTLAYOUT, dev->CreateInputLayout(ied, 2, blob->GetBufferPointer(), blob->GetBufferSize(), &pLayout))) // create an input layout from the VS
 		return hr;	
 
-	if (!Handle(&hr, HRH_SHADER_COMPILE, D3DX11CompileFromFileW(L".\\Shaders\\shader.hlsl", 0, 0, "PShader", "ps_4_0", 0, 0, 0, &blob, 0, 0)))
+	if (!Handle(&hr, HRH_SHADER_COMPILE, D3DCompileFromFile(L".\\Shaders\\shader.hlsl", 0, 0, "PShader", "ps_4_0", 0, 0, &blob, 0)))
 		return hr;	
 	if (!Handle(&hr, HRH_SHADER_CREATE, dev->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &pPShader))) // create the PS
 		return hr;
@@ -510,7 +510,7 @@ HRESULT InitGraphics()
 	if (!Handle(&hr, HRH_GRAPHICS_VERTEXBUFFER, dev->CreateBuffer(&bd, NULL, &pVertexBuffer)))
 		return hr;
 
-	bd.ByteWidth = sizeof(D3DXMATRIX) * 3;
+	bd.ByteWidth = sizeof(mat) * 3;
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	if (!Handle(&hr, HRH_GRAPHICS_CONSTANTBUFFER, dev->CreateBuffer(&bd, NULL, &pConstantBuffer)))
 		return hr;
@@ -528,13 +528,13 @@ HRESULT InitGraphics()
 
 	//
 
-	D3DXMatrixIdentity(&mIdentity);
+	mIdentity = XMMatrixIdentity();
 	mWorld = mIdentity;
 	mView = mIdentity;
-	D3DXMatrixLookAtLH(&mView, &(vec3(0, 0, -1)), &(vec3(0, 0, 0)), &vec3(0, 1, 0));
-	D3DXMatrixPerspectiveFovLH(&mProj, D3DX_PI / 4, wAspectRatio, 0.001f, 10000.0f);
+	mView = XMMatrixLookAtLH(float3(0, 0, -1), float3(0, 0, 0), float3(0, 1, 0));
+	mProj = XMMatrixPerspectiveFovLH(DX_PI / 4, wAspectRatio, 0.001f, 10000.0f);
 
-	//camera.moveToPoint(origin, -1);
+	camera.moveToPoint(origin + float3(0, 0, -1), -1);
 	camera.lookAtPoint(origin, -1);
 
 	WriteToConsole(L"done\n");

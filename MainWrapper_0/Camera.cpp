@@ -3,28 +3,23 @@
 
 void Camera::update(float delta)
 {
+	updatePos(delta);
+
 	th += th_vel * delta;
 	ph += ph_vel * delta;
 
 	th_vel *= friction * delta;
-	ph_vel *= friction * delta;
+	ph_vel *= friction * delta;	
 
-	pos += (pos_dest - pos) * response * 75 * delta;
-	lookat += (lookat_dest - lookat) * response * 75 * delta;
+	float3 dir;
+	dir = XMVector3Normalize(lookat - pos);
+	float3 cross;
+	cross = XMVector3Cross(float3(0, -1, 0), dir);
 
-	if (pos == pos_dest)
-		response = 0.0f;
-	if (lookat == lookat_dest)
-		response = 0.0f;
-
-	vec3 dir;
-	D3DXVec3Normalize(&dir, &(lookat - pos));
-	vec3 cross;
-	D3DXVec3Cross(&cross, &vec3(0, -1, 0), &dir);
-
-	th = -atan2f(-dir.z, D3DXVec3Dot(&vec3(1, 0, 0), &dir));
+	th = -atan2f(-dir.z, XMVectorGetX(XMVector3Dot(float3(1, 0, 0), dir)));
+	ph = atan2f(XMVectorGetX(XMVector3Length(cross)), XMVectorGetX(XMVector3Dot(float3(0, -1, 0), dir)));
 	//ph = acosf(D3DXVec3Dot(&vec3(0, -1, 0), &dir) / sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z));
-	ph = atan2f(D3DXVec3Length(&cross), D3DXVec3Dot(&vec3(0, -1, 0), &dir));
+
 	//th = asinf(dir.z);
 	//ph = asinf(dir.y);
 }
@@ -67,10 +62,10 @@ float Camera::getFriction()
 Camera::Camera()
 {
 	free = false;
-	pos = vec3(0, 0, 0);
-	pos_dest = vec3(0, 0, 0);
-	lookat = vec3(0, 0, 0);
-	lookat_dest = vec3(0, 0, 0);
+	pos = float3(0, 0, 0);
+	pos_dest = float3(0, 0, 0);
+	lookat = float3(0, 0, 0);
+	lookat_dest = float3(0, 0, 0);
 	response = 0.0f;
 	friction = 0.99f;
 	th = 0.0f;
