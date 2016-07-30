@@ -22,7 +22,8 @@ Both 64-bit (x64) and 32-bit (x86) version of the operating systems are supporte
 
 Visual Studio 2015 is needed to open/build the solution, any other version is unconfirmed to be compatible with the project files. It is recommended to use the free official [Visual Studio 2015 Community](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx) provided by Microsoft.
 
-The C/C++ code is written to work with the official MSVC 14.0 compiler, other toolsets might work, but no official support is given.
+The C/C++ code is written to work with the official MSVC 14.0 compiler. Other toolsets might work, but no official support is given.
+
 The project currently supports static linkage against official Microsoft C Runtime and Microsoft DirectX 11 Runtime libraries, so no inclusion of redistributable bundles is needed for release deployment.
 
 The project currently does not make use of the deprecated D3DX libraries, instead it uses the included [SimpleMath](https://blogs.msdn.microsoft.com/shawnhar/2013/01/08/simplemath-a-simplified-wrapper-for-directxmath/) library from the official [Microsoft DirectX Tool Kit for DirectX 11](https://github.com/Microsoft/DirectXTK), so no installation and inclusion of the deprecated DirectX SDK is required.
