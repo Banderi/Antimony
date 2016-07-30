@@ -32,13 +32,23 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	CreateMainWindow(hInstance);
 	ShowWindow(hWnd, nCmdShow);
 
+	if (!Handle(&hr, HRH_MAIN_ENUMHW, EnumHardware()))
+		return 0;
+
 	if (!Handle(&hr, HRH_MAIN_INITD3D, InitD3D(hWnd)))
 		return 0;
 
 	if (!Handle(&hr, HRH_MAIN_REGHID, InitControls()))
 		return 0;
 
+	if (!Handle(&hr, HRH_MAIN_INITSHADERS, InitShaders()))
+		return 0;
 
+	if (!Handle(&hr, HRH_MAIN_INITGRAPHICS, InitGraphics()))
+		return 0;
+
+	if (!Handle(&hr, HRH_MAIN_STARTINGFILES, LoadStartingFiles()))
+		return 0;
 
 	ShowCursor(false);
 	ClipCursor(&wScreen);
@@ -89,7 +99,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 			*/
 
 		delta = timer.GetDelta();
-		RenderFrame(delta * worldSpeed);
+		Frame(delta * worldSpeed);
 
 	#ifdef _DEBUG
 		Log();
@@ -205,33 +215,26 @@ HRESULT EnumHardware()
 	float fieldOfView, screenAspect;*/
 
 	// Create a DirectX graphics interface factory.
-	hr = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory);
-	if (FAILED(hr))
+	if (!Handle(&hr, HRH_ENUM_CREATEDXGIFACTORY, CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory)))
 		return hr;
 
 	// Use the factory to create an adapter for the primary graphics interface (video card).
-	hr = factory->EnumAdapters(0, &adapter);
-	if (FAILED(hr))
+	if (!Handle(&hr, HRH_ENUM_ENUMGPU, factory->EnumAdapters(0, &adapter)))
 		return hr;
 
 	// Enumerate the primary adapter output (monitor).
-	hr = adapter->EnumOutputs(0, &adapterOutput);
-	if (FAILED(hr))
+	if (!Handle(&hr, HRH_ENUM_ENUMOUTPUTDEVICE, adapter->EnumOutputs(0, &adapterOutput)))
 		return hr;
 
 	// Get the number of modes that fit the DXGI_FORMAT_R8G8B8A8_UNORM display format for the adapter output (monitor).
-	hr = adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &numModes, NULL);
-	if (FAILED(hr))
+	if (!Handle(&hr, HRH_ENUM_GETOUTPUTMODESNUMBER, adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &numModes, NULL)))
 		return hr;
 
 	// Create a list to hold all the possible display modes for this monitor/video card combination.
 	displayModeList = new DXGI_MODE_DESC[numModes];
-	if (FAILED(hr))
-		return hr;
 
 	// Now fill the display mode list structures.
-	hr = adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &numModes, displayModeList);
-	if (FAILED(hr))
+	if (!Handle(&hr, HRH_ENUM_FILLOUTPUTMODESLIST, adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &numModes, displayModeList)))
 		return hr;
 
 	RECT desktop;
@@ -253,8 +256,7 @@ HRESULT EnumHardware()
 	}
 
 	// Get the adapter (video card) description.
-	hr = adapter->GetDesc(&adapterDesc);
-	if (FAILED(hr))
+	if (!Handle(&hr, HRH_ENUM_GETGPUDESC, adapter->GetDesc(&adapterDesc)))
 		return hr;
 
 	// Store the dedicated video card memory in megabytes.
@@ -280,8 +282,6 @@ HRESULT EnumHardware()
 }
 HRESULT InitD3D(HWND hWnd)
 {
-	EnumHardware();
-
 	WriteToConsole(L"Initializing D3D11... ");
 
 	DXGI_SWAP_CHAIN_DESC scd;
@@ -430,24 +430,8 @@ HRESULT InitD3D(HWND hWnd)
 
 	WriteToConsole(L"done\n");
 
-	return LoadStartingFiles();
+	return S_OK;
 }
-void CleanD3D()
-{
-	WriteToConsole(L"Cleaning D3D11... ");
-
-	swapchain->SetFullscreenState(FALSE, NULL);
-	swapchain->Release();
-	dev->Release();
-	devcon->Release();
-	targettview->Release();
-	depthstencilview->Release();
-
-	WriteToConsole(L"done\n");
-
-	ReleaseFiles();
-}
-
 HRESULT InitControls()
 {
 	hr = RegisterRID();
@@ -462,17 +446,6 @@ HRESULT InitControls()
 	keys.sprint.vkey = kSprint;
 	keys.jump.vkey = kJump;
 	keys.action.vkey = kAction;
-
-	return S_OK;
-}
-HRESULT LoadStartingFiles()
-{
-	InitShaders();
-	if (FAILED(hr))
-		return hr;
-	InitGraphics();
-	if (FAILED(hr))
-		return hr;
 
 	return S_OK;
 }
@@ -545,6 +518,27 @@ HRESULT InitGraphics()
 
 	WriteToConsole(L"done\n");
 	return S_OK;
+}
+HRESULT LoadStartingFiles()
+{
+	// TODO: Implement FBX & test some files against it
+
+	return S_OK;
+}
+void CleanD3D()
+{
+	WriteToConsole(L"Cleaning D3D11... ");
+
+	swapchain->SetFullscreenState(FALSE, NULL);
+	swapchain->Release();
+	dev->Release();
+	devcon->Release();
+	targettview->Release();
+	depthstencilview->Release();
+
+	WriteToConsole(L"done\n");
+
+	ReleaseFiles();
 }
 void ReleaseFiles()
 {

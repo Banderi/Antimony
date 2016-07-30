@@ -66,13 +66,7 @@ Timer timer;
 
 //
 
-HRESULT RenderFrameDX9(float delta)
-{
-	//
-	return S_OK;
-}
-
-HRESULT RenderFrame(float delta)
+HRESULT Frame(float delta)
 {
 	PrepareFrame();
 
@@ -86,10 +80,14 @@ HRESULT RenderFrame(float delta)
 	UpdateAI(delta);
 	UpdatePhysics(delta);
 	UpdateWorld(delta);
+	Update_DebugCube(delta);
 
 	//
 
-	Update_DebugCube(delta);
+	RenderWorld();
+	RenderEntities();
+	RenderHUD();
+	Render_DebugCube();
 
 	return PresentFrame();
 }
@@ -117,97 +115,6 @@ HRESULT SetView(mat *world, mat *view, mat *proj)
 	matrices.projection = TransposeMatrix(*proj);
 
 	return FillBuffer(dev, devcon, &pConstantBuffer, &matrices, sizeof(MatrixBufferType));
-}
-
-void Update_DebugCube(float delta)
-{
-	devcon->IASetInputLayout(pLayout);
-	devcon->VSSetShader(pVShader, 0, 0);
-	devcon->PSSetShader(pPShader, 0, 0);
-
-	//
-
-	static float r = 0.3;
-
-	VERTEX vertices[] =
-	{
-		{ -r, -r, -r, color(1.0, 1.0, 1.0, 1.0) },	//			7 o
-		{ r, -r, -r, color(1.0, 1.0, 1.0, 1.0) },	//			  |		  6 o
-		{ r, r, -r, color(1.0, 1.0, 1.0, 1.0) },	//	  3 o	  |			|
-		{ -r, r, -r, color(1.0, 1.0, 1.0, 1.0) },	//		|	  |	2 o		|
-		{ -r, -r, r, color(1.0, 1.0, 1.0, 1.0) },	//		|	4 o   |		|
-		{ r, -r, r, color(1.0, 1.0, 1.0, 1.0) },	//		|		  |   5 o
-		{ r, r, r, color(1.0, 1.0, 1.0, 1.0) },		//	  0 o		  |
-		{ -r, r, r, color(1.0, 1.0, 1.0, 1.0) },	//				1 o
-													//
-		{ 0, 0, 0, color(0.0, 0.0, 0.0, 1.0) },
-		{ 2, 0, 0, color(0.0, 0.0, 0.0, 1.0) },
-		{ 2, 0, 2, color(0.0, 0.0, 0.0, 1.0) },
-		{ 0, 0, 2, color(0.0, 0.0, 0.0, 1.0) },
-		{ -2, 0, 2, color(0.0, 0.0, 0.0, 1.0) },
-		{ -2, 0, 0, color(0.0, 0.0, 0.0, 1.0) },
-		{ -2, 0, -2, color(0.0, 0.0, 0.0, 1.0) },
-		{ 0, 0, -2, color(0.0, 0.0, 0.0, 1.0) },
-		{ 2, 0, -2, color(0.0, 0.0, 0.0, 1.0) },
-		//
-		{ 0, 1, 0, color(0.0, 0.0, 0.0, 1.0) }
-	};
-	FillBuffer<VERTEX[]>(dev, devcon, &pVertexBuffer, vertices, sizeof(vertices));
-
-	UINT indices[] =
-	{
-		0, 3, 2,
-		0, 2, 1,
-		0, 4, 7,
-		0, 7, 3,
-		0, 1, 5,
-		0, 5, 4,
-		6, 2, 3,
-		6, 3, 7,
-		6, 5, 1,
-		6, 1, 2,
-		6, 4, 5,
-		4, 6, 7,
-		//
-		10, 16,
-		11, 15,
-		12, 14,
-		12, 10,
-		13, 9,
-		14, 16,
-		//
-		8, 17
-	};
-	FillBuffer<UINT[]>(dev, devcon, &pIndexBuffer, indices, sizeof(indices));
-
-	//
-
-	//SetDepthBufferState(OFF);
-
-	mWorld = mIdentity;
-	SetView(&mWorld, &mView, &mProj);
-	devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-	devcon->DrawIndexed(14, 36, 0); // axis
-
-									//SetDepthBufferState(ON);
-
-	static float h = 0;
-	h += 0.5f * DX_PI * delta;
-	if (h >= 2 * DX_PI)
-		h = 0;
-	mWorld = XMMatrixRotationY(h);
-	mTemp = XMMatrixScaling(0.5, 0.5, 0.5);
-	mWorld = mTemp * mWorld;
-	mTemp = XMMatrixTranslation(0, 1, 0);
-	SetView(&(mTemp * mWorld), &mView, &mProj);
-	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	devcon->DrawIndexed(36, 0, 0); // rotating cube
-
-	mWorld = XMMatrixTranslationFromVector(player.getPos() + float3(0, 0.3, 0));
-	mTemp = XMMatrixScaling(0.4, 1, 0.4);
-	SetView(&(mTemp * mWorld), &mView, &mProj);
-	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	devcon->DrawIndexed(36, 0, 0); // player cube
 }
 
 void UpdatePlayerControls(Keys* khandle, float delta)
@@ -275,7 +182,7 @@ void UpdateCameraControls(Mouse* mhandle, float delta)
 	if (mhandle->GetButtonState(middlebutton) == held)
 	{
 		camera.lock();
-		camera.lookAtPoint(origin, .15);
+		camera.lookAtPoint(origin, 15);
 	}
 	else if (!camera.isfree())
 		camera.unlock();
@@ -302,6 +209,108 @@ void UpdateWorld(float delta)
 {
 	// TODO: Implement world mechanics
 	// TODO: Implement triggers
+}
+void Update_DebugCube(float delta)
+{
+	static float r = 0.3;
+
+	VERTEX vertices[] =
+	{
+		{ -r, -r, -r, color(1.0, 1.0, 1.0, 1.0) },	//			7 o
+		{ r, -r, -r, color(1.0, 1.0, 1.0, 1.0) },	//			  |		  6 o
+		{ r, r, -r, color(1.0, 1.0, 1.0, 1.0) },	//	  3 o	  |			|
+		{ -r, r, -r, color(1.0, 1.0, 1.0, 1.0) },	//		|	  |	2 o		|
+		{ -r, -r, r, color(1.0, 1.0, 1.0, 1.0) },	//		|	4 o   |		|
+		{ r, -r, r, color(1.0, 1.0, 1.0, 1.0) },	//		|		  |   5 o
+		{ r, r, r, color(1.0, 1.0, 1.0, 1.0) },		//	  0 o		  |
+		{ -r, r, r, color(1.0, 1.0, 1.0, 1.0) },	//				1 o
+		//
+		{ 0, 0, 0, color(0.0, 0.0, 0.0, 1.0) },
+		{ 2, 0, 0, color(0.0, 0.0, 0.0, 1.0) },
+		{ 2, 0, 2, color(0.0, 0.0, 0.0, 1.0) },
+		{ 0, 0, 2, color(0.0, 0.0, 0.0, 1.0) },
+		{ -2, 0, 2, color(0.0, 0.0, 0.0, 1.0) },
+		{ -2, 0, 0, color(0.0, 0.0, 0.0, 1.0) },
+		{ -2, 0, -2, color(0.0, 0.0, 0.0, 1.0) },
+		{ 0, 0, -2, color(0.0, 0.0, 0.0, 1.0) },
+		{ 2, 0, -2, color(0.0, 0.0, 0.0, 1.0) },
+		//
+		{ 0, 1, 0, color(0.0, 0.0, 0.0, 1.0) }
+	};
+	FillBuffer<VERTEX[]>(dev, devcon, &pVertexBuffer, vertices, sizeof(vertices));
+
+	UINT indices[] =
+	{
+		0, 3, 2,
+		0, 2, 1,
+		0, 4, 7,
+		0, 7, 3,
+		0, 1, 5,
+		0, 5, 4,
+		6, 2, 3,
+		6, 3, 7,
+		6, 5, 1,
+		6, 1, 2,
+		6, 4, 5,
+		4, 6, 7,
+		//
+		10, 16,
+		11, 15,
+		12, 14,
+		12, 10,
+		13, 9,
+		14, 16,
+		//
+		8, 17
+	};
+	FillBuffer<UINT[]>(dev, devcon, &pIndexBuffer, indices, sizeof(indices));
+
+	static float h = 0;
+	h += 0.5f * DX_PI * delta;
+	if (h >= 2 * DX_PI)
+		h = 0;
+	mWorld = XMMatrixRotationY(h);
+}
+
+void RenderWorld()
+{
+
+}
+void RenderEntities()
+{
+
+}
+void RenderHUD()
+{
+
+}
+void Render_DebugCube()
+{
+	devcon->IASetInputLayout(pLayout);
+	devcon->VSSetShader(pVShader, 0, 0);
+	devcon->PSSetShader(pPShader, 0, 0);
+
+	//SetDepthBufferState(OFF);
+
+	mWorld = mIdentity;
+	SetView(&mWorld, &mView, &mProj);
+	devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+	devcon->DrawIndexed(14, 36, 0); // axis
+
+	//SetDepthBufferState(ON);	
+	
+	mTemp = XMMatrixScaling(0.5, 0.5, 0.5);
+	mWorld = mTemp * mWorld;
+	mTemp = XMMatrixTranslation(0, 1, 0);
+	SetView(&(mTemp * mWorld), &mView, &mProj);
+	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	devcon->DrawIndexed(36, 0, 0); // rotating cube
+
+	mWorld = XMMatrixTranslationFromVector(player.getPos() + float3(0, 0.3, 0));
+	mTemp = XMMatrixScaling(0.4, 1, 0.4);
+	SetView(&(mTemp * mWorld), &mView, &mProj);
+	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	devcon->DrawIndexed(36, 0, 0); // player cube
 }
 
 void SetDepthBufferState(bool state)

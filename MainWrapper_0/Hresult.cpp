@@ -20,6 +20,10 @@ bool Handle(HRESULT *hOut, DWORD facing, HRESULT hr)
 
 		switch (facing)
 		{
+		case HRH_MAIN_ENUMHW:
+			swprintf(buffer,
+				L"Hardware enumeration failed! Program will now terminate.");
+			break;
 		case HRH_MAIN_INITD3D:
 			swprintf(buffer,
 				L"DirectX11 initialization failed! Program will now terminate.");
@@ -28,6 +32,38 @@ bool Handle(HRESULT *hOut, DWORD facing, HRESULT hr)
 			swprintf(buffer,
 				L"HID objects registration failed! Program will now terminate.");
 			break;
+		case HRH_MAIN_INITSHADERS:
+			swprintf(buffer,
+				L"Shaders initialization failed! Program will now terminate.");
+			break;
+		case HRH_MAIN_INITGRAPHICS:
+			swprintf(buffer,
+				L"Graphics initialization failed! Program will now terminate.");
+			break;
+		case HRH_MAIN_STARTINGFILES:
+			swprintf(buffer,
+				L"Could not load starting files! Program will now terminate.");
+			break;
+
+		// EnumHardware(...)
+		case HRH_ENUM_CREATEDXGIFACTORY:
+			swprintf(buffer,
+				L"Unable to create DirectX graphics interface factory.\nError code: %s (0x%X)", errMsg, hr);
+		case HRH_ENUM_ENUMGPU:
+			swprintf(buffer,
+				L"Unable to enumerate graphic adapter.\nError code: %s (0x%X)", errMsg, hr);
+		case HRH_ENUM_ENUMOUTPUTDEVICE:
+			swprintf(buffer,
+				L"Unable to enumerate output device.\nError code: %s (0x%X)", errMsg, hr);
+		case HRH_ENUM_GETOUTPUTMODESNUMBER:
+			swprintf(buffer,
+				L"Unable to enumerate output modes count.\nError code: %s (0x%X)", errMsg, hr);
+		case HRH_ENUM_FILLOUTPUTMODESLIST:
+			swprintf(buffer,
+				L"Unable to fill output modes list.\nError code: %s (0x%X)", errMsg, hr);
+		case HRH_ENUM_GETGPUDESC:
+			swprintf(buffer,
+				L"Unable to get GPU description.\nError code: %s (0x%X)", errMsg, hr);
 
 		// InitD3D(...)
 		case HRH_SWAPCHAIN_CREATE:

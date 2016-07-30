@@ -48,8 +48,7 @@ extern Timer timer;
 
 //
 
-HRESULT RenderFrameDX9(float delta);		// <-- yah, I'm serious
-HRESULT RenderFrame(float delta);
+HRESULT Frame(float delta);
 
 HRESULT PrepareFrame();
 HRESULT PresentFrame();
@@ -62,8 +61,12 @@ void UpdateHUD(float delta);
 void UpdateAI(float delta);
 void UpdatePhysics(float delta);
 void UpdateWorld(float delta);
-
 void Update_DebugCube(float delta);
+
+void RenderWorld();
+void RenderEntities();
+void RenderHUD();
+void Render_DebugCube();
 
 void SetDepthBufferState(bool state);
 

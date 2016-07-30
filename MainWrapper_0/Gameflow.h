@@ -16,5 +16,7 @@
 extern unsigned int GameState;
 
 void SetGameState(unsigned int state);
+unsigned int GetGameState();
+bool ForGameState(unsigned int state);
 
 #endif
