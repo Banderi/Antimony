@@ -16,11 +16,11 @@ The project is currently Windows only. There are currently no plans for implemen
 
 ## Tools and libraries required
 
-The Windows SDK 8.1 is required to develop DirectX11 applications, so the project is only compatible with Windows Vista, 7, 8, 8.1 and 10 (currently only tested on Windows 7, 8.1 and 10); support to Windows XP is currently not given.
+The Windows SDK 8.1 is required to develop DirectX11 applications, so the project is only compatible with Windows Vista, 7, 8, 8.1 and 10 (currently only tested on Windows 7, 8.1 and 10). Support to the deprecated Windows XP and other versions of Windows is currently not given.
 
-Both 64-bit (x64) and 32-bit (x86) version of the operating systems are supported, though compilation in 64-bit is unconfirmed to be free of issues at the moment.
+Both 64-bit (x64) and 32-bit (x86) version of the operating systems are supported, though compilation of the code in 64-bit is unconfirmed to be free of issues at the moment.
 
-Visual Studio 2015 is needed to open/build the solution, any other version is unconfirmed to be compatible with the project files; it is recommended to use the free official [Visual Studio 2015 Community](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx) provided by Microsoft.
+Visual Studio 2015 is needed to open/build the solution, any other version is unconfirmed to be compatible with the project files. It is recommended to use the free official [Visual Studio 2015 Community](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx) provided by Microsoft.
 
 The C/C++ code is written to work with the official MSVC 14.0 compiler, other toolsets might work, but no official support is given.
 The project currently supports static linkage against official Microsoft C Runtime and Microsoft DirectX 11 Runtime libraries, so no inclusion of redistributable bundles is needed for release deployment.
