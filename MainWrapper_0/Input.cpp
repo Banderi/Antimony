@@ -6,6 +6,9 @@
 #include "Window.h"
 #include "DebugWin.h"
 
+// TODO: Implement controller input
+// TODO: Fix keyboard input setting to '1' repeatedly
+
 RAWINPUTDEVICE rid[4];
 
 Mouse mouse;

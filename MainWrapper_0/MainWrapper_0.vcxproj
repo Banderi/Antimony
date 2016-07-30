@@ -187,6 +187,7 @@
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="FBX.cpp" />
     <ClCompile Include="Frame.cpp" />
+    <ClCompile Include="Gameflow.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="Hresult.cpp" />
     <ClCompile Include="Input.cpp" />
@@ -203,6 +204,7 @@
     <ClInclude Include="Entity.h" />
     <ClInclude Include="FBX.h" />
     <ClInclude Include="Frame.h" />
+    <ClInclude Include="Gameflow.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="Hresult.h" />
     <ClInclude Include="Input.h" />

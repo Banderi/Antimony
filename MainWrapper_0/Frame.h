@@ -49,14 +49,21 @@ extern Timer timer;
 //
 
 HRESULT RenderFrameDX9(float delta);		// <-- yah, I'm serious
-HRESULT RenderFrameDX11(float delta);
+HRESULT RenderFrame(float delta);
 
 HRESULT PrepareFrame();
 HRESULT PresentFrame();
 
-void PlayerControls(Keys* khandle, float delta);
-void CameraControls(Mouse* mhandle, float delta);
 HRESULT SetView(mat *world, mat *view, mat *proj);
+void UpdatePlayerControls(Keys* khandle, float delta);
+void UpdateCameraControls(Mouse* mhandle, float delta);
+
+void UpdateHUD(float delta);
+void UpdateAI(float delta);
+void UpdatePhysics(float delta);
+void UpdateWorld(float delta);
+
+void Update_DebugCube(float delta);
 
 void SetDepthBufferState(bool state);
 

@@ -10,6 +10,7 @@
 #include "Frame.h"
 #include "DebugWin.h"
 #include "Controls.h"
+#include "Gameflow.h"
 
 #pragma comment (lib, "Shlwapi.lib")
 
@@ -71,12 +72,55 @@ HRESULT RenderFrameDX9(float delta)
 	return S_OK;
 }
 
-HRESULT RenderFrameDX11(float delta)
+HRESULT RenderFrame(float delta)
 {
 	PrepareFrame();
-	PlayerControls(&keys, delta);
-	CameraControls(&mouse, delta); // --> updates into mView
 
+	if (ForGameState(GAMESTATE_INGAME))
+	{
+		UpdatePlayerControls(&keys, delta);
+		UpdateCameraControls(&mouse, delta); // --> updates into mView
+	}
+
+	UpdateHUD(delta);
+	UpdateAI(delta);
+	UpdatePhysics(delta);
+	UpdateWorld(delta);
+
+	//
+
+	Update_DebugCube(delta);
+
+	return PresentFrame();
+}
+
+HRESULT PrepareFrame()
+{
+	devcon->ClearRenderTargetView(targettview, RGBA{ 0.0f, 0.2f, 0.4f, 0.0f });
+	devcon->ClearDepthStencilView(depthstencilview, D3D11_CLEAR_DEPTH, 1.0f, 0);
+	return S_OK;
+}
+HRESULT PresentFrame()
+{
+	if (wVSync)
+		return swapchain->Present(1, 0);
+	else
+		return swapchain->Present(0, 0);
+}
+
+HRESULT SetView(mat *world, mat *view, mat *proj)
+{
+	MatrixBufferType matrices;
+
+	matrices.world = TransposeMatrix(*world);
+	matrices.view = TransposeMatrix(*view);
+	matrices.projection = TransposeMatrix(*proj);
+
+	return FillBuffer(dev, devcon, &pConstantBuffer, &matrices, sizeof(MatrixBufferType));
+}
+
+void Update_DebugCube(float delta)
+{
 	devcon->IASetInputLayout(pLayout);
 	devcon->VSSetShader(pVShader, 0, 0);
 	devcon->PSSetShader(pPShader, 0, 0);
@@ -95,7 +139,7 @@ HRESULT RenderFrameDX11(float delta)
 		{ r, -r, r, color(1.0, 1.0, 1.0, 1.0) },	//		|		  |   5 o
 		{ r, r, r, color(1.0, 1.0, 1.0, 1.0) },		//	  0 o		  |
 		{ -r, r, r, color(1.0, 1.0, 1.0, 1.0) },	//				1 o
-		//
+													//
 		{ 0, 0, 0, color(0.0, 0.0, 0.0, 1.0) },
 		{ 2, 0, 0, color(0.0, 0.0, 0.0, 1.0) },
 		{ 2, 0, 2, color(0.0, 0.0, 0.0, 1.0) },
@@ -109,7 +153,7 @@ HRESULT RenderFrameDX11(float delta)
 		{ 0, 1, 0, color(0.0, 0.0, 0.0, 1.0) }
 	};
 	FillBuffer<VERTEX[]>(dev, devcon, &pVertexBuffer, vertices, sizeof(vertices));
-	
+
 	UINT indices[] =
 	{
 		0, 3, 2,
@@ -145,7 +189,7 @@ HRESULT RenderFrameDX11(float delta)
 	devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 	devcon->DrawIndexed(14, 36, 0); // axis
 
-	//SetDepthBufferState(ON);
+									//SetDepthBufferState(ON);
 
 	static float h = 0;
 	h += 0.5f * DX_PI * delta;
@@ -164,27 +208,9 @@ HRESULT RenderFrameDX11(float delta)
 	SetView(&(mTemp * mWorld), &mView, &mProj);
 	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	devcon->DrawIndexed(36, 0, 0); // player cube
-
-	//
-
-	return PresentFrame();
 }
 
-HRESULT PrepareFrame()
-{
-	devcon->ClearRenderTargetView(targettview, RGBA{ 0.0f, 0.2f, 0.4f, 0.0f });
-	devcon->ClearDepthStencilView(depthstencilview, D3D11_CLEAR_DEPTH, 1.0f, 0);
-	return S_OK;
-}
-HRESULT PresentFrame()
-{
-	if (wVSync)
-		return swapchain->Present(1, 0);
-	else
-		return swapchain->Present(0, 0);
-}
-
-void PlayerControls(Keys* khandle, float delta)
+void UpdatePlayerControls(Keys* khandle, float delta)
 {
 	float speed = 2;
 	if (khandle->sprint.press > unpressed)
@@ -208,7 +234,7 @@ void PlayerControls(Keys* khandle, float delta)
 
 	player.update(delta);
 }
-void CameraControls(Mouse* mhandle, float delta)
+void UpdateCameraControls(Mouse* mhandle, float delta)
 {
 	float3 eye = origin;
 	float slide = 0.005 * mSensibility, radius = 1;
@@ -258,15 +284,24 @@ void CameraControls(Mouse* mhandle, float delta)
 
 	mView = XMMatrixLookAtLH(camera.getPos(), camera.getLookAt(), float3(0, 1, 0));
 }
-HRESULT SetView(mat *world, mat *view, mat *proj)
+
+void UpdateHUD(float delta)
 {
-	MatrixBufferType matrices;
-
-	matrices.world = TransposeMatrix(*world);
-	matrices.view = TransposeMatrix(*view);
-	matrices.projection = TransposeMatrix(*proj);
-
-	return FillBuffer(dev, devcon, &pConstantBuffer, &matrices, sizeof(MatrixBufferType));
+	// TODO: Implement font/text printing
+	// TODO: Implement HUD
+}
+void UpdateAI(float delta)
+{
+	// TODO: Implement AI
+}
+void UpdatePhysics(float delta)
+{
+	// TODO: Implement physics
+}
+void UpdateWorld(float delta)
+{
+	// TODO: Implement world mechanics
+	// TODO: Implement triggers
 }
 
 void SetDepthBufferState(bool state)

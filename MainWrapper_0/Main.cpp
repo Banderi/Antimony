@@ -9,21 +9,25 @@
 #include "DebugWin.h"
 #include "Hresult.h"
 #include "Controls.h"
+#include "Gameflow.h"
 
 using namespace std;
 
 float delta = 0;
+float worldSpeed = 1;
 
 int WINAPI WinMain(HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
 	LPSTR lpCmdLine,
 	int nCmdShow)
 {
+	SetGameState(GAMESTATE_LOADING_1);
+
 	ReadConfig();
-#ifdef _DEBUG
+		#ifdef _DEBUG
 	InitializeDebugConsole();
 	WriteToConsole(L"---> START OF DEBUG CONSOLE <---\n");
-#endif	
+		#endif	
 
 	CreateMainWindow(hInstance);
 	ShowWindow(hWnd, nCmdShow);
@@ -48,6 +52,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 	WriteToConsole(L"Entering main loop...\n");
 	camera.unlock();
+
+	SetGameState(GAMESTATE_INGAME);
 
 	while (run)
 	{
@@ -83,7 +89,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 			*/
 
 		delta = timer.GetDelta();
-		RenderFrameDX11(delta * 1);
+		RenderFrame(delta * worldSpeed);
 
 	#ifdef _DEBUG
 		Log();

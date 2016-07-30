@@ -11,14 +11,12 @@ void Camera::update(float delta)
 	th_vel *= friction * delta;
 	ph_vel *= friction * delta;	
 
-	float3 dir;
-	dir = XMVector3Normalize(lookat - pos);
-	float3 cross;
-	cross = XMVector3Cross(float3(0, -1, 0), dir);
+	float3 dir = XMVector3Normalize(lookat - pos);
+	float3 cross = dir.Cross(float3(0, -1, 0));
+	float dot = dir.Dot(float3(1, 0, 0));
 
-	th = -atan2f(-dir.z, XMVectorGetX(XMVector3Dot(float3(1, 0, 0), dir)));
-	ph = atan2f(XMVectorGetX(XMVector3Length(cross)), XMVectorGetX(XMVector3Dot(float3(0, -1, 0), dir)));
-	//ph = acosf(D3DXVec3Dot(&vec3(0, -1, 0), &dir) / sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z));
+	th = -atan2f(-dir.z, dot);
+	ph = atan2f(cross.Length(), dot);
 
 	//th = asinf(dir.z);
 	//ph = asinf(dir.y);
