@@ -5,7 +5,7 @@ This project is an open source, general-purpose 3D-2D game engine built to accom
 
 ## Usage
 
-As of now, no available games or applications make use of this engine. Plans for future use on various commercially available games are 
+As of now, no available games or applications make use of this engine. Plans for future use on various commercially available games are currently underway.
 
 ## Current situation
 
