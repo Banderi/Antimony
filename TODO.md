@@ -48,3 +48,4 @@
 - Implement multiplatform support
 - Look into Vulkan support
 - Look into mobile/legacy systems
+- Handshake with Jon Stewart
