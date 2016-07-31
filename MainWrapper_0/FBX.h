@@ -15,15 +15,15 @@
 
 #ifdef ENVIRONMENT32
 #ifdef _DEBUG
-#pragma comment (lib, "x86/libfbxsdk-mtd.lib")
+#pragma comment (lib, "FBXSDK/lib/x86/libfbxsdk-mtd.lib")
 #else
-#pragma comment (lib, "x86/libfbxsdk-mt.lib")
+#pragma comment (lib, "FBXSDK/lib/x86/libfbxsdk-mt.lib")
 #endif
 #elif defined(ENVIRONMENT64)
 #ifdef _DEBUG
-#pragma comment (lib, "x64/libfbxsdk-mtd.lib")
+#pragma comment (lib, "FBXSDK/lib/x64/libfbxsdk-mtd.lib")
 #else
-#pragma comment (lib, "x64/libfbxsdk-mt.lib")
+#pragma comment (lib, "FBXSDK/lib/x64/libfbxsdk-mt.lib")
 #endif
 #endif
 
