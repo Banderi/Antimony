@@ -3,3 +3,4 @@ language:
 compiler:
   - clang
   - gcc
+  - msvc
