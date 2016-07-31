@@ -4,3 +4,8 @@ compiler:
   - clang
   - gcc
   - msvc
+script:
+  - mkdir build
+  - cd build
+  - cmake ..
+  - make
