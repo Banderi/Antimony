@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <Windows.h>
-#include "../FBXSDK/include/fbxsdk.h"
+#include <fbxsdk.h>
 
 #if _WIN32 || _WIN64
 #if _WIN64
@@ -15,15 +15,15 @@
 
 #ifdef ENVIRONMENT32
 #ifdef _DEBUG
-#pragma comment (lib, "../FBXSDK/lib/x86/libfbxsdk-mtd.lib")
+#pragma comment (lib, "x86/libfbxsdk-mtd.lib")
 #else
-#pragma comment (lib, "../FBXSDK/lib/x86/libfbxsdk-mt.lib")
+#pragma comment (lib, "x86/libfbxsdk-mt.lib")
 #endif
 #elif defined(ENVIRONMENT64)
 #ifdef _DEBUG
-#pragma comment (lib, "../FBXSDK/lib/x64/libfbxsdk-mtd.lib")
+#pragma comment (lib, "x64/libfbxsdk-mtd.lib")
 #else
-#pragma comment (lib, "../FBXSDK/lib/x64/libfbxsdk-mt.lib")
+#pragma comment (lib, "x64/libfbxsdk-mt.lib")
 #endif
 #endif
 
