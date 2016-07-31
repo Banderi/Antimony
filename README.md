@@ -1,4 +1,4 @@
-# Project-X ·· ![travis-ci](https://travis-ci.org/Banderi/Project-X.svg?branch=master)
+# Project-X ·· ![Microsoft Team Services CI](https://banderi.visualstudio.com/_apis/public/build/definitions/ed4db6b1-d928-4080-8bdc-edf144c3fcac/1/badge)
 
 The greatness I possess in choosing project titles is without bounds.
 This project is an open source, general-purpose 3D-2D game engine built to accomodate many indie game ideas and concepts I had in mind. Feel free to contribute, fork or use at will for your personal or commercial projects, following my [license specifications](LICENSE.md).
