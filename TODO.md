@@ -1,24 +1,31 @@
 # TODO list
 
 ### Features:
-- [ ] Implement 3D rendering
+- [ ] Implement 3D graphics
     - [x] Basic 3D rendering, vertex/index buffering, vector/matrix management
     - [ ] 3D lights
     - [ ] Cel-shading HLSL shader
-- [ ] Implement FBX models management system
-    - [ ] Mesh container management/loading
-    - [ ] 3D Animation
 - [ ] Implement 2D graphics
-    - [ ] Implement font/text printing
+    - [ ] Font/text printing
+    - [ ] Menu/buttons system
 - [ ] Implement physics
 - [ ] Implement AI
-- [ ] Implement world mechanics
+- [ ] Implement basic world mechanics
 - [ ] Implement triggers
 - [ ] Implement controller input
-- [ ] Implement menus/settings editor
+- [ ] Implement menus/GUI
+        - [ ] Settings editor
 - [ ] Implement save/load system
+- [ ] Implement dynamic gameplay system
+- [ ] Implement asset file system
+    - [ ] FBX models
+        - [ ] Mesh container management/loading
+        - [ ] 3D Animation
+    - [ ] 2D assets
+    - [ ] World/region and triggers
+    - [ ] Main asset archive/compression system
 
-### Bugfixes:
+### Bugs:
 - [ ] Fix keyboard input setting to '1' repeatedly
 
 ### Roadmap:
@@ -27,6 +34,7 @@
 - [ ] Polish github/create dedicated website
 - [ ] Develop prototype working game
 - [ ] Sell on Steam
+- [ ] Develop multiple gameplays
 - [ ] Implement Steam Workshop
 - [ ] ???
 - [ ] Profit
