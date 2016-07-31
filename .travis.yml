@@ -4,6 +4,8 @@ compiler:
   - clang
   - gcc
   - msvc
+  - myawesomecompiler
+  - ( ͡° ͜ʖ ͡°)
 script:
   - mkdir build
   - cd build
