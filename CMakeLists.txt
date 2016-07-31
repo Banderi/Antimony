@@ -21,9 +21,9 @@ if(COMMAND cmake_policy)
   endif(POLICY CMP0015)
 endif(COMMAND cmake_policy)
 
-set(CMAKE_MODULE_PATH "./cmake/Modules" ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules" ${CMAKE_MODULE_PATH})
 
-set(V2C_CONFIG_DIR_LOCAL "./cmake/vcproj2cmake")
+set(V2C_CONFIG_DIR_LOCAL "${CMAKE_SOURCE_DIR}/cmake/vcproj2cmake")
 
 # include the main file for pre-defined vcproj2cmake helper functions
 include(vcproj2cmake_func)
