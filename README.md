@@ -1,4 +1,4 @@
-# Project-X
+# Project-X ·· ![travis-ci](https://travis-ci.org/Banderi/Project-X.svg?branch=master)
 
 The greatness I possess in choosing project titles is without bounds.
 This project is an open source, general-purpose 3D-2D game engine built to accomodate many indie game ideas and concepts I had in mind. Feel free to contribute, fork or use at will for your personal or commercial projects, following my [license specifications](LICENSE.md).
