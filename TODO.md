@@ -15,6 +15,8 @@
 - [ ] Implement world mechanics
 - [ ] Implement triggers
 - [ ] Implement controller input
+- [ ] Implement menus/settings editor
+- [ ] Implement save/load system
 
 ### Bugfixes:
 - [ ] Fix keyboard input setting to '1' repeatedly
