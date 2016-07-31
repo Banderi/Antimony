@@ -9,12 +9,17 @@
     - [ ] Font/text printing
     - [ ] Menu/buttons system
 - [ ] Implement physics
+- [ ] Implement basic player mechanics
 - [ ] Implement AI
 - [ ] Implement basic world mechanics
 - [ ] Implement triggers
 - [ ] Implement controller input
-- [ ] Implement menus/GUI
-        - [ ] Settings editor
+- [ ] Implement menus/GUIs
+    - [ ] Main menu
+        - [ ] Settings
+    - [ ] Pause menu
+        - [ ] Inventory GUI
+- [ ] Implement launcher/external settings editor
 - [ ] Implement save/load system
 - [ ] Implement dynamic gameplay system
 - [ ] Implement asset file system
