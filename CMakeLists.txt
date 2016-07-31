@@ -21,7 +21,7 @@ if(COMMAND cmake_policy)
   endif(POLICY CMP0015)
 endif(COMMAND cmake_policy)
 
-set(CMAKE_MODULE_PATH "././cmake/Modules" ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH "./cmake/Modules" ${CMAKE_MODULE_PATH})
 
 set(V2C_CONFIG_DIR_LOCAL "./cmake/vcproj2cmake")
 
