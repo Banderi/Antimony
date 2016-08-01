@@ -36,7 +36,7 @@ using namespace DirectX::SimpleMath;
 
 #define DX_PI (3.14159265358979323846)
 
-#define vector XMVECTOR
+#define vec XMVECTOR
 
 #define float2 Vector2
 #define float3 Vector3

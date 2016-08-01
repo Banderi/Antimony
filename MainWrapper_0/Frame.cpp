@@ -11,6 +11,7 @@
 #include "DebugWin.h"
 #include "Controls.h"
 #include "Gameflow.h"
+#include "FBX.h"
 
 #pragma comment (lib, "Shlwapi.lib")
 
