@@ -28,6 +28,8 @@ The project currently supports static linkage against official Microsoft C Runti
 
 The project currently does not make use of the deprecated D3DX libraries, instead it uses the included [SimpleMath](https://blogs.msdn.microsoft.com/shawnhar/2013/01/08/simplemath-a-simplified-wrapper-for-directxmath/) library from the official [Microsoft DirectX Tool Kit for DirectX 11](https://github.com/Microsoft/DirectXTK), so no installation and inclusion of the deprecated DirectX SDK is required.
 
+The project currently includes parts of the [Autodesk FBX SDK](http://usa.autodesk.com/adsk/servlet/pc/item?siteID=123112&id=10775847), which have been added to the source control for continuous integration and are statically linked as well, so no SDK or dynamic library is required for development or release deployment.
+
 No other third-party library is currently required.
 
 ## Contributing
