@@ -1,7 +1,8 @@
-# TODO list
+# TODO list for Antimony OpenEngine
 
-### Features:
+### Todo:
 - [ ] Core
+    - [ ] Implement core subsystem management
     - [ ] Implement 3D graphics
         - [x] Basic 3D rendering, vertex/index buffering, vector/matrix management
         - [ ] 3D lights
