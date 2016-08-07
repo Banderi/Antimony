@@ -12,14 +12,11 @@ void Camera::update(float delta)
 	ph_vel *= friction * delta;	
 
 	float3 dir = XMVector3Normalize(lookat - pos);
-	float3 cross = dir.Cross(float3(0, -1, 0));
-	float dot = dir.Dot(float3(1, 0, 0));
+	float3 n = dir.Cross(float3(0, 1, 0));
+	float det = n.Dot(n);
 
-	th = -atan2f(-dir.z, dot);
-	ph = atan2f(cross.Length(), dot);
-
-	//th = asinf(dir.z);
-	//ph = asinf(dir.y);
+	th = -atan2f(-dir.z, dir.Dot(float3(1, 0, 0)));
+	ph = atan2f(n.Dot(n), dir.Dot(float3(0, 1, 0)));
 }
 
 void Camera::rotate(bool angle, float accelaration)

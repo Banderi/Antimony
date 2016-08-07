@@ -1,50 +1,38 @@
 #include "Entity.h"
 
+#define clamp(x, lower, upper) (min(upper, max(x, lower)))
+
 void Entity::updatePos(float delta)
 {
-	float mult = response;
+	float3 mov;
 
-	float3 v = pos_dest - pos;
-
-	if (((v.Length() * mult * delta) <= v.Length()) && !((v * mult * delta).Length() <= v.Length()))
-		int mah = 1;
+	float mult;
 
 	if (1)
 	{
-		float3 v = pos_dest - pos;
-		if ((v.Length() * mult * delta) <= v.Length())
-			pos += v * mult * delta;
-		else
-			pos = pos_dest;
-		v = lookat_dest - lookat;
-		if ((v.Length() * mult * delta) <= v.Length())
-			lookat += v * mult * delta;
-		else
-			lookat = lookat_dest;
+		float base = 1.0f - response;
+		float exponent = delta / response;
+		mult = 1.0f - pow(base, exponent);
 	}
 	else if (1)
 	{
-		float3 v = pos_dest - pos;
-		if ((v * mult * delta).Length() <= v.Length())
-			pos += v * mult * delta;
-		else
-			pos = pos_dest;
-		v = lookat_dest - lookat;
-		if ((v * mult * delta).Length() <= v.Length())
-			lookat += v * mult * delta;
-		else
-			lookat = lookat_dest;
-	}
-	else
-	{
-		pos = pos_dest;
-		lookat = lookat_dest;
+		float timeNeeded = 3.0f;
+		float increment = delta / timeNeeded;
+		mult = response + increment;
+
+		mult = clamp(mult, 0.0f, 1.0f);
 	}
 
+	mov = pos_dest - pos;
+	pos += mov * mult;
+
+	mov = lookat_dest - lookat;
+	lookat += mov * mult;
+
 	if (pos == pos_dest)
-		response = 0.0f;
+		response = 0;
 	if (lookat == lookat_dest)
-		response = 0.0f;
+		response = 0;
 }
 void Entity::lock()
 {
@@ -60,29 +48,31 @@ bool Entity::isfree()
 }
 void Entity::moveToPoint(float3 dest, float r)
 {
+	pos_dest = dest;
 	if (r != -1)
 	{
+		if (r < 0)
+			r = 0;
+		else if (r > 1)
+			r = 1;
 		response = r;
-		pos_dest = dest;
 	}
 	else
-	{
-		pos = dest;
-		pos_dest = dest;
-	}		
+		response = 1;
 }
 void Entity::lookAtPoint(float3 dest, float r)
 {
+	lookat_dest = dest;
 	if (r != -1)
 	{
+		if (r < 0)
+			r = 0;
+		else if (r > 1)
+			r = 1;
 		response = r;
-		lookat_dest = dest;
 	}
 	else
-	{
-		lookat = dest;
-		lookat_dest = dest;
-	}
+		response = 1;
 }
 float3 Entity::getPos()
 {

@@ -38,8 +38,6 @@ ID3D11Buffer *pVertexBuffer;
 ID3D11Buffer *pIndexBuffer;
 ID3D11Buffer *pConstantBuffer;
 
-MatrixBufferType cameraMatrices;
-
 //
 
 float Timer::GetDelta()
@@ -67,28 +65,28 @@ Timer timer;
 
 //
 
-HRESULT Frame(float delta)
+HRESULT Frame(double delta)
 {
 	PrepareFrame();
 
 	if (ForGameState(GAMESTATE_INGAME))
 	{
-		UpdatePlayerControls(&keys, delta);
-		UpdateCameraControls(&mouse, delta); // --> updates into mView
+		UpdatePlayerControls(&keys, &controller[0], delta);
+		UpdateCameraControls(&mouse, &keys, &controller[0], delta); // --> updates into mView
 	}
 
 	UpdateHUD(delta);
 	UpdateAI(delta);
 	UpdatePhysics(delta);
 	UpdateWorld(delta);
-	Update_DebugCube(delta);
+	Update_Debug(delta);
 
 	//
 
 	RenderWorld();
 	RenderEntities();
 	RenderHUD();
-	Render_DebugCube();
+	Render_Debug();
 
 	return PresentFrame();
 }
@@ -107,65 +105,76 @@ HRESULT PresentFrame()
 		return swapchain->Present(0, 0);
 }
 
-HRESULT SetView(mat *world, mat *view, mat *proj)
+HRESULT SetView(mat *world, mat *view, mat *proj, color diffuse = color(1, 1, 1, 1))
 {
-	MatrixBufferType matrices;
+	ConstantBuffer buffer;
 
-	matrices.world = TransposeMatrix(*world);
-	matrices.view = TransposeMatrix(*view);
-	matrices.projection = TransposeMatrix(*proj);
+	buffer.world = TransposeMatrix(*world);
+	buffer.view = TransposeMatrix(*view);
+	buffer.projection = TransposeMatrix(*proj);
+	buffer.diffuse = diffuse;
 
-	return FillBuffer(dev, devcon, &pConstantBuffer, &matrices, sizeof(MatrixBufferType));
+	return FillBuffer(dev, devcon, &pConstantBuffer, &buffer, sizeof(ConstantBuffer));
 }
 
-void UpdatePlayerControls(Keys* khandle, float delta)
+void UpdatePlayerControls(KeysController *khandle, XInputController *xhandle, double delta)
 {
 	float speed = 2;
-	if (khandle->sprint.press > unpressed)
+	if (khandle->sprint.GetState() > unpressed || xhandle->B.GetState() > unpressed)
 		speed = 4;
 
-	float3 mov = float3(0, 0, 0);
+	// = (player.getPosDest() - player.getPos()) / (speed * delta);
+	float3 mmov, cmov;
 	float th = camera.getAngle(theta);
 
-	if (khandle->forward.press > 0)
-		mov = mov + float3(cosf(th), 0, sinf(th));
-	if (khandle->backward.press > 0)
-		mov = mov + float3(-cosf(th), 0, -sinf(th));
-	if (khandle->left.press > 0)
-		mov = mov + float3(-sinf(th), 0, cosf(th));
-	if (khandle->right.press > 0)
-		mov = mov + float3(sinf(th), 0, -cosf(th));
+	if (khandle->forward.GetState() > unpressed)
+		mmov += float3(cosf(th), 0, sinf(th));
+	if (khandle->backward.GetState() > unpressed)
+		mmov += float3(-cosf(th), 0, -sinf(th));
+	if (khandle->left.GetState() > unpressed)
+		mmov += float3(-sinf(th), 0, cosf(th));
+	if (khandle->right.GetState() > unpressed)
+		mmov += float3(sinf(th), 0, -cosf(th));
+	
+	cmov = float3(sinf(th) * xhandle->LX.vel + cosf(th) * xhandle->LY.vel, 0, sinf(th) * xhandle->LY.vel + cosf(th) * (-xhandle->LX.vel));
+	
+	float3 mov = mmov + cmov;
+	if (mov.Length() > 1)
+		mov = XMVector3Normalize(mov);	
 
-	mov = XMVector3Normalize(mov);
-
-	player.moveToPoint(player.getPosDest() + mov * speed * delta, 20);
+	player.moveToPoint(player.getPosDest() + mov * speed * delta, .9999999);
 
 	player.update(delta);
 }
-void UpdateCameraControls(Mouse* mhandle, float delta)
+void UpdateCameraControls(MouseController *mhandle, KeysController *khandle, XInputController *xhandle, double delta)
 {
 	float3 eye = origin;
-	float slide = 0.005 * mSensibility, radius = 1;
+	float mSlide = 0.002 * mSensibility;
+	float xSlide = 4 * xSensibility * delta;
+	float radius = 1;
+	float maxpitch = 0.1;
 	static float zoom = 1.2;
 	static float _theta = DX_PI / 2;
 	static float _phi = DX_PI / 2;
 
 	// camera rotation
-	if (mhandle->GetButtonState(rightbutton) == unpressed)
+	if (khandle->RMB.GetState() == unpressed)
 	{
-		_theta -= slide * mhandle->GetCoord(xcoord).vel;
-		_phi += slide * mhandle->GetCoord(ycoord).vel;
+		_theta -= mSlide * mhandle->X.vel * BoolToSign(mouseXAxis)
+			+ xSlide * xhandle->RX.vel * BoolToSign(controllerXAxis);
+		_phi += mSlide * mhandle->Y.vel * BoolToSign(mouseYAxis)
+			+ xSlide * xhandle->RY.vel * -BoolToSign(controllerYAxis);
 	}
 	else // zoom
-		zoom += float(mhandle->GetCoord(ycoord).vel) * 0.005;
-	zoom -= float(mhandle->GetCoord(zcoord).vel) * 0.005;
+		zoom += float(mhandle->Z.vel) * 0.005;
+	zoom -= float(mhandle->Z.vel) * 0.005;
 
 	if (zoom < 0)
 		zoom = 0;
-	if (_phi >= DX_PI - 0.001)
-		_phi = DX_PI - 0.001;
-	if (_phi <= 0.001)
-		_phi = 0.001;
+	if (_phi >= DX_PI - maxpitch)
+		_phi = DX_PI - maxpitch;
+	if (_phi <= maxpitch)
+		_phi = maxpitch;
 
 	eye.x = (radius + zoom * zoom) * cosf(_theta) * sinf(_phi);
 	eye.y = (radius + zoom * zoom) * cosf(_phi);
@@ -174,44 +183,44 @@ void UpdateCameraControls(Mouse* mhandle, float delta)
 	float3 height = float3(0, 0.75, 0);
 
 	if (camera.isfree())
-	{
-		camera.lookAtPoint(player.getPos() + height + eye, 15);
-		camera.moveToPoint(player.getPos() + height - eye * zoom, 15);
-	}
+		camera.lookAtPoint(player.getPos() + height + eye, .99999999);
+
+	camera.moveToPoint(player.getPos() + height - eye * zoom, .99999999);
 
 	// reset camera
-	if (mhandle->GetButtonState(middlebutton) == held)
+	if (khandle->MMB.GetState() == held || xhandle->RS.GetState() == held)
 	{
 		camera.lock();
-		camera.lookAtPoint(origin, 15);
+		camera.lookAtPoint(origin, .99999);
+		zoom = 1.2;
 	}
 	else if (!camera.isfree())
 		camera.unlock();
 
 	camera.update(delta);
 
-	mView = XMMatrixLookAtLH(camera.getPos(), camera.getLookAt(), float3(0, 1, 0));
+	mView = MLookAtLH(camera.getPos(), camera.getLookAt(), float3(0, 1, 0));
 }
 
-void UpdateHUD(float delta)
+void UpdateHUD(double delta)
 {
 	// TODO: Implement font/text printing
 	// TODO: Implement HUD
 }
-void UpdateAI(float delta)
+void UpdateAI(double delta)
 {
 	// TODO: Implement AI
 }
-void UpdatePhysics(float delta)
+void UpdatePhysics(double delta)
 {
 	// TODO: Implement physics
 }
-void UpdateWorld(float delta)
+void UpdateWorld(double delta)
 {
 	// TODO: Implement world mechanics
 	// TODO: Implement triggers
 }
-void Update_DebugCube(float delta)
+void Update_Debug(double delta)
 {
 	static float r = 0.3;
 
@@ -236,7 +245,64 @@ void Update_DebugCube(float delta)
 		{ 0, 0, -2, color(0.0, 0.0, 0.0, 1.0) },
 		{ 2, 0, -2, color(0.0, 0.0, 0.0, 1.0) },
 		//
-		{ 0, 1, 0, color(0.0, 0.0, 0.0, 1.0) }
+		{ 0, 1, 0, color(0.0, 0.0, 0.0, 1.0) },
+		//
+		{ -.5, 0, 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ .5, 0, 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ .5, 1, 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ -.5, 1, 0, color(1.0, 1.0, 1.0, 1.0) },
+		//
+		{ -1.44, -1, 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ -1.75, 1, 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ -.8, 1, 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ -.56, .25, 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ .56, .25, 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ .8, 1, 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ 1.75, 1, 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ 1.44, -1, 0, color(1.0, 1.0, 1.0, 1.0) },
+		//
+		{ cosf(0 * DX_PI / 20), sinf(0 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(1 * DX_PI / 20), sinf(1 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(2 * DX_PI / 20), sinf(2 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(3 * DX_PI / 20), sinf(3 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(4 * DX_PI / 20), sinf(4 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(5 * DX_PI / 20), sinf(5 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(6 * DX_PI / 20), sinf(6 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(7 * DX_PI / 20), sinf(7 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(8 * DX_PI / 20), sinf(8 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(9 * DX_PI / 20), sinf(9 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(10 * DX_PI / 20), sinf(10 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(11 * DX_PI / 20), sinf(11 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(12 * DX_PI / 20), sinf(12 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(13 * DX_PI / 20), sinf(13 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(14 * DX_PI / 20), sinf(14 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(15 * DX_PI / 20), sinf(15 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(16 * DX_PI / 20), sinf(16 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(17 * DX_PI / 20), sinf(17 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(18 * DX_PI / 20), sinf(18 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(19 * DX_PI / 20), sinf(19 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(20 * DX_PI / 20), sinf(20 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(21 * DX_PI / 20), sinf(21 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(22 * DX_PI / 20), sinf(22 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(23 * DX_PI / 20), sinf(23 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(24 * DX_PI / 20), sinf(24 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(25 * DX_PI / 20), sinf(25 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(26 * DX_PI / 20), sinf(26 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(27 * DX_PI / 20), sinf(27 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(28 * DX_PI / 20), sinf(28 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(29 * DX_PI / 20), sinf(29 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(30 * DX_PI / 20), sinf(30 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(31 * DX_PI / 20), sinf(31 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(32 * DX_PI / 20), sinf(32 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(33 * DX_PI / 20), sinf(33 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(34 * DX_PI / 20), sinf(34 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(35 * DX_PI / 20), sinf(35 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(36 * DX_PI / 20), sinf(36 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(37 * DX_PI / 20), sinf(37 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(38 * DX_PI / 20), sinf(38 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(39 * DX_PI / 20), sinf(39 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ cosf(40 * DX_PI / 20), sinf(40 * DX_PI / 20), 0, color(1.0, 1.0, 1.0, 1.0) },
+		{ 0, 0, 0, color(1.0, 1.0, 1.0, 1.0) }
 	};
 	FillBuffer<VERTEX[]>(dev, devcon, &pVertexBuffer, vertices, sizeof(vertices));
 
@@ -262,7 +328,59 @@ void Update_DebugCube(float delta)
 		13, 9,
 		14, 16,
 		//
-		8, 17
+		8, 17,
+		//
+		18, 20, 19,
+		18, 21, 20,
+		//
+		22, 23, 24,
+		22, 24, 25,
+		22, 25, 26,
+		22, 26, 29,
+		29, 26, 27,
+		29, 27, 28,
+		//
+		30, 31, 71,
+		31, 32, 71,
+		32, 33, 71,
+		33, 34, 71,
+		34, 35, 71,
+		35, 36, 71,
+		36, 37, 71,
+		37, 38, 71,
+		38, 39, 71,
+		39, 40, 71,
+		40, 41, 71,
+		41, 42, 71,
+		42, 43, 71,
+		43, 44, 71,
+		44, 45, 71,
+		45, 46, 71,
+		46, 47, 71,
+		47, 48, 71,
+		48, 49, 71,
+		49, 50, 71,
+		50, 51, 71,
+		51, 52, 71,
+		52, 53, 71,
+		53, 54, 71,
+		54, 55, 71,
+		55, 56, 71,
+		56, 57, 71,
+		57, 58, 71,
+		58, 59, 71,
+		59, 60, 71,
+		60, 61, 71,
+		61, 62, 71,
+		62, 63, 71,
+		63, 64, 71,
+		64, 65, 71,
+		65, 66, 71,
+		66, 67, 71,
+		67, 68, 71,
+		68, 69, 71,
+		69, 70, 71,
+		70, 30, 71
 	};
 	FillBuffer<UINT[]>(dev, devcon, &pIndexBuffer, indices, sizeof(indices));
 
@@ -270,7 +388,14 @@ void Update_DebugCube(float delta)
 	h += 0.5f * DX_PI * delta;
 	if (h >= 2 * DX_PI)
 		h = 0;
-	mWorld = XMMatrixRotationY(h);
+	mWorld = MRotY(h);
+
+	if (0)
+	{
+		unsigned int f = 0;
+		f = abs(10 * cosf(h));
+		Sleep(f);
+	}
 }
 
 void RenderWorld()
@@ -285,33 +410,525 @@ void RenderHUD()
 {
 
 }
-void Render_DebugCube()
+void Render_Debug()
 {
 	devcon->IASetInputLayout(pLayout);
 	devcon->VSSetShader(pVShader, 0, 0);
 	devcon->PSSetShader(pPShader, 0, 0);
 
-	//SetDepthBufferState(OFF);
+	mTemp = MScaling(0.5, 0.5, 0.5);
+	mWorld = mTemp * mWorld;
+	mTemp = MTranslation(0, 1, 0);
+	SetView(&(mTemp * mWorld), &mView, &mProj);
+	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	devcon->DrawIndexed(36, 0, 0); // rotating cube
 
 	mWorld = mIdentity;
 	SetView(&mWorld, &mView, &mProj);
 	devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 	devcon->DrawIndexed(14, 36, 0); // axis
 
-	//SetDepthBufferState(ON);	
-	
-	mTemp = XMMatrixScaling(0.5, 0.5, 0.5);
-	mWorld = mTemp * mWorld;
-	mTemp = XMMatrixTranslation(0, 1, 0);
-	SetView(&(mTemp * mWorld), &mView, &mProj);
-	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	devcon->DrawIndexed(36, 0, 0); // rotating cube
-
-	mWorld = XMMatrixTranslationFromVector(player.getPos() + float3(0, 0.3, 0));
-	mTemp = XMMatrixScaling(0.4, 1, 0.4);
-	SetView(&(mTemp * mWorld), &mView, &mProj);
+	mWorld = MTranslVector(player.getPos() + float3(0, 0.3, 0));
+	SetView(&(MScaling(0.4, 1, 0.4) * mWorld), &mView, &mProj);
 	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	devcon->DrawIndexed(36, 0, 0); // player cube
+
+	//mWorld = MTranslVector(player.getPosDest() + float3(0, 0.3, 0));
+	//SetView(&(MScaling(0.4, 1, 0.4) * mWorld), &mView, &mProj);
+	//devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	//devcon->DrawIndexed(36, 0, 0); // dest cube
+
+	//
+
+	SetDepthBufferState(OFF);
+
+	Render_DebugKeyboard(origin);
+	Render_DebugMouse(float3(0.02, 0.01, 0));
+	Render_DebugController(origin, 0);
+
+	SetDepthBufferState(ON);
+}
+void Render_DebugKeyboard(float3 pos)
+{
+	mWorld = MRotX(camera.getAngle(phi) + DX_PI * 1.5) * MRotY(-camera.getAngle(theta) + DX_PI * .5)
+		* MTranslVector(camera.getPos() + 0.1 * (camera.getLookAt() - camera.getPos()));
+
+	// Esc
+	mTemp = MScaling(0.01, 0.009, 1) * MTranslation(0.107775, -0.090, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// F1
+	mTemp = MScaling(0.009, 0.009, 1) * MTranslation(0.124775, -0.090, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// F2
+	mTemp = MScaling(0.009, 0.009, 1) * MTranslation(0.137775, -0.090, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// F3
+	mTemp = MScaling(0.009, 0.009, 1) * MTranslation(0.150775, -0.090, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// F4
+	mTemp = MScaling(0.009, 0.009, 1) * MTranslation(0.163775, -0.090, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// F5
+	mTemp = MScaling(0.009, 0.009, 1) * MTranslation(0.179775, -0.090, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// F6
+	mTemp = MScaling(0.009, 0.009, 1) * MTranslation(0.192775, -0.090, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// F7
+	mTemp = MScaling(0.009, 0.009, 1) * MTranslation(0.205775, -0.090, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// F8
+	mTemp = MScaling(0.009, 0.009, 1) * MTranslation(0.217775, -0.090, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// F9
+	mTemp = MScaling(0.009, 0.009, 1) * MTranslation(0.234775, -0.090, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// F10
+	mTemp = MScaling(0.009, 0.009, 1) * MTranslation(0.247775, -0.090, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// F11
+	mTemp = MScaling(0.009, 0.009, 1) * MTranslation(0.260775, -0.090, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// F12
+	mTemp = MScaling(0.009, 0.009, 1) * MTranslation(0.273775, -0.090, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// Ins
+	mTemp = MScaling(0.009, 0.008, 1) * MTranslation(0.28875, -0.078, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Start
+	mTemp = MScaling(0.009, 0.008, 1) * MTranslation(0.30275, -0.078, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Pgup
+	mTemp = MScaling(0.009, 0.008, 1) * MTranslation(0.31675, -0.078, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Canc
+	mTemp = MScaling(0.009, 0.008, 1) * MTranslation(0.28875, -0.090, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// End
+	mTemp = MScaling(0.009, 0.008, 1) * MTranslation(0.30275, -0.090, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Pgdn
+	mTemp = MScaling(0.009, 0.008, 1) * MTranslation(0.31675, -0.090, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// Backslash
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.107775, -0.105, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// 1
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.122775, -0.105, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// 2
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.137775, -0.105, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// 3
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.152775, -0.105, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// 4
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.167775, -0.105, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// 5
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.182775, -0.105, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// 6
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.197775, -0.105, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// 7
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.212775, -0.105, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// 8
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.227775, -0.105, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// 9
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.242775, -0.105, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// 0
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.257775, -0.105, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// '
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.272775, -0.105, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// ì
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.287775, -0.105, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Backspace
+	mTemp = MScaling(0.026, 0.01, 1) * MTranslation(0.3105, -0.105, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// Tab
+	mTemp = MScaling(0.0195, 0.01, 1) * MTranslation(0.11275, -0.12, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Q
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.1325, -0.12, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// W
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.1475, -0.12, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(keys.forward));
+	devcon->DrawIndexed(6, 50, 0);
+	// E
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.1625, -0.12, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(keys.action));
+	devcon->DrawIndexed(6, 50, 0);
+	// R
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.1775, -0.12, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// T
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.1925, -0.12, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Y
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.2075, -0.12, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// U
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.2225, -0.12, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// I
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.2375, -0.12, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// O
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.2525, -0.12, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// P
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.2675, -0.12, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// è
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.2825, -0.12, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// +
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.2975, -0.12, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Enter
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.3125, -0.12, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// CAPS
+	mTemp = MScaling(0.022, 0.01, 1) * MTranslation(0.114, -0.135, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// A
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.135, -0.135, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(keys.left));
+	devcon->DrawIndexed(6, 50, 0);
+	// S
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.15, -0.135, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(keys.backward));
+	devcon->DrawIndexed(6, 50, 0);
+	// D
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.165, -0.135, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(keys.right));
+	devcon->DrawIndexed(6, 50, 0);
+	// F
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.18, -0.135, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// G
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.195, -0.135, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// H
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.21, -0.135, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// J
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.225, -0.135, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// K
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.24, -0.135, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// L
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.255, -0.135, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// ò
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.27, -0.135, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// à
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.285, -0.135, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// ù
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.3, -0.135, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Enter
+	mTemp = MScaling(0.014, 0.025, 1) * MTranslation(0.317, -0.135, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// Left Shift
+	mTemp = MScaling(0.014, 0.01, 1) * MTranslation(0.11, -0.15, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(keys.sprint));
+	devcon->DrawIndexed(6, 50, 0);
+	// < >
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.1275, -0.15, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Z
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.1425, -0.15, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// X
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.1575, -0.15, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// C
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.1725, -0.15, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// V
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.1875, -0.15, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// B
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.2025, -0.15, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// N
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.2175, -0.15, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// M
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.2325, -0.15, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// ,
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.2475, -0.15, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// .
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.2625, -0.15, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// -
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.2775, -0.15, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Right Shift
+	mTemp = MScaling(0.036, 0.01, 1) * MTranslation(0.3055, -0.15, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// Left Ctrl
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.10775, -0.165, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Fn
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.12275, -0.165, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Start
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.13775, -0.165, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Left Alt
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.15275, -0.165, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Spacebar
+	mTemp = MScaling(0.07, 0.01, 1) * MTranslation(0.19775, -0.165, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(keys.jump));
+	devcon->DrawIndexed(6, 50, 0);
+	// Alt Gr
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.24275, -0.165, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Win
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.25775, -0.165, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Right Ctrl
+	mTemp = MScaling(0.01, 0.01, 1) * MTranslation(0.27275, -0.165, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// Up
+	mTemp = MScaling(0.01, 0.008, 1) * MTranslation(0.30275, -0.163, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Left
+	mTemp = MScaling(0.01, 0.008, 1) * MTranslation(0.28875, -0.175, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Down
+	mTemp = MScaling(0.01, 0.008, 1) * MTranslation(0.30275, -0.175, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+	// Right
+	mTemp = MScaling(0.01, 0.008, 1) * MTranslation(0.31675, -0.175, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+}
+void Render_DebugMouse(float3 pos)
+{
+	mWorld = MRotX(camera.getAngle(phi) + DX_PI * 1.5) * MRotY(-camera.getAngle(theta) + DX_PI * .5)
+		* MTranslVector(camera.getPos() + 0.1 * (camera.getLookAt() - camera.getPos()));
+
+	// Left
+	mTemp = MScaling(0.0075, 0.01, 1) * MTranslation(0.1, -0.050, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(keys.LMB));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// Middle
+	mTemp = MScaling(0.0035, 0.01, 1) * MTranslation(0.11, -0.050, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(keys.MMB));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// Right
+	mTemp = MScaling(0.0075, 0.01, 1) * MTranslation(0.12, -0.050, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(keys.RMB));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// Mouse
+	mTemp = MScaling(0.028, 0.0235, 1) * MTranslation(0.11, -0.0775, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(6, 50, 0);
+}
+void Render_DebugController(float3 pos, unsigned char c)
+{
+	mWorld = MRotX(camera.getAngle(phi) + DX_PI * 1.5) * MRotY(-camera.getAngle(theta) + DX_PI * .5)
+		* MTranslVector(camera.getPos() + 0.1 * (camera.getLookAt() - camera.getPos()));
+
+	// Layout
+	mTemp = MRotZ(DX_PI) * MScaling(0.0175, 0.0175, 1) * MTranslation(0.23, -0.050, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(18, 56, 0);
+
+	// Left Circle
+	mTemp = MScaling(0.007, -0.007, 1) * MTranslation(0.2215, -0.053, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(120, 74, 0);
+
+	// Right Circle
+	mTemp = MScaling(0.007, -0.007, 1) * MTranslation(0.2385, -0.053, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, color(.2, .2, .2, 1));
+	devcon->DrawIndexed(120, 74, 0);
+
+	// Left Stick
+	mTemp = MScaling(0.0045, -0.0045, 1) * MTranslation(0.2215, -0.053, 0) * MTranslation(pos.x, pos.y, pos.z) * MTranslation(controller[c].LX.vel * 0.002, controller[c].LY.vel * 0.002, 0);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(controller[c].LS));
+	devcon->DrawIndexed(120, 74, 0);
+
+	// Right Stick
+	mTemp = MScaling(0.0045, -0.0045, 1) * MTranslation(0.2385, -0.053, 0) * MTranslation(pos.x, pos.y, pos.z) * MTranslation(controller[c].RX.vel * 0.002, controller[c].RY.vel * 0.002, 0);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(controller[c].RS));
+	devcon->DrawIndexed(120, 74, 0);
+
+	// Back
+	mTemp = MScaling(0.0045, 0.004, 1) * MTranslation(0.225, -0.045, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(controller[c].Back));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// Start
+	mTemp = MScaling(0.0045, 0.004, 1) * MTranslation(0.235, -0.045, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(controller[c].Start));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// Left
+	mTemp = MScaling(0.005, 0.005, 1) * MTranslation(0.2075, -0.045, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(controller[c].Left));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// Right
+	mTemp = MScaling(0.005, 0.005, 1) * MTranslation(0.2175, -0.045, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(controller[c].Right));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// Down
+	mTemp = MScaling(0.005, 0.005, 1) * MTranslation(0.2125, -0.05, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(controller[c].Down));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// Up
+	mTemp = MScaling(0.005, 0.005, 1) * MTranslation(0.2125, -0.04, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(controller[c].Up));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// X
+	mTemp = MScaling(0.005, 0.005, 1) * MTranslation(0.2425, -0.045, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(controller[c].X));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// B
+	mTemp = MScaling(0.005, 0.005, 1) * MTranslation(0.2525, -0.045, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(controller[c].B));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// A
+	mTemp = MScaling(0.005, 0.005, 1) * MTranslation(0.2475, -0.05, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(controller[c].A));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// Y
+	mTemp = MScaling(0.005, 0.005, 1) * MTranslation(0.2475, -0.04, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(controller[c].Y));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// LT
+	mTemp = MScaling(0.0075, 0.0075, 1) * MTranslation(0.2125, -0.0325, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(controller[c].LT));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// RT
+	mTemp = MScaling(0.0075, 0.0075, 1) * MTranslation(0.2475, -0.0325, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(controller[c].RT));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// LB
+	mTemp = MScaling(0.01, 0.0025, 1) * MTranslation(0.2125, -0.0325, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(controller[c].LB));
+	devcon->DrawIndexed(6, 50, 0);
+
+	// RB
+	mTemp = MScaling(0.01, 0.0025, 1) * MTranslation(0.2475, -0.0325, 0) * MTranslation(pos.x, pos.y, pos.z);
+	SetView(&(mTemp * mWorld), &mView, &mProj, BtnStateColor(controller[c].RB));
+	devcon->DrawIndexed(6, 50, 0);
 }
 
 void SetDepthBufferState(bool state)
@@ -320,4 +937,21 @@ void SetDepthBufferState(bool state)
 		devcon->OMSetDepthStencilState(depthstencil_enabled, 1);
 	else
 		devcon->OMSetDepthStencilState(depthstencil_disabled, 1);
+}
+
+color BtnStateColor(Input bt)
+{
+	switch (bt.GetState())
+	{
+	case unpressed:
+		return color(1, 1, 1, 1);
+	case pressed:
+		return color(0, 1, 0, 1);
+	case held:
+		return color(0, 0, 1, 1);
+	case released:
+		return color(1, 0, 0, 1);
+	default:
+		return color(1, 1, 1, 1);
+	}
 }

@@ -21,12 +21,14 @@
             - [ ] 3D Animation
         - [ ] 2D assets
         - [ ] World/region and triggers files
+		- [ ] Sound files
         - [ ] Main asset archive/compression system
     - [ ] Implement launcher/external settings editor
         - [ ] Version build management/updater
         - [ ] GUI and text editor for config.ini
         - [ ] Compatibility and requirements check
-    - [ ] Implement controller input
+    - [X] Implement controller input
+	- [ ] Implement sound system
     - [ ] Implement core AI structure
     - [ ] Implement core triggers mechanics
     - [ ] Implement core physics
@@ -42,7 +44,9 @@
 - [ ] SubSystem: 2D/3D Sidescroller
 
 ### Bugs:
-- [ ] Fix keyboard input setting to '1' repeatedly
+- [X] Fix keyboard input setting to '1' repeatedly
+- [X] Fix camera interpolation
+- [ ] Fix high framerate usage by the debug renderer
 
 ### Roadmap:
 - [ ] Get basic gameplay engine working, test some assets against it

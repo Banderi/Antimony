@@ -13,7 +13,7 @@
 
 using namespace std;
 
-float delta = 0;
+double delta = 0;
 float worldSpeed = 1;
 
 int WINAPI WinMain(HINSTANCE hInstance,
@@ -90,14 +90,6 @@ int WINAPI WinMain(HINSTANCE hInstance,
 			}
 		}
 
-		/*static bool once = 1;
-		if (once)
-		{
-			once = 0;
-		}
-		else
-			*/
-
 		delta = timer.GetDelta();
 		Frame(delta * worldSpeed);
 
@@ -106,6 +98,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	#endif
 		mouse.Reset();
 		keys.Reset();
+		for (unsigned char i = 0; i< XUSER_MAX_COUNT; i++)
+		{
+			if (controller[i].enabled)
+				controller[i].Reset();
+		}
 	}
 	WriteToConsole(L"Main loop terminated!\n");
 
@@ -144,7 +141,7 @@ void ReadConfig()
 	WriteToConsole(L"Loading config files... ");
 
 	wVSync = GetPrivateProfileIntW(L"display", L"VSync", 0, L".\\config.ini");
-	wFullscreen = GetPrivateProfileIntW(L"display", L"Fullscreen", 0, L".\\config.ini");	
+	wFullscreen = GetPrivateProfileIntW(L"display", L"Fullscreen", 0, L".\\config.ini");
 
 	if (wFullscreen)
 	{
@@ -171,8 +168,15 @@ void ReadConfig()
 
 	// Get controls settings
 	WCHAR buf[32];
-	GetPrivateProfileStringW(L"controls", L"mSensibility", L"1", buf, 32, L".\\config.ini");
+	GetPrivateProfileStringW(L"controls", L"mSensibility", L".5", buf, 32, L".\\config.ini");
 	mSensibility = _wtof(buf);
+	GetPrivateProfileStringW(L"controls", L"xSensibility", L".5", buf, 32, L".\\config.ini");
+	xSensibility = _wtof(buf);
+
+	mouseXAxis = GetPrivateProfileIntW(L"controls", L"InvertMouseXAxis", 0, L".\\config.ini");
+	mouseYAxis = GetPrivateProfileIntW(L"controls", L"InvertMouseYAxis", 0, L".\\config.ini");
+	controllerXAxis = GetPrivateProfileIntW(L"controls", L"InvertControllerXAxis", 0, L".\\config.ini");
+	controllerYAxis = GetPrivateProfileIntW(L"controls", L"InvertControllerYAxis", 0, L".\\config.ini");
 
 	GetPrivateProfileStringW(L"controls", L"kForward", L"0x57", buf, 32, L".\\config.ini");
 	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&kForward));
@@ -354,7 +358,7 @@ HRESULT InitD3D(HWND hWnd)
 	txd.Height = wHeight;
 	txd.MipLevels = 1;
 	txd.ArraySize = 1;
-	txd.Format = DXGI_FORMAT_D32_FLOAT; //DXGI_FORMAT_D32_FLOAT //DXGI_FORMAT_D32_FLOAT_S8X24_UINT //DXGI_FORMAT_D24_UNORM_S8_UINT
+	txd.Format = DXGI_FORMAT_D32_FLOAT;
 	txd.SampleDesc.Count = 1;
 	txd.SampleDesc.Quality = 0;
 	txd.Usage = D3D11_USAGE_DEFAULT;
@@ -368,19 +372,6 @@ HRESULT InitD3D(HWND hWnd)
 	dsd.DepthEnable = true;
 	dsd.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 	dsd.DepthFunc = D3D11_COMPARISON_LESS;
-	//dsd.StencilEnable = false;
-	//dsd.StencilReadMask = 0xFF;
-	//dsd.StencilWriteMask = 0xFF;
-	//// Stencil operations if pixel is front-facing
-	//dsd.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	//dsd.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
-	//dsd.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	//dsd.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-	//// Stencil operations if pixel is back-facing
-	//dsd.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	//dsd.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
-	//dsd.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	//dsd.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 	if (!Handle(&hr, HRH_DEPTHSTENCIL_STATE, dev->CreateDepthStencilState(&dsd, &depthstencil_enabled)))
 		return hr;
 	dsd.DepthEnable = false;
@@ -417,7 +408,6 @@ HRESULT InitD3D(HWND hWnd)
 	rzd.SlopeScaledDepthBias = 0.0f;
 	if (!Handle(&hr, HRH_RASTERIZER_STATE, dev->CreateRasterizerState(&rzd, &rasterizerstate)))
 		return hr;
-	//devcon->RSSetState(rasterizerstate);
 
 	// Viewport setup
 	viewport.Width = wWidth;
@@ -438,14 +428,14 @@ HRESULT InitControls()
 	if (FAILED(hr))
 		return hr;
 
-	keys.forward.vkey = kForward;
-	keys.backward.vkey = kBackward;
-	keys.left.vkey = kLeft;
-	keys.right.vkey = kRight;
+	keys.forward.Set(kForward, "W");
+	keys.backward.Set(kBackward, "S");
+	keys.left.Set(kLeft, "A");
+	keys.right.Set(kRight, "D");
 
-	keys.sprint.vkey = kSprint;
-	keys.jump.vkey = kJump;
-	keys.action.vkey = kAction;
+	keys.sprint.Set(kSprint, "Shift");
+	keys.jump.Set(kJump, "Space");
+	keys.action.Set(kAction, "E");
 
 	return S_OK;
 }
@@ -467,11 +457,6 @@ HRESULT InitShaders()
 	if (!Handle(&hr, HRH_SHADER_CREATE, dev->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &pPShader))) // create the PS
 		return hr;
 
-	//hr = LoadShader(L".\\Shaders\\toon3_cel.hlsl", pCelVS, pCelPS, &vs_blob, &ps_blob);
-	//dev->CreateInputLayout(ied_VS_INPUT, 5, vs_blob->GetBufferPointer(), vs_blob->GetBufferSize(), &pCelLayout);
-	//hr = LoadShader(L".\\Shaders\\toon3_outline.hlsl", pOutlineVS, pOutlinePS, &vs_blob, &ps_blob);
-	//dev->CreateInputLayout(ied_VS_INPUT, 4, vs_blob->GetBufferPointer(), vs_blob->GetBufferSize(), &pCelLayout);
-
 	WriteToConsole(L"done\n");
 	return S_OK;
 }
@@ -483,18 +468,18 @@ HRESULT InitGraphics()
 	ZeroMemory(&bd, sizeof(bd));
 
 	bd.Usage = D3D11_USAGE_DYNAMIC;
-	bd.ByteWidth = sizeof(VERTEX) * 64;
+	bd.ByteWidth = sizeof(VERTEX) * 512;
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	if (!Handle(&hr, HRH_GRAPHICS_VERTEXBUFFER, dev->CreateBuffer(&bd, NULL, &pVertexBuffer)))
 		return hr;
 
-	bd.ByteWidth = sizeof(mat) * 3;
+	bd.ByteWidth = sizeof(ConstantBuffer);
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	if (!Handle(&hr, HRH_GRAPHICS_CONSTANTBUFFER, dev->CreateBuffer(&bd, NULL, &pConstantBuffer)))
 		return hr;
 
-	bd.ByteWidth = sizeof(UINT) * 64;
+	bd.ByteWidth = sizeof(UINT) * 512;
 	bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	if (!Handle(&hr, HRH_GRAPHICS_INDEXBUFFER, dev->CreateBuffer(&bd, NULL, &pIndexBuffer)))
 		return hr;
@@ -507,11 +492,11 @@ HRESULT InitGraphics()
 
 	//
 
-	mIdentity = XMMatrixIdentity();
+	mIdentity = MIdentity();
 	mWorld = mIdentity;
 	mView = mIdentity;
-	mView = XMMatrixLookAtLH(float3(0, 0, -1), float3(0, 0, 0), float3(0, 1, 0));
-	mProj = XMMatrixPerspectiveFovLH(DX_PI / 4, wAspectRatio, 0.001f, 10000.0f);
+	mView = MLookAtLH(float3(0, 0, -1), float3(0, 0, 0), float3(0, 1, 0));
+	mProj = MPerspFovLH(DX_PI / 4, wAspectRatio, 0.001f, 10000.0f);
 
 	camera.moveToPoint(origin + float3(0, 0, -1), -1);
 	camera.lookAtPoint(origin, -1);
@@ -571,21 +556,14 @@ void Log()
 			WriteToConsole(L" (X)");*/
 
 			WriteToConsole(L"\r                                                            \r");
-			WriteToConsole(to_wstring(mouse.GetButtonState(leftbutton)));
-			WriteToConsole(L" (LMB) ");
-			WriteToConsole(to_wstring(mouse.GetButtonState(middlebutton)));
-			WriteToConsole(L" (MMB) ");
-			WriteToConsole(to_wstring(mouse.GetButtonState(rightbutton)));
-			WriteToConsole(L" (RMB) ");
-
-			WriteToConsole(to_wstring(keys.forward.press));
-			WriteToConsole(L" (W) ");
-			WriteToConsole(to_wstring(keys.left.press));
-			WriteToConsole(L" (A) ");
-			WriteToConsole(to_wstring(keys.backward.press));
-			WriteToConsole(L" (S) ");
-			WriteToConsole(to_wstring(keys.right.press));
-			WriteToConsole(L" (D) ");
+			WriteToConsole(to_wstring(controller[0].LX.vel));
+			WriteToConsole(L" (LX) ");
+			WriteToConsole(to_wstring(controller[0].LY.vel));
+			WriteToConsole(L" (LY) ");
+			WriteToConsole(to_wstring(controller[0].RX.vel));
+			WriteToConsole(L" (RX) ");
+			WriteToConsole(to_wstring(controller[0].RY.vel));
+			WriteToConsole(L" (RY) ");
 			
 			//printf("\33[2K\r");
 			//system("CLS");

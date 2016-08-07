@@ -1,233 +1,247 @@
 #include <string>
-#include <ctime>
 
 #include "Warnings.h"
 #include "Input.h"
 #include "Window.h"
 #include "DebugWin.h"
 
+#pragma comment(lib, "Xinput9_1_0.lib")
+
 // TODO: Implement controller input
-// TODO: Fix keyboard input setting to '1' repeatedly
 
 RAWINPUTDEVICE rid[4];
 
-Mouse mouse;
-Keys keys;
+MouseController mouse;
+KeysController keys;
+XInputController controller[4];
 
 //
 
-void Mouse::Update(RAWMOUSE rmouse)
+void Axis::Update(float v)
 {
-	oldx = posx;
-	oldy = posy;
-	oldz = posz;
+	oldpos = pos;
+	vel = v;
+	pos = oldpos + vel;
+}
 
-	velx = rmouse.lLastX; // "Last" is relative position a.k.a velocity
-	vely = rmouse.lLastY;
+void Input::Update(char down)
+{
+	if (down == 1) // input is activated
+	{
+		if (press != 2)
+		{
+			press = 1;
+			time = clock();
+		}
+		else
+			press = 2;
+	}
+	else if (down == 0) // input is released
+	{
+		press = 3;
+		time = -1;
+	}
+	else if (down == -1) // input does not change state
+	{
+		if (press == 1)
+			press = 2;
+		else if (press == 3)
+		{
+			press = 0;
+			time = -1;
+		}
+	}
+}
+unsigned char Input::GetState()
+{
+	return press;
+}
+float Input::GetTime()
+{
+	return (float)(clock() - time) / CLOCKS_PER_SEC;
+}
+void Input::Set(std::string nm)
+{
+	name = nm;
+}
+void Input_Key::Set(unsigned short vk, std::string nm)
+{
+	vkey = vk;
+	name = nm;
+}
+void Input_Mouse::Set(unsigned short flup, unsigned short fldn, std::string nm)
+{
+	flagup = flup;
+	flagdown = fldn;
+	name = nm;
+}
+void Input_Button::Set(unsigned short mp, std::string nm)
+{
+	map = mp;
+	name = nm;
+}
+
+//
+
+void MouseController::Update(RAWMOUSE rmouse)
+{
+	X.Update(rmouse.lLastX); // "Last" is relative position a.k.a velocity
+	Y.Update(rmouse.lLastY);
 	if (rmouse.usButtonFlags & RI_MOUSE_WHEEL)
-		velz = (short)rmouse.usButtonData;
-
-	posx = oldx + velx;
-	posy = oldy + vely;
-	posz = oldz + velz;
-
-	UpdateButtonState(rmouse.usButtonFlags);
+		Z.Update((short)rmouse.usButtonData);
 }
-void Mouse::UpdateButtonState(unsigned short flags)
+void MouseController::Reset()
 {
-	if (flags & RI_MOUSE_LEFT_BUTTON_DOWN)
-		left = 1;
-	if (flags & RI_MOUSE_LEFT_BUTTON_UP)
-		left = 3;
-	if (flags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
-		middle = 1;
-	if (flags & RI_MOUSE_MIDDLE_BUTTON_UP)
-		middle = 3;
-	if (flags & RI_MOUSE_RIGHT_BUTTON_DOWN)
-		right = 1;
-	if (flags & RI_MOUSE_RIGHT_BUTTON_UP)
-		right = 3;
+	X.Update(0);
+	Y.Update(0);
+	Z.Update(0);
 }
-int Mouse::GetButtonState(unsigned int button)
+
+void KeysController::UpdateMouse(RAWMOUSE rmouse)
 {
-	switch (button)
+	USHORT flags = rmouse.usButtonFlags;
+
+	for (unsigned char i = 0; i < sizeof(mousearray) / sizeof(Input_Mouse*); i++)
 	{
-		case 0:
-			return left;
-		case 1:
-			return middle;
-		case 2:
-			return right;
-		default:
-			return -1;
+		if (flags & mousearray[i]->flagdown)
+			mousearray[i]->Update(true);
+		else if (flags & mousearray[i]->flagup)
+			mousearray[i]->Update(false);
 	}
 }
-MouseCoordinate Mouse::GetCoord(unsigned int coord)
-{
-	switch (coord)
-	{
-	case 0:
-		return MouseCoordinate(posx, oldx, velx);
-	case 1:
-		return MouseCoordinate(posy, oldy, vely);
-	case 2:
-		return MouseCoordinate(posz, oldz, velz);
-	default:
-		return MouseCoordinate(-1, -1, -1);
-	}
-}
-void Mouse::Reset()
-{
-	oldx = posx;
-	oldy = posy;
-	oldz = posz;
-
-	velx = 0;
-	vely = 0;
-	velz = 0;
-
-	switch (left)
-	{
-		case 1: // pressed
-		{
-			left = 2;
-			break;
-		}
-		case 3: // released
-		{
-			left = 0;
-			break;
-		}
-		default:
-			break;
-	}
-
-	switch (middle)
-	{
-		case 1: // pressed
-		{
-			middle = 2;
-			break;
-		}
-		case 3: // released
-		{
-			middle = 0;
-			break;
-		}
-		default:
-			break;
-	}
-
-	switch (right)
-	{
-		case 1: // pressed
-		{
-			right = 2;
-			break;
-		}
-		case 3: // released
-		{
-			right = 0;
-			break;
-		}
-		default:
-			break;
-	}
-}
-Mouse::Mouse()
-{
-	left = 0;
-	middle = 0;
-	right = 0;
-
-	posx = 0;
-	posy = 0;
-	posz = 0;
-	oldx = 0;
-	oldy = 0;
-	oldz = 0;
-	velx = 0;
-	vely = 0;
-	velz = 0;
-
-	exclusive = 1;
-	reset = 0;
-}
-
-void Keys::Update(RAWKEYBOARD rkeys)
+void KeysController::UpdateKeyboard(RAWKEYBOARD rkeys)
 {
 	USHORT vk = rkeys.VKey;
-
-	if (rkeys.Message == WM_KEYDOWN)
+	
+	for (unsigned char i = 0; i < sizeof(keyarray) / sizeof(Input_Key*); i++)
 	{
-		UpdateKeyPress(vk, &forward, true);
-		UpdateKeyPress(vk, &backward, true);
-		UpdateKeyPress(vk, &left, true);
-		UpdateKeyPress(vk, &right, true);
-
-		UpdateKeyPress(vk, &sprint, true);
-		UpdateKeyPress(vk, &jump, true);
-		UpdateKeyPress(vk, &action, true);
-	}
-	else if (rkeys.Message == WM_KEYUP)
-	{
-		UpdateKeyPress(vk, &forward, false);
-		UpdateKeyPress(vk, &backward, false);
-		UpdateKeyPress(vk, &left, false);
-		UpdateKeyPress(vk, &right, false);
-
-		UpdateKeyPress(vk, &sprint, false);
-		UpdateKeyPress(vk, &jump, false);
-		UpdateKeyPress(vk, &action, false);
-	}
-}
-void Keys::UpdateKeyPress(USHORT vk, KEY* key, char down)
-{
-	if (key->vkey != vk && down != -1)
-		return;
-
-	if (down == 1)
-	{
-		key->press = 1;
-		key->time = clock();
-	}
-	else if (down == 0)
-	{
-		key->press = 3;
-	}
-	else if (down == -1)
-	{
-		if (key->press == 1)
-			key->press = 2;
-		else if (key->press == 3)
+		if (vk == keyarray[i]->vkey)
 		{
-			key->press = 0;
-			key->time = -1;
+			if (rkeys.Message == WM_KEYDOWN)
+				keyarray[i]->Update(true);
+			else if (rkeys.Message == WM_KEYUP)
+				keyarray[i]->Update(false);
 		}
 	}
 }
-void Keys::Reset()
+void KeysController::Reset()
 {
-	UpdateKeyPress(NULL,  &forward, -1);
-	UpdateKeyPress(NULL, &backward, -1);
-	UpdateKeyPress(NULL, &left, -1);
-	UpdateKeyPress(NULL, &right, -1);
-
-	UpdateKeyPress(NULL, &sprint, -1);
-	UpdateKeyPress(NULL, &jump, -1);
-	UpdateKeyPress(NULL, &action, -1);
+	for (unsigned char i = 0; i < sizeof(mousearray) / sizeof(Input_Mouse*); i++)
+	{
+		mousearray[i]->Update(-1);
+	}
+	for (unsigned char i = 0; i < sizeof(keyarray) / sizeof(Input_Key*); i++)
+	{
+		keyarray[i]->Update(-1);
+	}
 }
-void Keys::SetKey(KEY *key, unsigned short vk)
+void KeysController::SetKey(Input_Key *key, unsigned short vk)
 {
 	key->vkey = vk;
 }
-unsigned short Keys::GetKey(KEY *key)
+unsigned short KeysController::GetKey(Input_Key *key)
 {
 	return key->vkey;
 }
-Keys::Keys()
+
+void XInputController::Update()
 {
-	exclusive = 0;
+	ZeroMemory(&state, sizeof(XINPUT_STATE));
+	enabled = false;
+
+	if (XInputGetState(number, &state) == ERROR_SUCCESS) // controller is connected
+		enabled = true;
+	else
+		return;
+
+	if (enabled)
+	{
+		float rx = (float)state.Gamepad.sThumbRX / 32768;
+		float ry = (float)state.Gamepad.sThumbRY / 32768;
+		float lx = (float)state.Gamepad.sThumbLX / 32768;
+		float ly = (float)state.Gamepad.sThumbLY / 32768;
+
+		float mag_r = sqrt(rx * rx + ry * ry);
+		float mag_l = sqrt(lx * lx + ly * ly);
+		float dead_r = 0.25f;
+		float dead_l = 0.25f;
+
+		mag_r = min(mag_r, 1);
+		mag_l = min(mag_l, 1);
+
+		if (mag_r > dead_r)
+		{
+			float mult = (mag_r - dead_r) / (1.0f - dead_r);
+			RX.Update(rx * mult);
+			RY.Update(ry * mult);
+		}
+		else
+		{
+			RX.Update(0);
+			RY.Update(0);
+		}
+		if (mag_l > dead_l)
+		{
+			float mult = (mag_l - dead_l) / (1.0f - dead_l);
+			LX.Update(lx * mult);
+			LY.Update(ly * mult);
+		}
+		else
+		{
+			LX.Update(0);
+			LY.Update(0);
+		}
+
+		RZ = state.Gamepad.bRightTrigger;
+		LZ = state.Gamepad.bLeftTrigger;
+		if (RZ > 0)
+			RT.Update(true);
+		else if (RT.GetState() != unpressed)
+			RT.Update(false);
+		if (LZ > 0)
+			LT.Update(true);
+		else if (LT.GetState() != unpressed)
+			LT.Update(false);
+
+		for (unsigned char i = 0; i < sizeof(btnarray) / sizeof(Input_Key*); i++)
+		{
+			if (btnarray[i]->map != 0)
+			{
+				if (state.Gamepad.wButtons & btnarray[i]->map)
+					btnarray[i]->Update(true);
+				else if (btnarray[i]->GetState() != unpressed)
+					btnarray[i]->Update(false);
+			}			
+		}
+	}
+}
+void XInputController::Reset()
+{
+	for (unsigned char i = 0; i < sizeof(btnarray) / sizeof(Input_Key*); i++)
+	{
+		if (btnarray[i]->map != 0)
+			btnarray[i]->Update(-1);
+		else
+		{
+			btnarray[i]->Update(-1);
+		}
+	}
+}
+void XInputController::Vibrate(float leftmotor, float rightmotor)
+{
+	// Create a new Vibraton 
+	XINPUT_VIBRATION Vibration;
+
+	memset(&Vibration, 0, sizeof(XINPUT_VIBRATION));
+
+	int leftVib = (int)(leftmotor*65535.0f);
+	int rightVib = (int)(rightmotor*65535.0f);
+
+	// Set the Vibration Values
+	Vibration.wLeftMotorSpeed = leftVib;
+	Vibration.wRightMotorSpeed = rightVib;
+	// Vibrate the controller
+	XInputSetState(number, &Vibration);
 }
 
 //
@@ -237,27 +251,43 @@ HRESULT RegisterRID()
 	WriteToConsole(L"Initializing RID objects... ");
 
 	rid[0].usUsagePage = 0x01;
-	rid[0].usUsage = 0x02;				// HID mouse
+	rid[0].usUsage = 0x02;				// mouse
 	rid[0].dwFlags = RIDEV_NOLEGACY;
 	rid[0].hwndTarget = hWnd;
 
 	rid[1].usUsagePage = 0x01;
-	rid[1].usUsage = 0x06;				// HID keyboard
+	rid[1].usUsage = 0x06;				// keyboard
 	rid[1].dwFlags = 0;
 	rid[1].hwndTarget = hWnd;
 
 	rid[2].usUsagePage = 0x01;
 	rid[2].usUsage = 0x05;				// gamepad
 	rid[2].dwFlags = 0;
-	rid[2].hwndTarget = hWnd;	
+	rid[2].hwndTarget = hWnd;
 
-	if (RegisterRawInputDevices(rid, 3, sizeof(rid[0])) == false)
+	rid[3].usUsagePage = 0x01;
+	rid[3].usUsage = 0x04;				// joystick
+	rid[3].dwFlags = 0;
+	rid[3].hwndTarget = hWnd;
+
+	if (RegisterRawInputDevices(rid, 4, sizeof(rid[0])) == false)
 	{
 		LogError(HRESULT_FROM_WIN32(GetLastError()));
 		return HRESULT_FROM_WIN32(GetLastError());
 	}
 	else
 	{
+		XINPUT_STATE state;
+		for (unsigned char i = 0; i< XUSER_MAX_COUNT; i++)
+		{ 
+			controller[i].enabled = false;
+			controller[i].number = i;
+			ZeroMemory(&state, sizeof(XINPUT_STATE));
+
+			if (XInputGetState(i, &state) == ERROR_SUCCESS) // controller is connected
+				controller[i].enabled = true;
+		}
+
 		WriteToConsole(L"done\n");
 		return S_OK;
 	}
@@ -280,11 +310,19 @@ HRESULT HandleRaw(MSG msg)
 
 	if (raw->header.dwType == RIM_TYPEKEYBOARD)
 	{
-		keys.Update(raw->data.keyboard);
+		keys.UpdateKeyboard(raw->data.keyboard);
 	}
 	else if (raw->header.dwType == RIM_TYPEMOUSE)
 	{
+		keys.UpdateMouse(raw->data.mouse);
 		mouse.Update(raw->data.mouse);
+	}
+	else if (raw->header.dwType == RIM_TYPEHID)
+	{
+		for (unsigned char i = 0; i< XUSER_MAX_COUNT; i++)
+		{
+			controller[i].Update();
+		}
 	}
 
 	delete[] lpb;

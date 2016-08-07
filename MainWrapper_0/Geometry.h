@@ -3,11 +3,12 @@
 
 #include "DirectX.h"
 
-struct MatrixBufferType
+struct ConstantBuffer
 {
 	mat world;
 	mat view;
 	mat projection;
+	color diffuse;
 };
 struct VERTEX
 {
@@ -51,7 +52,7 @@ template <typename T> HRESULT FillBuffer(ID3D11Device *dev, ID3D11DeviceContext 
 }
 mat TransposeMatrix(const mat &mIn);
 
-
+char BoolToSign(bool b);
 
 
 

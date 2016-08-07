@@ -27,6 +27,15 @@ float3 origin = float3(0, 0, 0);
 mat TransposeMatrix(const mat &mIn)
 {
 	mat mTemp;
-	mTemp = XMMatrixTranspose(mIn);
+	mTemp = MTranspose(mIn);
 	return mTemp;
+}
+
+char BoolToSign(bool b)
+{
+	if (b == false)
+		return 1;
+	if (b == true)
+		return -1;
+	return 0;
 }

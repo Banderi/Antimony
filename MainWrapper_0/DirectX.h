@@ -44,6 +44,54 @@ using namespace DirectX::SimpleMath;
 #define mat XMMATRIX
 #define color Vector4
 
+#define MSet XMMatrixSet
+
+#define MTranslation XMMatrixTranslation
+#define MTranslVector XMMatrixTranslationFromVector
+#define MScaling XMMatrixScaling
+#define MScalVector XMMatrixScalingFromVector
+#define MRotX XMMatrixRotationX
+#define MRotY XMMatrixRotationY
+#define MRotZ XMMatrixRotationZ
+#define MRotRPY XMMatrixRotationRollPitchYaw
+#define MRotRPYVector XMMatrixRotationRollPitchYawFromVector
+#define MRotNormal XMMatrixRotationNormal
+#define MRotAxis XMMatrixRotationAxis
+#define MRotQuaternion XMMatrixRotationQuaternion
+
+#define MTransformation XMMatrixTransformation
+#define MTransf2D XMMatrixTransformation2D
+#define MTransfAffine XMMatrixAffineTransformation
+#define MTransfAffine2D XMMatrixAffineTransformation2D
+#define MReflect XMMatrixReflect
+#define MShadow XMMatrixShadow
+#define MIdentity XMMatrixIdentity
+#define MMultiply XMMatrixMultiply
+#define MMultTranspose XMMatrixMultiplyTranspose
+#define MTranspose XMMatrixTranspose
+#define MInverse XMMatrixInverse
+#define MDeterminant XMMatrixDeterminant
+#define MDecompose XMMatrixDecompose
+
+#define MIsNaN XMMatrixIsNaN
+#define MIsInfinite XMMatrixIsInfinite
+#define MIsIdentity XMMatrixIsIdentity
+
+#define MLookAtLH XMMatrixLookAtLH
+#define MLookAtRH XMMatrixLookAtRH
+#define MLookToLH XMMatrixLookToLH
+#define MLookToRH XMMatrixLookToRH
+#define MPerspLH XMMatrixPerspectiveLH
+#define MPerspRH XMMatrixPerspectiveRH
+#define MPerspFovLH XMMatrixPerspectiveFovLH
+#define MPerspFovRH XMMatrixPerspectiveFovRH
+#define MPerspOffCenterLH XMMatrixPerspectiveOffCenterLH
+#define MPerspOffCenterRH XMMatrixPerspectiveOffCenterRH
+#define MOrthoLH XMMatrixOrthographicLH
+#define MOrthoRH XMMatrixOrthographicRH
+#define MOrthoOffCenterLH XMMatrixOrthographicOffCenterLH
+#define MOrthoOffCenterRH XMMatrixOrthographicOffCenterRH
+
 typedef float RGBA[4];
 
 #endif

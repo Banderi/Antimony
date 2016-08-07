@@ -48,27 +48,31 @@ extern Timer timer;
 
 //
 
-HRESULT Frame(float delta);
+HRESULT Frame(double delta);
 
 HRESULT PrepareFrame();
 HRESULT PresentFrame();
 
-HRESULT SetView(mat *world, mat *view, mat *proj);
-void UpdatePlayerControls(Keys* khandle, float delta);
-void UpdateCameraControls(Mouse* mhandle, float delta);
+void UpdatePlayerControls(KeysController *khandle, XInputController *xhandle, double delta);
+void UpdateCameraControls(MouseController *mhandle, KeysController *khandle, XInputController *xhandle, double delta);
 
-void UpdateHUD(float delta);
-void UpdateAI(float delta);
-void UpdatePhysics(float delta);
-void UpdateWorld(float delta);
-void Update_DebugCube(float delta);
+void UpdateHUD(double delta);
+void UpdateAI(double delta);
+void UpdatePhysics(double delta);
+void UpdateWorld(double delta);
+void Update_Debug(double delta);
 
 void RenderWorld();
 void RenderEntities();
 void RenderHUD();
-void Render_DebugCube();
+void Render_Debug();
+void Render_DebugKeyboard(float3 pos);
+void Render_DebugMouse(float3 pos);
+void Render_DebugController(float3 pos, unsigned char c);
 
 void SetDepthBufferState(bool state);
+
+color BtnStateColor(Input bt);
 
 #define ON true
 #define OFF false
