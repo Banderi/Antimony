@@ -14,7 +14,7 @@ class Camera : public Entity
 	float quake;
 
 public:
-	void update(float delta);
+	void update(double delta);
 
 	void rotate(bool angle, float acceleration);
 	void setAngles(float t, float p);

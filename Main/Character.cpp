@@ -1,7 +1,7 @@
 #include "Character.h"
 #include "DebugWin.h"
 
-void Character::update(float delta)
+void Character::update(double delta)
 {
 	updatePos(delta);
 }

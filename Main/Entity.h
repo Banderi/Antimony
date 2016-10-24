@@ -12,14 +12,14 @@ protected:
 	float response;
 
 public:
-	void updatePos(float delta);
+	void updatePos(double delta);
 
 	void lock();
 	void unlock();
 	bool isfree();
 
-	void moveToPoint(float3 dest, float r);
-	void lookAtPoint(float3 dest, float r);
+	void moveToPoint(float3 dest, double r);
+	void lookAtPoint(float3 dest, double r);
 
 	float3 getPos();
 	float3 getPosDest();

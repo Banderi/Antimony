@@ -1,10 +1,35 @@
 #include "Geometry.h"
 #include "DebugWin.h"
 
-D3D11_INPUT_ELEMENT_DESC ied[] =
+IDXGISwapChain *swapchain;
+ID3D11Device *dev;
+ID3D11DeviceContext *devcon;
+
+ID3D11RenderTargetView *targettview;
+ID3D11DepthStencilView *depthstencilview;
+
+ID3D11RasterizerState *rasterizerstate;
+ID3D11DepthStencilState *dss_enabled, *dss_disabled;
+
+ID3D11VertexShader *vs_main, *vs_debug;
+ID3D11PixelShader *ps_main, *ps_debug;
+ID3D11InputLayout *il_main, *il_debug;
+
+ID3D11Buffer *vertexbuffer, *indexbuffer, *constantbuffer;
+
+mat mat_identity, mat_temp, mat_temp2, mat_world, mat_view, mat_proj;
+float3  v_origin = float3(0, 0, 0);
+
+D3D11_INPUT_ELEMENT_DESC ied_debug[] =
 {
 	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+};
+D3D11_INPUT_ELEMENT_DESC ied_main[] =
+{
+	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 };
 D3D11_INPUT_ELEMENT_DESC ied_VS_INPUT[] =
 {
@@ -21,21 +46,9 @@ D3D11_INPUT_ELEMENT_DESC ied_VS_OUTPUT[] =
 	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 };
 
-mat mIdentity, mTemp, mTemp2, mWorld, mView, mProj;
-float3 origin = float3(0, 0, 0);
-
 mat TransposeMatrix(const mat &mIn)
 {
-	mat mTemp;
-	mTemp = MTranspose(mIn);
-	return mTemp;
-}
-
-char BoolToSign(bool b)
-{
-	if (b == false)
-		return 1;
-	if (b == true)
-		return -1;
-	return 0;
+	mat mat_temp;
+	mat_temp = MTranspose(mIn);
+	return mat_temp;
 }

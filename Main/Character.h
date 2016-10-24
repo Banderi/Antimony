@@ -8,7 +8,7 @@ class Character : public Entity
 protected:
 
 public:
-	void update(float delta);
+	void update(double delta);
 
 	Character();
 };

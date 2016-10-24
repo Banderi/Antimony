@@ -372,12 +372,12 @@ HRESULT InitD3D(HWND hWnd)
 	dsd.DepthEnable = true;
 	dsd.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 	dsd.DepthFunc = D3D11_COMPARISON_LESS;
-	if (!Handle(&hr, HRH_DEPTHSTENCIL_STATE, dev->CreateDepthStencilState(&dsd, &depthstencil_enabled)))
+	if (!Handle(&hr, HRH_DEPTHSTENCIL_STATE, dev->CreateDepthStencilState(&dsd, &dss_enabled)))
 		return hr;
 	dsd.DepthEnable = false;
-	if (!Handle(&hr, HRH_DEPTHSTENCIL_STATE, dev->CreateDepthStencilState(&dsd, &depthstencil_disabled)))
+	if (!Handle(&hr, HRH_DEPTHSTENCIL_STATE, dev->CreateDepthStencilState(&dsd, &dss_disabled)))
 		return hr;
-	devcon->OMSetDepthStencilState(depthstencil_enabled, 1);
+	devcon->OMSetDepthStencilState(dss_enabled, 1);
 
 	// Set up the depth stencil view description.
 	dsvd.Format = txd.Format;
@@ -445,16 +445,18 @@ HRESULT InitShaders()
 
 	ID3D10Blob *blob = nullptr;
 
+	// debug shaders
 	if (!Handle(&hr, HRH_SHADER_COMPILE, D3DCompileFromFile(L".\\Shaders\\shader.hlsl", 0, 0, "VShader", "vs_4_0", 0, 0, &blob, 0)))
 		return hr;
-	if (!Handle(&hr, HRH_SHADER_CREATE, dev->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &pVShader))) // create the VS
-		return hr;	
-	if (!Handle(&hr, HRH_SHADER_INPUTLAYOUT, dev->CreateInputLayout(ied, 2, blob->GetBufferPointer(), blob->GetBufferSize(), &pLayout))) // create an input layout from the VS
-		return hr;	
+	if (!Handle(&hr, HRH_SHADER_CREATE, dev->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &vs_debug)))
+		return hr;
+
+	if (!Handle(&hr, HRH_SHADER_INPUTLAYOUT, dev->CreateInputLayout(ied_debug, 2, blob->GetBufferPointer(), blob->GetBufferSize(), &il_debug)))
+		return hr;
 
 	if (!Handle(&hr, HRH_SHADER_COMPILE, D3DCompileFromFile(L".\\Shaders\\shader.hlsl", 0, 0, "PShader", "ps_4_0", 0, 0, &blob, 0)))
-		return hr;	
-	if (!Handle(&hr, HRH_SHADER_CREATE, dev->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &pPShader))) // create the PS
+		return hr;
+	if (!Handle(&hr, HRH_SHADER_CREATE, dev->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &ps_debug)))
 		return hr;
 
 	WriteToConsole(L"done\n");
@@ -468,38 +470,38 @@ HRESULT InitGraphics()
 	ZeroMemory(&bd, sizeof(bd));
 
 	bd.Usage = D3D11_USAGE_DYNAMIC;
-	bd.ByteWidth = sizeof(VERTEX) * 512;
+	bd.ByteWidth = sizeof(VERTEX_BASIC) * 512;
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	if (!Handle(&hr, HRH_GRAPHICS_VERTEXBUFFER, dev->CreateBuffer(&bd, NULL, &pVertexBuffer)))
+	if (!Handle(&hr, HRH_GRAPHICS_VERTEXBUFFER, dev->CreateBuffer(&bd, NULL, &vertexbuffer)))
 		return hr;
 
 	bd.ByteWidth = sizeof(ConstantBuffer);
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	if (!Handle(&hr, HRH_GRAPHICS_CONSTANTBUFFER, dev->CreateBuffer(&bd, NULL, &pConstantBuffer)))
+	if (!Handle(&hr, HRH_GRAPHICS_CONSTANTBUFFER, dev->CreateBuffer(&bd, NULL, &constantbuffer)))
 		return hr;
 
 	bd.ByteWidth = sizeof(UINT) * 512;
 	bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	if (!Handle(&hr, HRH_GRAPHICS_INDEXBUFFER, dev->CreateBuffer(&bd, NULL, &pIndexBuffer)))
+	if (!Handle(&hr, HRH_GRAPHICS_INDEXBUFFER, dev->CreateBuffer(&bd, NULL, &indexbuffer)))
 		return hr;
 
-	UINT stride = sizeof(VERTEX);
+	UINT stride = sizeof(VERTEX_BASIC);
 	UINT offset = 0;
-	devcon->IASetVertexBuffers(0, 1, &pVertexBuffer, &stride, &offset);
-	devcon->IASetIndexBuffer(pIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
-	devcon->VSSetConstantBuffers(0, 1, &pConstantBuffer);
+	devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &stride, &offset);
+	devcon->IASetIndexBuffer(indexbuffer, DXGI_FORMAT_R32_UINT, 0);
+	devcon->VSSetConstantBuffers(0, 1, &constantbuffer);
 
 	//
 
-	mIdentity = MIdentity();
-	mWorld = mIdentity;
-	mView = mIdentity;
-	mView = MLookAtLH(float3(0, 0, -1), float3(0, 0, 0), float3(0, 1, 0));
-	mProj = MPerspFovLH(DX_PI / 4, wAspectRatio, 0.001f, 10000.0f);
+	mat_identity = MIdentity();
+	mat_world = mat_identity;
+	mat_view = mat_identity;
+	mat_view = MLookAtLH(float3(0, 0, -1), float3(0, 0, 0), float3(0, 1, 0));
+	mat_proj = MPerspFovLH(DX_PI / 4, wAspectRatio, 0.001f, 10000.0f);
 
-	camera.moveToPoint(origin + float3(0, 0, -1), -1);
-	camera.lookAtPoint(origin, -1);
+	camera.moveToPoint(v_origin + float3(0, 0, -1), -1);
+	camera.lookAtPoint(v_origin, -1);
 
 	WriteToConsole(L"done\n");
 	return S_OK;
@@ -529,12 +531,10 @@ void ReleaseFiles()
 {
 	WriteToConsole(L"Releasing files... ");
 
-	smartRelease(pVShader);
-	smartRelease(pPShader);
-	smartRelease(pCelVS);
-	smartRelease(pCelPS);
-	smartRelease(pOutlineVS);
-	smartRelease(pOutlinePS);
+	smartRelease(vs_main);
+	smartRelease(vs_debug);
+	smartRelease(ps_main);
+	smartRelease(ps_debug);
 
 	WriteToConsole(L"done\n");
 }

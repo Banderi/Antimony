@@ -1,7 +1,7 @@
 #include "Camera.h"
 #include "DebugWin.h"
 
-void Camera::update(float delta)
+void Camera::update(double delta)
 {
 	updatePos(delta);
 

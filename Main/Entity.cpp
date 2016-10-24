@@ -2,32 +2,21 @@
 
 #define clamp(x, lower, upper) (min(upper, max(x, lower)))
 
-void Entity::updatePos(float delta)
+void Entity::updatePos(double delta)
 {
 	float3 mov;
 
-	float mult;
+	double mult;
 
-	if (1)
-	{
-		float base = 1.0f - response;
-		float exponent = delta / response;
-		mult = 1.0f - pow(base, exponent);
-	}
-	else if (1)
-	{
-		float timeNeeded = 3.0f;
-		float increment = delta / timeNeeded;
-		mult = response + increment;
-
-		mult = clamp(mult, 0.0f, 1.0f);
-	}
+	float base = 1.0f - response;
+	double exponent = delta / response;
+	mult = 1.0f - pow(base, exponent);
 
 	mov = pos_dest - pos;
-	pos += mov * mult;
+	pos += mov * (float)mult;
 
 	mov = lookat_dest - lookat;
-	lookat += mov * mult;
+	lookat += mov * (float)mult;
 
 	if (pos == pos_dest)
 		response = 0;
@@ -46,7 +35,7 @@ bool Entity::isfree()
 {
 	return free;
 }
-void Entity::moveToPoint(float3 dest, float r)
+void Entity::moveToPoint(float3 dest, double r)
 {
 	pos_dest = dest;
 	if (r != -1)
@@ -60,7 +49,7 @@ void Entity::moveToPoint(float3 dest, float r)
 	else
 		response = 1;
 }
-void Entity::lookAtPoint(float3 dest, float r)
+void Entity::lookAtPoint(float3 dest, double r)
 {
 	lookat_dest = dest;
 	if (r != -1)
