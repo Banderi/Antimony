@@ -10,6 +10,7 @@
 #include "Hresult.h"
 #include "Controls.h"
 #include "Gameflow.h"
+#include "SmartRelease.h"
 
 using namespace std;
 
@@ -24,18 +25,24 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	SetGameState(GAMESTATE_LOADING_1);
 
 	ReadConfig();
-		#ifdef _DEBUG
-	InitializeDebugConsole();
-	WriteToConsole(L"---> START OF DEBUG CONSOLE <---\n");
-		#endif	
+
+#ifdef _DEBUG
+	game.debug = true;
+#endif
+
+	if (game.debug)
+	{
+		InitializeDebugConsole();
+		WriteToConsole(L"---> START OF DEBUG CONSOLE <---\n");
+	}
 
 	CreateMainWindow(hInstance);
-	ShowWindow(hWnd, nCmdShow);
+	ShowWindow(windowMain.hWnd, nCmdShow);
 
 	if (!Handle(&hr, HRH_MAIN_ENUMHW, EnumHardware()))
 		return 0;
 
-	if (!Handle(&hr, HRH_MAIN_INITD3D, InitD3D(hWnd)))
+	if (!Handle(&hr, HRH_MAIN_INITD3D, InitD3D(windowMain.hWnd)))
 		return 0;
 
 	if (!Handle(&hr, HRH_MAIN_REGHID, InitControls()))
@@ -51,7 +58,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		return 0;
 
 	ShowCursor(false);
-	ClipCursor(&wScreen);
+	ClipCursor(&windowMain.plane);
 
 	//
 
@@ -90,7 +97,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
 			}
 		}
 
-		delta = timer.GetDelta();
+		timer.UpdateDelta(TIMER_FRAME_GLOBAL);
+		delta = timer.GetDelta(TIMER_FRAME_GLOBAL);
 		Frame(delta * worldSpeed);
 
 	#ifdef _DEBUG
@@ -140,31 +148,41 @@ void ReadConfig()
 {
 	WriteToConsole(L"Loading config files... ");
 
-	wVSync = GetPrivateProfileIntW(L"display", L"VSync", 0, L".\\config.ini");
-	wFullscreen = GetPrivateProfileIntW(L"display", L"Fullscreen", 0, L".\\config.ini");
+	// Get window settings
+	windowMain.fullscreen = GetPrivateProfileIntW(L"display", L"Fullscreen", 0, L".\\config.ini");
 
-	if (wFullscreen)
+	if (windowMain.fullscreen)
 	{
 		RECT desktop;
 		const HWND hDesktop = GetDesktopWindow();
 		GetWindowRect(hDesktop, &desktop);
-		wWidth = desktop.right;
-		wHeight = desktop.bottom;
-		wX = 0;
-		wY = 0;
-		wAspectRatio = (float)wWidth / (float)wHeight;
+		windowMain.width = desktop.right;
+		windowMain.height = desktop.bottom;
+		windowMain.X = 0;
+		windowMain.Y = 0;
+		windowMain.aspect = (float)windowMain.width / (float)windowMain.height;
 	}
 	else
 	{
-		wWidth = GetPrivateProfileIntW(L"display", L"WindowWidth", 800, L".\\config.ini");
-		wHeight = GetPrivateProfileIntW(L"display", L"WindowHeight", 600, L".\\config.ini");
-		wX = GetPrivateProfileIntW(L"display", L"WindowX", 0, L".\\config.ini");
-		wY = GetPrivateProfileIntW(L"display", L"WindowY", 0, L".\\config.ini");
-		wBorderless = GetPrivateProfileIntW(L"display", L"Borderless", 0, L".\\config.ini");
-		wAspectRatio = (float)wWidth / (float)wHeight;
+		windowMain.width = GetPrivateProfileIntW(L"display", L"WindowWidth", 800, L".\\config.ini");
+		windowMain.height = GetPrivateProfileIntW(L"display", L"WindowHeight", 600, L".\\config.ini");
+		windowMain.X = GetPrivateProfileIntW(L"display", L"WindowX", 0, L".\\config.ini");
+		windowMain.Y = GetPrivateProfileIntW(L"display", L"WindowY", 0, L".\\config.ini");
+		windowMain.borderless = GetPrivateProfileIntW(L"display", L"Borderless", 0, L".\\config.ini");
+		windowMain.aspect = (float)windowMain.width / (float)windowMain.height;
 	}
 
-	wScreen = { wX, wY, wWidth + wX, wHeight + wY};
+	windowMain.plane = { windowMain.X, windowMain.Y, windowMain.width + windowMain.X, windowMain.height + windowMain.Y};
+
+	// Get display settings
+	display.v_sync = GetPrivateProfileIntW(L"display", L"VSync", 0, L".\\config.ini");
+	display.triple_buff = GetPrivateProfileIntW(L"display", L"TripleBuffering", 0, L".\\config.ini");
+
+	// Get game settings
+	game.debug = GetPrivateProfileIntW(L"game", L"Debug", 0, L".\\config.ini");
+	game.cheats = GetPrivateProfileIntW(L"game", L"Cheats", 1, L".\\config.ini");
+	game.difficulty = GetPrivateProfileIntW(L"game", L"Difficulty", 1, L".\\config.ini");
+	game.camera_friction = GetPrivateProfileIntW(L"game", L"CameraWobble", 1, L".\\config.ini");
 
 	// Get controls settings
 	WCHAR buf[32];
@@ -246,15 +264,15 @@ HRESULT EnumHardware()
 	GetWindowRect(hDesktop, &desktop);
 
 	// Now go through all the display modes and find the one that matches the screen width and height.
-	// When a match is found store the numerator and denominator of the refresh rate for that monitor.
+	// When a match is found store thedisplay.gpu_num and display.gpu_denom of the refresh rate for that monitor.
 	for (i = 0; i<numModes; i++)
 	{
 		if (displayModeList[i].Width == (unsigned int)desktop.right)
 		{
 			if (displayModeList[i].Height == (unsigned int)desktop.bottom)
 			{
-				numerator = displayModeList[i].RefreshRate.Numerator;
-				denominator = displayModeList[i].RefreshRate.Denominator;
+				display.gpu_num = displayModeList[i].RefreshRate.Numerator;			WriteToConsole(to_wstring(display.gpu_num) + L" ");
+				display.gpu_denom = displayModeList[i].RefreshRate.Denominator;		WriteToConsole(to_wstring(display.gpu_num) + L" ");
 			}
 		}
 	}
@@ -264,10 +282,10 @@ HRESULT EnumHardware()
 		return hr;
 
 	// Store the dedicated video card memory in megabytes.
-	videoCardMemory = (int)(adapterDesc.DedicatedVideoMemory / 1024 / 1024);
+	display.gpu_vram = (int)(adapterDesc.DedicatedVideoMemory / 1024 / 1024);		WriteToConsole(to_wstring(display.gpu_vram) + L"mb ");
 
 	// Convert the name of the video card to a character array and store it.
-	error = wcstombs_s(&stringLength, videoCardDescription, 128, adapterDesc.Description, 128);
+	error = wcstombs_s(&stringLength, display.gpu_desc, 128, adapterDesc.Description, 128);
 	if (error != 0)
 		return error;
 
@@ -294,6 +312,7 @@ HRESULT InitD3D(HWND hWnd)
 	D3D11_DEPTH_STENCIL_VIEW_DESC dsvd;
 	D3D11_RASTERIZER_DESC rzd;
 	D3D11_VIEWPORT viewport;
+	D3D11_BLEND_DESC bsd;
 
 	ZeroMemory(&scd, sizeof(DXGI_SWAP_CHAIN_DESC));
 	ZeroMemory(&txd, sizeof(D3D11_TEXTURE2D_DESC));
@@ -301,32 +320,36 @@ HRESULT InitD3D(HWND hWnd)
 	ZeroMemory(&dsvd, sizeof(D3D11_DEPTH_STENCIL_VIEW_DESC));
 	ZeroMemory(&rzd, sizeof(D3D11_RASTERIZER_DESC));
 	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
+	ZeroMemory(&bsd, sizeof(D3D11_BLEND_DESC));
 
 	ID3D11Texture2D *pBackBufferTexture = NULL;
 	ID3D11Texture2D *pDepthStencilBufferTexture = NULL;
 
 	// Fill swapchain description
 	scd.BufferCount = 1;
-	scd.BufferDesc.Width = wWidth;
-	scd.BufferDesc.Height = wHeight;
+	scd.BufferDesc.Width = windowMain.width;
+	scd.BufferDesc.Height = windowMain.height;
 	scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	scd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	scd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-	if (wVSync)
+	if (display.v_sync)
 	{
-		scd.BufferDesc.RefreshRate.Numerator = numerator;
-		scd.BufferDesc.RefreshRate.Denominator = denominator;
+		scd.BufferDesc.RefreshRate.Numerator = display.gpu_num;
+		scd.BufferDesc.RefreshRate.Denominator = display.gpu_denom;
 	}
 	else
 	{
 		scd.BufferDesc.RefreshRate.Numerator = 0;
 		scd.BufferDesc.RefreshRate.Denominator = 1;
 	}
+	if (display.triple_buff)
+		scd.BufferCount = 3;
+
 	scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	scd.OutputWindow = hWnd;
+	scd.OutputWindow = windowMain.hWnd;
 	scd.SampleDesc.Count = 1;
 	scd.SampleDesc.Quality = 0;
-	scd.Windowed = !wFullscreen;
+	scd.Windowed = !windowMain.fullscreen;
 	scd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 	
@@ -354,8 +377,8 @@ HRESULT InitD3D(HWND hWnd)
 		return hr;
 
 	// Fill 2D texture description for the depth buffer
-	txd.Width = wWidth;
-	txd.Height = wHeight;
+	txd.Width = windowMain.width;
+	txd.Height = windowMain.height;
 	txd.MipLevels = 1;
 	txd.ArraySize = 1;
 	txd.Format = DXGI_FORMAT_D32_FLOAT;
@@ -410,13 +433,26 @@ HRESULT InitD3D(HWND hWnd)
 		return hr;
 
 	// Viewport setup
-	viewport.Width = wWidth;
-	viewport.Height = wHeight;
+	viewport.Width = windowMain.width;
+	viewport.Height = windowMain.height;
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
 	viewport.TopLeftX = 0.0f;
 	viewport.TopLeftY = 0.0f;
 	devcon->RSSetViewports(1, &viewport);
+
+	// Create an alpha enabled blend state description
+	bsd.RenderTarget[0].BlendEnable = TRUE;
+	bsd.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	bsd.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	bsd.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	bsd.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	bsd.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;	
+	bsd.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	bsd.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	if (!Handle(&hr, HRH_ALPHABLEND_STATE, dev->CreateBlendState(&bsd, &blendstate)))
+		return hr;
+	devcon->OMSetBlendState(blendstate, 0, 0xffffffff);
 
 	WriteToConsole(L"done\n");
 
@@ -443,20 +479,11 @@ HRESULT InitShaders()
 {
 	WriteToConsole(L"Loading shaders... ");
 
-	ID3D10Blob *blob = nullptr;
-
-	// debug shaders
-	if (!Handle(&hr, HRH_SHADER_COMPILE, D3DCompileFromFile(L".\\Shaders\\shader.hlsl", 0, 0, "VShader", "vs_4_0", 0, 0, &blob, 0)))
+	if (!CompileShader(&hr, L"main", &sh_main))
 		return hr;
-	if (!Handle(&hr, HRH_SHADER_CREATE, dev->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &vs_debug)))
+	if (!CompileShader(&hr, L"test", &sh_debug))
 		return hr;
-
-	if (!Handle(&hr, HRH_SHADER_INPUTLAYOUT, dev->CreateInputLayout(ied_debug, 2, blob->GetBufferPointer(), blob->GetBufferSize(), &il_debug)))
-		return hr;
-
-	if (!Handle(&hr, HRH_SHADER_COMPILE, D3DCompileFromFile(L".\\Shaders\\shader.hlsl", 0, 0, "PShader", "ps_4_0", 0, 0, &blob, 0)))
-		return hr;
-	if (!Handle(&hr, HRH_SHADER_CREATE, dev->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &ps_debug)))
+	if (!CompileShader(&hr, L"plain", &sh_plain))
 		return hr;
 
 	WriteToConsole(L"done\n");
@@ -496,12 +523,13 @@ HRESULT InitGraphics()
 
 	mat_identity = MIdentity();
 	mat_world = mat_identity;
-	mat_view = mat_identity;
 	mat_view = MLookAtLH(float3(0, 0, -1), float3(0, 0, 0), float3(0, 1, 0));
-	mat_proj = MPerspFovLH(DX_PI / 4, wAspectRatio, 0.001f, 10000.0f);
+	mat_orthoview = MLookAtLH(float3(0, 0, -1), float3(0, 0, 0), float3(0, 1, 0));
+	mat_proj = MPerspFovLH(DX_PI / 4, windowMain.aspect, 0.001f, 10000.0f);
+	mat_orthoproj = MOrthoLH(windowMain.width, windowMain.height, 0.001f, 10000.0f);
 
-	camera.moveToPoint(v_origin + float3(0, 0, -1), -1);
-	camera.lookAtPoint(v_origin, -1);
+	camera.moveToPoint(v3_origin + float3(0, 0, -1), -1);
+	camera.lookAtPoint(v3_origin, -1);
 
 	WriteToConsole(L"done\n");
 	return S_OK;
@@ -531,43 +559,33 @@ void ReleaseFiles()
 {
 	WriteToConsole(L"Releasing files... ");
 
-	smartRelease(vs_main);
+	/*smartRelease(vs_main);
 	smartRelease(vs_debug);
 	smartRelease(ps_main);
-	smartRelease(ps_debug);
+	smartRelease(ps_debug);*/
 
 	WriteToConsole(L"done\n");
 }
 
 void Log()
 {
-	if (1)
+	static float c = 0.0f;
+	c += delta;
+
+	if (c >= 0.05)
 	{
-		static float c = 0.0f;
-		c += delta;
+		/*WriteToConsole(L"\r                                    \r");
+		WriteToConsole(L"Mouse position: ");
+		WriteToConsole(to_wstring(mouse.GetCoord(xcoord).pos));
+		WriteToConsole(L" (X) ");
+		WriteToConsole(to_wstring(mouse.GetCoord(ycoord).pos));
+		WriteToConsole(L" (X)");*/
 
-		if (c >= 0.05)
-		{
-			/*WriteToConsole(L"\r                                    \r");
-			WriteToConsole(L"Mouse position: ");
-			WriteToConsole(to_wstring(mouse.GetCoord(xcoord).pos));
-			WriteToConsole(L" (X) ");
-			WriteToConsole(to_wstring(mouse.GetCoord(ycoord).pos));
-			WriteToConsole(L" (X)");*/
+		WriteToConsole(L"\r                                                            \r");
+		WriteToConsole(to_wstring(timer.GetFPSStamp()) + L" FPS (" + to_wstring(timer.GetFramesCount()) + L")");
 
-			WriteToConsole(L"\r                                                            \r");
-			WriteToConsole(to_wstring(controller[0].LX.vel));
-			WriteToConsole(L" (LX) ");
-			WriteToConsole(to_wstring(controller[0].LY.vel));
-			WriteToConsole(L" (LY) ");
-			WriteToConsole(to_wstring(controller[0].RX.vel));
-			WriteToConsole(L" (RX) ");
-			WriteToConsole(to_wstring(controller[0].RY.vel));
-			WriteToConsole(L" (RY) ");
-			
-			//printf("\33[2K\r");
-			//system("CLS");
-			c = 0.0f;
-		}		
+		//printf("\33[2K\r");
+		//system("CLS");
+		c = 0.0f;
 	}
 }

@@ -85,6 +85,7 @@ void Input_Button::Set(unsigned short mp, std::string nm)
 
 void MouseController::Update(RAWMOUSE rmouse)
 {
+	bool relative = (rmouse.usFlags & MOUSE_MOVE_RELATIVE);
 	X.Update(rmouse.lLastX); // "Last" is relative position a.k.a velocity
 	Y.Update(rmouse.lLastY);
 	if (rmouse.usButtonFlags & RI_MOUSE_WHEEL)
@@ -253,22 +254,22 @@ HRESULT RegisterRID()
 	rid[0].usUsagePage = 0x01;
 	rid[0].usUsage = 0x02;				// mouse
 	rid[0].dwFlags = RIDEV_NOLEGACY;
-	rid[0].hwndTarget = hWnd;
+	rid[0].hwndTarget = windowMain.hWnd;
 
 	rid[1].usUsagePage = 0x01;
 	rid[1].usUsage = 0x06;				// keyboard
 	rid[1].dwFlags = 0;
-	rid[1].hwndTarget = hWnd;
+	rid[1].hwndTarget = windowMain.hWnd;
 
 	rid[2].usUsagePage = 0x01;
 	rid[2].usUsage = 0x05;				// gamepad
 	rid[2].dwFlags = 0;
-	rid[2].hwndTarget = hWnd;
+	rid[2].hwndTarget = windowMain.hWnd;
 
 	rid[3].usUsagePage = 0x01;
 	rid[3].usUsage = 0x04;				// joystick
 	rid[3].dwFlags = 0;
-	rid[3].hwndTarget = hWnd;
+	rid[3].hwndTarget = windowMain.hWnd;
 
 	if (RegisterRawInputDevices(rid, 4, sizeof(rid[0])) == false)
 	{

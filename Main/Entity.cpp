@@ -6,22 +6,31 @@ void Entity::updatePos(double delta)
 {
 	float3 mov;
 
-	double mult;
+	long double mult;
+	long double base;
+	long double response;
+	long double exponent;
 
-	float base = 1.0f - response;
-	double exponent = delta / response;
+	response = pos_response;
+	base = 1.0f - response;
+	exponent = delta / response;
 	mult = 1.0f - pow(base, exponent);
 
 	mov = pos_dest - pos;
 	pos += mov * (float)mult;
 
+	response = lookat_response;
+	base = 1.0f - response;
+	exponent = delta / response;
+	mult = 1.0f - pow(base, exponent);
+
 	mov = lookat_dest - lookat;
 	lookat += mov * (float)mult;
 
-	if (pos == pos_dest)
-		response = 0;
+	/*if (pos == pos_dest)
+		pos_response = 0;
 	if (lookat == lookat_dest)
-		response = 0;
+		lookat_response = 0;*/
 }
 void Entity::lock()
 {
@@ -35,7 +44,7 @@ bool Entity::isfree()
 {
 	return free;
 }
-void Entity::moveToPoint(float3 dest, double r)
+void Entity::moveToPoint(float3 dest, long double r)
 {
 	pos_dest = dest;
 	if (r != -1)
@@ -44,12 +53,12 @@ void Entity::moveToPoint(float3 dest, double r)
 			r = 0;
 		else if (r > 1)
 			r = 1;
-		response = r;
+		pos_response = r;
 	}
 	else
-		response = 1;
+		pos_response = 1;
 }
-void Entity::lookAtPoint(float3 dest, double r)
+void Entity::lookAtPoint(float3 dest, long double r)
 {
 	lookat_dest = dest;
 	if (r != -1)
@@ -58,10 +67,10 @@ void Entity::lookAtPoint(float3 dest, double r)
 			r = 0;
 		else if (r > 1)
 			r = 1;
-		response = r;
+		lookat_response = r;
 	}
 	else
-		response = 1;
+		lookat_response = 1;
 }
 float3 Entity::getPos()
 {

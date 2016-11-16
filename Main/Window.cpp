@@ -1,16 +1,6 @@
 #include "Window.h"
 #include "DebugWin.h"
 
-HWND hWnd;
-int wWidth, wHeight, wX, wY;
-RECT wScreen;
-bool wFullscreen, wBorderless, wVSync;
-float wAspectRatio;
-
-unsigned int numerator, denominator;
-int videoCardMemory;
-char videoCardDescription[128];
-
 void CreateMainWindow(HINSTANCE hInstance)
 {
 	WriteToConsole(L"Creating main window handle...");
@@ -27,12 +17,12 @@ void CreateMainWindow(HINSTANCE hInstance)
 	wc.lpszClassName = L"WindowClass";
 	RegisterClassExW(&wc);
 
-	hWnd = CreateWindowExW(0,
+	windowMain.hWnd = CreateWindowExW(0,
 		L"WindowClass",
 		L"Project X",
-		DWORD(wBorderless * WS_POPUP) | WS_VISIBLE | WS_SYSMENU,
-		wX, wY,
-		wWidth, wHeight,
+		DWORD(windowMain.borderless * WS_POPUP) | WS_VISIBLE | WS_SYSMENU,
+		windowMain.X, windowMain.Y,
+		windowMain.width, windowMain.height,
 		NULL,
 		NULL,
 		hInstance,

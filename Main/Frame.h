@@ -16,18 +16,27 @@ extern HRESULT hr;
 
 class Timer
 {
-	float m_previousTime;
-	float m_currentTime;
-	float m_delta;
-	float m_correction;
+	double m_previousClock[32];
+	double m_currentClock[32];
+	double m_delta[32];	
+	double m_correction;
+	double m_clockStamp;
+	int m_framesCount;
+	float m_fpsStamp;
 
 public:
-	float GetDelta();
+	void UpdateDelta(char d);
 	void SetCorrection(float c);
+	double GetDelta(char d);
+	int GetFramesCount();
+	float GetFPSStamp();
 
 	Timer();
 };
 extern Timer timer;
+
+#define TIMER_FRAME_GLOBAL	0x00000000
+#define TIMER_TEST			0x00000001
 
 //
 
@@ -43,15 +52,14 @@ void UpdateHUD(double delta);
 void UpdateAI(double delta);
 void UpdatePhysics(double delta);
 void UpdateWorld(double delta);
-void Update_Debug(double delta);
 
 void RenderWorld();
 void RenderEntities();
 void RenderHUD();
-void Render_Debug();
-void Render_DebugKeyboard(float3 pos);
-void Render_DebugMouse(float3 pos);
-void Render_DebugController(float3 pos, unsigned char c);
+void Render_Debug(double delta);
+void Render_DebugKeyboard(float2 pos);
+void Render_DebugMouse(float2 pos);
+void Render_DebugController(float2 pos, unsigned char c);
 
 void SetDepthBufferState(bool state);
 

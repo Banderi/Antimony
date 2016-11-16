@@ -9,7 +9,8 @@ protected:
 	bool free;
 	float3 pos, pos_dest;
 	float3 lookat, lookat_dest;
-	float response;
+	long double pos_response;
+	long double lookat_response;
 
 public:
 	void updatePos(double delta);
@@ -18,8 +19,8 @@ public:
 	void unlock();
 	bool isfree();
 
-	void moveToPoint(float3 dest, double r);
-	void lookAtPoint(float3 dest, double r);
+	void moveToPoint(float3 dest, long double r);
+	void lookAtPoint(float3 dest, long double r);
 
 	float3 getPos();
 	float3 getPosDest();

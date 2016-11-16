@@ -94,6 +94,10 @@ bool Handle(HRESULT *hOut, DWORD facing, HRESULT hr)
 			swprintf(buffer,
 				L"Unable to create rasterizer state.\nError code: %s (0x%X)", errMsg, hr);
 			break;
+		case HRH_ALPHABLEND_STATE:
+			swprintf(buffer,
+				L"Unable to create alpha blending state.\nError code: %s (0x%X)", errMsg, hr);
+			break;
 
 		// InitShaders(...)
 		case HRH_SHADER_COMPILE:
@@ -124,7 +128,7 @@ bool Handle(HRESULT *hOut, DWORD facing, HRESULT hr)
 			break;
 		}
 
-		MessageBoxW(hWnd, buffer, L"Error", MB_OK);
+		MessageBoxW(windowMain.hWnd, buffer, L"Error", MB_OK);
 
 		return false;
 	}

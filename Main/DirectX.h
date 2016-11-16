@@ -92,6 +92,12 @@ using namespace DirectX::SimpleMath;
 #define MOrthoOffCenterLH XMMatrixOrthographicOffCenterLH
 #define MOrthoOffCenterRH XMMatrixOrthographicOffCenterRH
 
+#define COLOR_WHITE color(1,1,1,1)
+#define COLOR_BLACK color(0,0,0,1)
+#define COLOR_RED color(1,0,0,1)
+#define COLOR_GREEN color(0,1,0,1)
+#define COLOR_BLUE color(0,0,1,1)
+
 typedef float RGBA[4];
 
 #endif

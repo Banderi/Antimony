@@ -22,6 +22,9 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="Shader Files\original">
+      <UniqueIdentifier>{f3d82992-9c10-441a-aa5e-408490d21492}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -64,6 +67,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Gameflow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Param.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -119,6 +125,12 @@
     <ClInclude Include="Gameflow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Param.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SmartRelease.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Debug\Shaders\include\Quad.fxh">
@@ -136,26 +148,32 @@
     <FxCompile Include="..\Debug\Shaders\effects\toon3_skinning.fx">
       <Filter>Shader Files\effects</Filter>
     </FxCompile>
-    <FxCompile Include="..\Debug\Shaders\toon3_cel_vs.hlsl">
+    <FxCompile Include="..\Debug\Shaders\main.hlsl">
       <Filter>Shader Files</Filter>
     </FxCompile>
-    <FxCompile Include="..\Debug\Shaders\toon3_outline_ps.hlsl">
+    <FxCompile Include="..\Debug\Shaders\plain.hlsl">
       <Filter>Shader Files</Filter>
     </FxCompile>
-    <FxCompile Include="..\Debug\Shaders\toon3_outline_vs.hlsl">
+    <FxCompile Include="..\Debug\Shaders\test.hlsl">
       <Filter>Shader Files</Filter>
     </FxCompile>
-    <FxCompile Include="..\Debug\Shaders\toon3_cel.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="..\Debug\Shaders\original\toon3_outline_ps.hlsl">
+      <Filter>Shader Files\original</Filter>
     </FxCompile>
-    <FxCompile Include="..\Debug\Shaders\toon3_outline.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="..\Debug\Shaders\original\toon3_outline_vs.hlsl">
+      <Filter>Shader Files\original</Filter>
     </FxCompile>
-    <FxCompile Include="..\Debug\Shaders\shader.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="..\Debug\Shaders\original\toon3_cel.hlsl">
+      <Filter>Shader Files\original</Filter>
     </FxCompile>
-    <FxCompile Include="..\Debug\Shaders\toon3_cel_ps.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="..\Debug\Shaders\original\toon3_cel_ps.hlsl">
+      <Filter>Shader Files\original</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Debug\Shaders\original\toon3_cel_vs.hlsl">
+      <Filter>Shader Files\original</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Debug\Shaders\original\toon3_outline.hlsl">
+      <Filter>Shader Files\original</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>
