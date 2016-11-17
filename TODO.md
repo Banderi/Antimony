@@ -5,10 +5,21 @@
     - [ ] Implement core subsystem management
     - [ ] Implement 3D graphics
         - [x] Basic 3D rendering, vertex/index buffering, vector/matrix management
+	- [x] Basic 3D geometry
+	- [ ] Basic texture rendering
         - [ ] 3D lights
         - [ ] Cel-shading HLSL shader
+	- [ ] Advanced techniques and shaders
+	    - [ ] Normal mapping
+	    - [ ] Displacement mapping
+	    - [ ] God rays
+	    - [ ] Dynamic reflection
+	    - [ ] Ambient occlusion
     - [ ] Implement 2D/HUD graphics
+        - [x] Basic 2D geometry
         - [ ] Font/text printing
+	    - [x] Basic 2D font
+	    - [ ] Advanced/2.5D fonts & effects
         - [ ] 2D/3D textures rendering
     - [ ] Implement menu/GUI/HUD system
         - [ ] Core GUI/buttons system
@@ -21,14 +32,14 @@
             - [ ] 3D Animation
         - [ ] 2D assets
         - [ ] World/region and triggers files
-		- [ ] Sound files
+	- [ ] Sound files
         - [ ] Main asset archive/compression system
     - [ ] Implement launcher/external settings editor
         - [ ] Version build management/updater
         - [ ] GUI and text editor for config.ini
         - [ ] Compatibility and requirements check
     - [X] Implement controller input
-	- [ ] Implement sound system
+    - [ ] Implement sound system
     - [ ] Implement core AI structure
     - [ ] Implement core triggers mechanics
     - [ ] Implement core physics
@@ -46,7 +57,7 @@
 ### Bugs:
 - [X] Fix keyboard input setting to '1' repeatedly
 - [X] Fix camera interpolation
-- [ ] Fix high framerate usage by the debug renderer
+- [?] Fix high framerate usage by the debug renderer -- compiling with `release` optimization gives expected results for the moment
 
 ### Roadmap:
 - [ ] Get basic gameplay engine working, test some assets against it
