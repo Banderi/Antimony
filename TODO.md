@@ -57,7 +57,7 @@
 ### Bugs:
 - [X] Fix keyboard input setting to '1' repeatedly
 - [X] Fix camera interpolation
-- [?] Fix high framerate usage by the debug renderer -- compiling with `release` optimization gives expected results for the moment
+- [x] Fix high framerate usage by the debug renderer -- compiling with `release` optimization gives expected results for the moment
 
 ### Roadmap:
 - [ ] Get basic gameplay engine working, test some assets against it
