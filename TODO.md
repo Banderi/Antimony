@@ -5,21 +5,21 @@
     - [ ] Implement core subsystem management
     - [ ] Implement 3D graphics
         - [x] Basic 3D rendering, vertex/index buffering, vector/matrix management
-	- [x] Basic 3D geometry
-	- [ ] Basic texture rendering
+        - [x] Basic 3D geometry
+        - [ ] Basic texture rendering
         - [ ] 3D lights
         - [ ] Cel-shading HLSL shader
-	- [ ] Advanced techniques and shaders
-	    - [ ] Normal mapping
-	    - [ ] Displacement mapping
-	    - [ ] God rays
-	    - [ ] Dynamic reflection
-	    - [ ] Ambient occlusion
+        - [ ] Advanced techniques and shaders
+            - [ ] Normal mapping
+            - [ ] Displacement mapping
+            - [ ] God rays
+            - [ ] Dynamic reflection
+            - [ ] Ambient occlusion
     - [ ] Implement 2D/HUD graphics
         - [x] Basic 2D geometry
         - [ ] Font/text printing
-	    - [x] Basic 2D font
-	    - [ ] Advanced/2.5D fonts & effects
+            - [x] Basic 2D font
+            - [ ] Advanced/2.5D fonts & effects
         - [ ] 2D/3D textures rendering
     - [ ] Implement menu/GUI/HUD system
         - [ ] Core GUI/buttons system
@@ -32,7 +32,7 @@
             - [ ] 3D Animation
         - [ ] 2D assets
         - [ ] World/region and triggers files
-	- [ ] Sound files
+        - [ ] Sound files
         - [ ] Main asset archive/compression system
     - [ ] Implement launcher/external settings editor
         - [ ] Version build management/updater
