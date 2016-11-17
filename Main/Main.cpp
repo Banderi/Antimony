@@ -111,9 +111,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		delta = timer.GetDelta(TIMER_FRAME_GLOBAL);
 		Frame(delta * worldSpeed);
 
-	#ifdef _DEBUG
-		Log();
-	#endif
+		if (game.debug)
+			Log();
+
 		mouse.Reset();
 		keys.Reset();
 		for (unsigned char i = 0; i< XUSER_MAX_COUNT; i++)

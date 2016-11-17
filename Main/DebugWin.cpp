@@ -5,6 +5,9 @@
 #include <string>
 
 #include "DebugWin.h"
+#include "Param.h"
+
+//
 
 void InitializeDebugConsole()
 {
@@ -58,17 +61,19 @@ void ShutdownDebugConsole()
 
 HRESULT WriteToConsole(std::wstring string)
 {
-#ifdef _DEBUG
-	HANDLE ConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-	DWORD CharsWritten;
-	BOOL er = WriteConsoleW(ConsoleOutput, string.c_str(), string.size(), &CharsWritten, 0);
+	if (game.debug == true)
+	{
+		HANDLE ConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+		DWORD CharsWritten;
+		BOOL er = WriteConsoleW(ConsoleOutput, string.c_str(), string.size(), &CharsWritten, 0);
 
-	if (er == 0)
-		return HRESULT_FROM_WIN32(GetLastError());
+		if (er == 0)
+			return HRESULT_FROM_WIN32(GetLastError());
+		else
+			return S_OK;
+	}
 	else
 		return S_OK;
-#endif
-	return S_OK;
 }
 void LogError(HRESULT hr)
 {
