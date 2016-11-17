@@ -1,5 +1,4 @@
-#ifndef ENTITY_H
-#define ENTITY_H
+#pragma once
 
 #include "DirectX.h"
 
@@ -27,5 +26,3 @@ public:
 	float3 getLookAt();
 	float3 getLookAtDest();
 };
-
-#endif

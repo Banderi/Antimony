@@ -1,5 +1,4 @@
-#ifndef CAMERA_H
-#define CAMERA_H
+#pragma once
 
 #include "Entity.h"
 
@@ -29,5 +28,3 @@ public:
 };
 
 extern Camera camera;
-
-#endif

@@ -1,8 +1,9 @@
-#ifndef GEOMETRY_H
-#define GEOMETRY_H
+#pragma once
 
 #include "DirectX.h"
 #include "SmartRelease.h"
+
+//
 
 extern IDXGISwapChain *swapchain;
 extern ID3D11Device *dev;
@@ -22,8 +23,13 @@ struct SHADER
 	bool ready;
 
 	ID3D11VertexShader *vs;
-	ID3D11PixelShader *ps;
+	ID3D11PixelShader *ps;	
 	ID3D11InputLayout *il;
+
+	ID3D11GeometryShader *gs;
+	ID3D11HullShader *hs;
+	ID3D11ComputeShader *cs;
+	ID3D11DomainShader *ds;
 
 	SHADER()
 	{
@@ -117,6 +123,3 @@ void Draw3DRectangle(float w, float h, color c, bool dd = false, mat *world = &m
 void Draw3DEllipses(float w, float h, color c, bool dd = false, mat *world = &mat_world, color diffuse = COLOR_WHITE, ID3D11Device *dv = dev, ID3D11DeviceContext *devc = devcon, ID3D11Buffer *vb = vertexbuffer, ID3D11Buffer *ib = indexbuffer, ID3D11Buffer *cb = constantbuffer);
 void Draw3DBox(float w, float h, float b, color c, mat *world = &mat_world, color diffuse = COLOR_WHITE, ID3D11Device *dv = dev, ID3D11DeviceContext *devc = devcon, ID3D11Buffer *vb = vertexbuffer, ID3D11Buffer *ib = indexbuffer, ID3D11Buffer *cb = constantbuffer);
 void Draw3DCube(float r, color c, mat *world = &mat_world, color diffuse = COLOR_WHITE, ID3D11Device *dv = dev, ID3D11DeviceContext *devc = devcon, ID3D11Buffer *vb = vertexbuffer, ID3D11Buffer *ib = indexbuffer, ID3D11Buffer *cb = constantbuffer);
-
-
-#endif

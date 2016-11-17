@@ -1,9 +1,8 @@
-#ifndef FBX_H
-#define FBX_H
+#pragma once
 
-#include <vector>
 #include <Windows.h>
 #include <fbxsdk.h>
+#include <vector>
 
 //#if _WIN32 || _WIN64
 //#if _WIN64
@@ -35,5 +34,3 @@ struct MyVertex
 extern FbxManager* g_pFbxSdkManager;
 
 HRESULT LoadFBX(std::vector<MyVertex>* pOutVertexVector);
-
-#endif

@@ -1,6 +1,9 @@
+#include "Warnings.h"
 #include "Geometry.h"
 #include "DebugWin.h"
 #include "Hresult.h"
+
+//
 
 IDXGISwapChain *swapchain;
 ID3D11Device *dev;
@@ -21,31 +24,29 @@ mat mat_identity, mat_temp, mat_temp2, mat_world, mat_view, mat_proj, mat_orthov
 float2  v2_origin = float2(0, 0);
 float3  v3_origin = float3(0, 0, 0);
 
-D3D11_INPUT_ELEMENT_DESC ied_debug[] =
-{
+D3D11_INPUT_ELEMENT_DESC ied_debug[] = {
 	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 };
-D3D11_INPUT_ELEMENT_DESC ied_main[] =
-{
+D3D11_INPUT_ELEMENT_DESC ied_main[] = {
 	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 };
-D3D11_INPUT_ELEMENT_DESC ied_VS_INPUT[] =
-{
+D3D11_INPUT_ELEMENT_DESC ied_VS_INPUT[] = {
 	{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	{ "BLENDWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	{ "BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 };
-D3D11_INPUT_ELEMENT_DESC ied_VS_OUTPUT[] =
-{
+D3D11_INPUT_ELEMENT_DESC ied_VS_OUTPUT[] = {
 	{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 };
+
+//
 
 mat TransposeMatrix(const mat &mIn)
 {
@@ -80,10 +81,14 @@ bool CompileShader(HRESULT *hr, std::wstring shader, SHADER *sh)
 bool SetShader(SHADER *sh, ID3D11DeviceContext *devc)
 {
 	if (sh->ready)
-	{
-		devc->IASetInputLayout(sh->il);
+	{		
 		devc->VSSetShader(sh->vs, 0, 0);
 		devc->PSSetShader(sh->ps, 0, 0);
+		devc->IASetInputLayout(sh->il);
+		devc->GSSetShader(sh->gs, 0, 0);
+		devc->HSSetShader(sh->hs, 0, 0);
+		devc->CSSetShader(sh->cs, 0, 0);
+		devc->DSSetShader(sh->ds, 0, 0);
 		return 1; // all ok
 	}
 	return 0; // NOPE
@@ -283,7 +288,7 @@ void Draw3DLineThin(float3 p1, float3 p2, color c1, color c2, mat *world, color 
 }
 void Draw3DLineThick()
 {
-
+	// TODO: Implement bill-boarding
 }
 void Draw3DTriangle(float3 p1, float3 p2, float3 p3, color c, bool dd, mat *world, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, ID3D11Buffer *vb, ID3D11Buffer *ib, ID3D11Buffer *cb)
 {

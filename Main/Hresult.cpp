@@ -6,6 +6,8 @@
 #include "DebugWin.h"
 #include "Warnings.h"
 
+//
+
 bool Handle(HRESULT *hOut, DWORD facing, HRESULT hr)
 {
 	*hOut = hr;
@@ -36,6 +38,10 @@ bool Handle(HRESULT *hOut, DWORD facing, HRESULT hr)
 			swprintf(buffer,
 				L"Shaders initialization failed! Program will now terminate.");
 			break;
+		case HRH_MAIN_INITFONTS:
+			swprintf(buffer,
+				L"Fonts initialization failed! Program will now terminate.");
+			break;
 		case HRH_MAIN_INITGRAPHICS:
 			swprintf(buffer,
 				L"Graphics initialization failed! Program will now terminate.");
@@ -49,21 +55,31 @@ bool Handle(HRESULT *hOut, DWORD facing, HRESULT hr)
 		case HRH_ENUM_CREATEDXGIFACTORY:
 			swprintf(buffer,
 				L"Unable to create DirectX graphics interface factory.\nError code: %s (0x%X)", errMsg, hr);
+			break;
 		case HRH_ENUM_ENUMGPU:
 			swprintf(buffer,
 				L"Unable to enumerate graphic adapter.\nError code: %s (0x%X)", errMsg, hr);
+			break;
 		case HRH_ENUM_ENUMOUTPUTDEVICE:
 			swprintf(buffer,
 				L"Unable to enumerate output device.\nError code: %s (0x%X)", errMsg, hr);
+			break;
 		case HRH_ENUM_GETOUTPUTMODESNUMBER:
 			swprintf(buffer,
 				L"Unable to enumerate output modes count.\nError code: %s (0x%X)", errMsg, hr);
+			break;
 		case HRH_ENUM_FILLOUTPUTMODESLIST:
 			swprintf(buffer,
 				L"Unable to fill output modes list.\nError code: %s (0x%X)", errMsg, hr);
+			break;
 		case HRH_ENUM_GETGPUDESC:
 			swprintf(buffer,
 				L"Unable to get GPU description.\nError code: %s (0x%X)", errMsg, hr);
+			break;
+		case HRH_ENUM_GETMEMINFO:
+			swprintf(buffer,
+				L"Unable to get memory info.\nError code: %s (0x%X)", errMsg, hr);
+			break;
 
 		// InitD3D(...)
 		case HRH_SWAPCHAIN_CREATE:
@@ -113,6 +129,16 @@ bool Handle(HRESULT *hOut, DWORD facing, HRESULT hr)
 				L"Unable to create input layout from shader.\nError code: %s (0x%X)", errMsg, hr);
 			break;
 
+		// InitFonts(...)
+		case HRH_FONTS_CREATEDW1FACTORY:
+			swprintf(buffer,
+				L"Unable to create font wrapper factory.\nError code: %s (0x%X)", errMsg, hr);
+			break;
+		case HRH_FONTS_CREATEWRAPPER:
+			swprintf(buffer,
+				L"Unable to create font wrapper.\nError code: %s (0x%X)", errMsg, hr);
+			break;
+
 		// InitGraphics(...)
 		case HRH_GRAPHICS_VERTEXBUFFER:
 			swprintf(buffer,
@@ -134,3 +160,5 @@ bool Handle(HRESULT *hOut, DWORD facing, HRESULT hr)
 	}
 	return true;
 }
+
+HRESULT hr;

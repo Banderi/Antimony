@@ -1,5 +1,4 @@
-#ifndef DEBUGWINDOW_H
-#define DEBUGWINDOW_H
+#pragma once
 
 #include <stdio.h>
 #include <iostream>
@@ -9,5 +8,3 @@ void ShutdownDebugConsole();
 
 HRESULT WriteToConsole(std::wstring string);
 void LogError(HRESULT hr);
-
-#endif

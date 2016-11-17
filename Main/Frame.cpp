@@ -1,9 +1,6 @@
 #include <string>
 #include <fstream>
 #include <vector>
-#include <ctime>
-
-#include "Shlwapi.h"
 
 #include "Warnings.h"
 #include "Window.h"
@@ -12,55 +9,17 @@
 #include "Controls.h"
 #include "Gameflow.h"
 #include "FBX.h"
+#include "CpuRamUsage.h"
+#include "Timer.h"
+#include "Font.h"
 
 #pragma comment (lib, "Shlwapi.lib")
 
 using namespace std;
 
-HRESULT hr;
-
 //
 
-void Timer::UpdateDelta(char d)
-{
-	m_previousClock[d] = m_currentClock[d];
-	m_currentClock[d] = clock();
-	m_delta[d] = abs(m_currentClock[d] - m_previousClock[d]) / m_correction;
-
-	if (d == TIMER_FRAME_GLOBAL)
-		m_framesCount++;
-
-	if (m_currentClock[d] >= m_clockStamp + m_correction)
-	{
-		m_fpsStamp = (float)m_framesCount - (float)((m_currentClock[d] - (m_clockStamp + m_correction)) / (m_currentClock[d] - m_previousClock[d]));
-		m_framesCount = 0;
-		m_clockStamp += m_correction;
-	}
-
-	//overtime = clocktime - nextUpdate;
-	//frametime = 0; //frames / (float)(1+ (float)framesteps/(float)CLOCKS_PER_SEC); // 0.00001 / (float)framesteps; //overtime;
-}
-void Timer::SetCorrection(float c)
-{
-	m_correction = c;
-}
-double Timer::GetDelta(char d)
-{
-	return m_delta[d];
-}
-int Timer::GetFramesCount()
-{
-	return m_framesCount;
-}
-float Timer::GetFPSStamp()
-{
-	return m_fpsStamp;
-}
-Timer::Timer()
-{
-	m_correction = CLOCKS_PER_SEC;
-}
-Timer timer;
+wchar_t global_str64[64];
 
 //
 
@@ -102,6 +61,13 @@ HRESULT PrepareFrame()
 {
 	devcon->ClearRenderTargetView(targettview, RGBA{ 0.0f, 0.2f, 0.4f, 0.0f });
 	devcon->ClearDepthStencilView(depthstencilview, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	UINT stride = sizeof(VERTEX_BASIC);
+	UINT offset = 0;
+	devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &stride, &offset);
+	devcon->IASetIndexBuffer(indexbuffer, DXGI_FORMAT_R32_UINT, 0);
+	devcon->VSSetConstantBuffers(0, 1, &constantbuffer);
+
 	return S_OK;
 }
 HRESULT PresentFrame()
@@ -246,9 +212,6 @@ void Render_Debug(double delta)
 	}
 
 	Draw3DCube(0.15, color(2, 1, 1, 1), &(MTranslation(0, 1, 0) * mat_world));
-	//Draw3DRectangle(1, 1, COLOR_WHITE, 0);
-	//Draw3DEllipses(1, 1, COLOR_WHITE, 0);
-	//Draw3DTriangle(float3(0, 0, 0), float3(1, 0, 0), float3(0, 1, 0), COLOR_WHITE, 0);
 
 	Draw3DLineThin(float3(-2, 0, -2), float3(-2, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
 	Draw3DLineThin(float3(0, 0, -2), float3(0, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
@@ -266,15 +229,10 @@ void Render_Debug(double delta)
 	SetDepthBufferState(OFF);
 	SetShader(SHADERS_PLAIN);
 
-	//h = DX_PI / 3;
-
-	Draw2DLineThin(float2(0, 0), float2(200 * cosf(h), 200 * sinf(h)), COLOR_WHITE, COLOR_BLACK);
-	Draw2DLineThick(float2(-100, 100), float2(200 * cosf(h), 200 * sinf(h)), 50, COLOR_WHITE, color(1,0,0,0));
-	Draw2DFullRect(200, 40, -600, 400, 10, color(0,0,0,0.5), color(1,0,0,1));
-
-	Render_DebugKeyboard(v2_origin);
-	Render_DebugMouse(float2(90, 30));
-	Render_DebugController(v2_origin, 0);
+	Render_DebugKeyboard(float2(0, 300));
+	Render_DebugMouse(float2(0, 300) + float2(90, 30));
+	Render_DebugController(float2(0, 300), 0);
+	Render_DebugFPS(float2(windowMain.width * 0.5, -windowMain.height * 0.5));
 
 	SetDepthBufferState(ON);
 }
@@ -843,17 +801,80 @@ void Render_DebugController(float2 pos, unsigned char c)
 	devcon->DrawIndexed(6, 0, 0);
 	
 	// Left Circle
-	Draw2DEllipses(15.4, 15.4, 487.3, -116.6, color(.4, .4, .4, 1));
+	Draw2DEllipses(15.4, 15.4, pos.x + 487.3, pos.y - 116.6, color(.4, .4, .4, 1));
 
 	// Right Circle
-	Draw2DEllipses(15.4, 15.4, 524.7, -116.6, color(.4, .4, .4, 1));
+	Draw2DEllipses(15.4, 15.4, pos.x + 524.7, pos.y - 116.6, color(.4, .4, .4, 1));
 
 	// Left Stick
-	Draw2DEllipses(9.9, 9.9, 487.3 + controller[c].LX.vel * 4.4, -116.6 + controller[c].LY.vel * 4.4, BtnStateColor(controller[c].LS));
+	Draw2DEllipses(9.9, 9.9, pos.x + 487.3 + controller[c].LX.vel * 4.4, pos.y - 116.6 + controller[c].LY.vel * 4.4, BtnStateColor(controller[c].LS));
 
 	// Right Stick
-	Draw2DEllipses(9.9, 9.9, 524.7 + controller[c].RX.vel * 4.4, -116.6 + controller[c].RY.vel * 4.4, BtnStateColor(controller[c].RS));
+	Draw2DEllipses(9.9, 9.9, pos.x + 524.7 + controller[c].RX.vel * 4.4, pos.y - 116.6 + controller[c].RY.vel * 4.4, BtnStateColor(controller[c].RS));
 
+}
+void Render_DebugFPS(float2 pos)
+{
+	short cpu = cpu_usage.GetUsage(0);
+
+	K32GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
+	physMemUsedByMe = pmc.WorkingSetSize;
+	double physMemPercent = double(physMemUsedByMe) / double(totalPhysMem) * 100;
+	double physMemMB = double(physMemUsedByMe) / 1000000;
+
+	color fps_bar;
+	int fps_line = 0;
+	if (timer.GetFramesCount() < 256)
+	{
+		fps_bar = color((float)(255 - timer.GetFramesCount()) / (float)255, (float)(timer.GetFramesCount()) / (float)255, 0, 1);
+		fps_line = 0.7843 * timer.GetFramesCount() + pos.x - 260;
+	}
+	else
+	{
+		fps_bar = color(0, (float)(510 - timer.GetFramesCount()) / (float)255, (float)(timer.GetFramesCount() - 255) / (float)255, 1);
+		fps_line = 0.7843 * 256 + pos.x - 260;
+	}
+	Draw2DRectangle(200, 10, pos.x - 260, pos.y + 174, color(0, 0, 0, 0.2));
+	Draw2DLineThick(float2(pos.x - 260, pos.y + 179), float2(fps_line, pos.y + 179), 10, fps_bar, fps_bar);
+	Draw2DRectBorderThick(200, 10, pos.x - 260, pos.y + 174, 1, color(0, 0.73, 0.73, 1));
+	Draw2DLineThick(float2(pos.x - 252.157, pos.y + 174), float2(pos.x - 252.157, pos.y + 184), 1, color(0, 0.73, 0.73, 1), color(0, 0.73, 0.73, 1)); // 10 FPS
+	Draw2DLineThick(float2(pos.x - 236.471, pos.y + 174), float2(pos.x - 236.471, pos.y + 184), 1, color(0, 0.73, 0.73, 1), color(0, 0.73, 0.73, 1)); // 30 FPS
+	Draw2DLineThick(float2(pos.x - 212.942, pos.y + 174), float2(pos.x - 212.942, pos.y + 184), 1, color(0, 0.73, 0.73, 1), color(0, 0.73, 0.73, 1)); // 60 FPS
+	Draw2DLineThick(float2(pos.x - 181.57, pos.y + 174), float2(pos.x - 181.57, pos.y + 184), 1, color(0, 0.73, 0.73, 1), color(0, 0.73, 0.73, 1)); // 100 FPS
+	Draw2DLineThick(float2(pos.x - 103.14, pos.y + 174), float2(pos.x - 103.14, pos.y + 184), 1, color(0, 0.73, 0.73, 1), color(0, 0.73, 0.73, 1)); // 200 FPS
+
+	Draw2DRectangle(200, 54, pos.x - 260, pos.y + 98, color(0, 0, 0, 0.2));
+	for (unsigned int i = 1; i < cpu_usage.usageStream.size(); i++)
+	{
+		Draw2DLineThin(
+			float2(pos.x - 260 + 2 * (i - 1) * ((float)100 / ((float)cpu_usage.GetMaxRecords() - 1)), pos.y + 100 + (float)cpu_usage.usageStream.at(i - 1) * 0.5),
+			float2(pos.x - 260 + 2 * (i) * ((float)100 / ((float)cpu_usage.GetMaxRecords() - 1)), pos.y + 100 + (float)cpu_usage.usageStream.at(i) * 0.5),
+			color(1, 0.06, 0.6, 1), color(1, 0.06, 0.6, 1));
+	}
+	Draw2DRectBorderThick(200, 54, pos.x - 260, pos.y + 98, 1, color(0, 0.73, 0.73, 1));
+
+	Draw2DRectangle(200, 10, pos.x - 260, pos.y + 83, color(0, 0, 0, 0.2));
+	Draw2DLineThick(float2(pos.x - 260, pos.y + 88), float2(1.945 * cpu + pos.x - 258, pos.y + 88), 10, color(1, 0.06, 0.6, 1), color(1, 0.06, 0.6, 1));
+	Draw2DRectBorderThick(200, 10, pos.x - 260, pos.y + 83, 1, color(0, 0.73, 0.73, 1));
+	
+	/*sprintf(global_text, "CPU usage: %d%%", cpu4);
+	PrintText(global_text, Tiny, pos.x - 260, pos.y + 78, D3DCOLOR_XRGB(255, 255, 255));
+	sprintf(global_text, "RAM usage: %.2f%%", physMemPercent);
+	PrintText(global_text, Tiny, pos.x - 260, pos.y + 64, D3DCOLOR_XRGB(255, 255, 255));
+	sprintf(global_text, "Alloc.: %.3f MB", physMemMB);
+	PrintText(global_text, Tiny, pos.x - 260, pos.y + 50, D3DCOLOR_XRGB(255, 255, 255));*/
+
+	swprintf(global_str64, L"FPS: %.2f (%i)", timer.GetFPSStamp(), timer.GetFramesCount());
+	fw_courier->DrawString(devcon, global_str64, 10, windowMain.width - 260, windowMain.height - 200, 0xffffffff, 0);
+	swprintf(global_str64, L"Max: %.2f", timer.maxFps);
+	fw_courier->DrawString(devcon, global_str64, 10, windowMain.width - 125, windowMain.height - 200, 0xffffffff, 0);
+
+	swprintf(global_str64, L"CPU usage: %d%%", cpu);
+	fw_courier->DrawString(devcon, global_str64, 10, windowMain.width - 260, windowMain.height - 78, 0xffffffff, 0);
+	swprintf(global_str64, L"RAM usage: %.2f%%", physMemPercent);
+	fw_courier->DrawString(devcon, global_str64, 10, windowMain.width - 260, windowMain.height - 64, 0xffffffff, 0);
+	swprintf(global_str64, L"Alloc.: %.3f MB", physMemMB);
+	fw_courier->DrawString(devcon, global_str64, 10, windowMain.width - 260, windowMain.height - 50, 0xffffffff, 0);
 }
 
 void SetDepthBufferState(bool state)

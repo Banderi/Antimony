@@ -78,29 +78,29 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)\Debug\</OutDir>
     <TargetName>game_dbg</TargetName>
-    <LibraryPath>$(FBXSDKDIR)\lib\x86;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
-    <IncludePath>$(FBXSDKDIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(FBXSDKDIR)\lib\x86;$(FW1DIR)\lib\x86;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+    <IncludePath>$(FBXSDKDIR)\include;$(FW1DIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Static|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)\Debug\</OutDir>
     <TargetName>game_dbgStatic</TargetName>
-    <LibraryPath>$(FBXSDKDIR)\lib\x86;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
-    <IncludePath>$(FBXSDKDIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(FBXSDKDIR)\lib\x86;$(FW1DIR)\lib\x86;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+    <IncludePath>$(FBXSDKDIR)\include;$(FW1DIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)\Debug\</OutDir>
     <TargetName>game</TargetName>
-    <LibraryPath>$(FBXSDKDIR)\lib\x86;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
-    <IncludePath>$(FBXSDKDIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(FBXSDKDIR)\lib\x86;$(FW1DIR)\lib\x86;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+    <IncludePath>$(FBXSDKDIR)\include;$(FW1DIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Static|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)\Debug\</OutDir>
     <TargetName>game_static</TargetName>
-    <LibraryPath>$(FBXSDKDIR)\lib\x86;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
-    <IncludePath>$(FBXSDKDIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(FBXSDKDIR)\lib\x86;$(FW1DIR)\lib\x86;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+    <IncludePath>$(FBXSDKDIR)\include;$(FW1DIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -188,9 +188,11 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Character.cpp" />
     <ClCompile Include="Controls.cpp" />
+    <ClCompile Include="CpuRamUsage.cpp" />
     <ClCompile Include="DebugWin.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="FBX.cpp" />
+    <ClCompile Include="Font.cpp" />
     <ClCompile Include="Frame.cpp" />
     <ClCompile Include="Gameflow.cpp" />
     <ClCompile Include="Geometry.cpp" />
@@ -199,16 +201,19 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Param.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="Timer.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Character.h" />
     <ClInclude Include="Controls.h" />
+    <ClInclude Include="CpuRamUsage.h" />
     <ClInclude Include="DebugWin.h" />
     <ClInclude Include="DirectX.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="FBX.h" />
+    <ClInclude Include="Font.h" />
     <ClInclude Include="Frame.h" />
     <ClInclude Include="Gameflow.h" />
     <ClInclude Include="Geometry.h" />
@@ -219,6 +224,7 @@
     <ClInclude Include="pchfx.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="SmartRelease.h" />
+    <ClInclude Include="Timer.h" />
     <ClInclude Include="Warnings.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>

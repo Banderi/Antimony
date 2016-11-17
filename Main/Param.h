@@ -1,5 +1,4 @@
-#ifndef PARAM_H
-#define PARAM_H
+#pragma once
 
 #include <Windows.h>
 
@@ -41,5 +40,3 @@ extern windowParams windowMain;
 extern displayParams display;
 extern audioParams audio;
 extern gameParams game;
-
-#endif

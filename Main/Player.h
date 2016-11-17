@@ -1,5 +1,4 @@
-#ifndef PLAYER_H
-#define PLAYER_H
+#pragma once
 
 #include "character.h"
 
@@ -13,4 +12,3 @@ public:
 };
 
 extern Player player;
-#endif

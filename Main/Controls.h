@@ -1,5 +1,4 @@
-#ifndef CONTROLS_H
-#define CONTROLS_H
+#pragma once
 
 extern float mSensibility;
 extern float xSensibility;
@@ -17,6 +16,3 @@ extern unsigned int kRight;
 extern unsigned int kSprint;
 extern unsigned int kJump;
 extern unsigned int kAction;
-
-
-#endif

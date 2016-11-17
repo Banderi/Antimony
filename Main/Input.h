@@ -1,5 +1,4 @@
-#ifndef INPUT_H
-#define INPUT_H
+#pragma once
 
 #include <Windows.h>
 #include <Windowsx.h>
@@ -280,5 +279,3 @@ extern XInputController controller[4];
 
 HRESULT RegisterRID();
 HRESULT HandleRaw(MSG msg);
-
-#endif

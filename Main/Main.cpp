@@ -11,11 +11,18 @@
 #include "Controls.h"
 #include "Gameflow.h"
 #include "SmartRelease.h"
+#include "CpuRamUsage.h"
+#include "Timer.h"
+#include "Font.h"
 
 using namespace std;
 
+//
+
 double delta = 0;
 float worldSpeed = 1;
+
+//
 
 int WINAPI WinMain(HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
@@ -49,6 +56,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		return 0;
 
 	if (!Handle(&hr, HRH_MAIN_INITSHADERS, InitShaders()))
+		return 0;
+
+	if (!Handle(&hr, HRH_MAIN_INITFONTS, InitFonts()))
 		return 0;
 
 	if (!Handle(&hr, HRH_MAIN_INITGRAPHICS, InitGraphics()))
@@ -212,6 +222,8 @@ void ReadConfig()
 	GetPrivateProfileStringW(L"controls", L"kAction", L"0x45", buf, 32, L".\\config.ini");
 	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&kAction));
 
+	cpu_usage.SetMaxRecords(100);
+
 	WriteToConsole(L"done\n");
 }
 HRESULT EnumHardware()
@@ -297,6 +309,14 @@ HRESULT EnumHardware()
 	smartRelease(adapterOutput);
 	smartRelease(adapter);
 	smartRelease(factory);
+
+	// Get RAM memory info
+	memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+	GlobalMemoryStatusEx(&memInfo);
+	if (!Handle(&hr, HRH_ENUM_GETMEMINFO, HRESULT_FROM_WIN32(GetLastError())))
+		return hr;
+	totalPhysMem = memInfo.ullTotalPhys;
+	physMemAvail = memInfo.ullAvailPhys;
 
 	WriteToConsole(L"done\n");
 
@@ -489,6 +509,21 @@ HRESULT InitShaders()
 	WriteToConsole(L"done\n");
 	return S_OK;
 }
+HRESULT InitFonts()
+{
+	WriteToConsole(L"Loading fonts... ");
+
+	if (!Handle(&hr, HRH_FONTS_CREATEDW1FACTORY, FW1CreateFactory(FW1_VERSION, &fw1factory)))
+		return hr;
+
+	if (!Handle(&hr, HRH_FONTS_CREATEWRAPPER, fw1factory->CreateFontWrapper(dev, L"Arial", &fw_arial)))
+		return hr;
+	if (!Handle(&hr, HRH_FONTS_CREATEWRAPPER, fw1factory->CreateFontWrapper(dev, L"Courier", &fw_courier)))
+		return hr;
+
+	WriteToConsole(L"done\n");
+	return S_OK;
+}
 HRESULT InitGraphics()
 {
 	WriteToConsole(L"Loading starting graphics... ");
@@ -559,10 +594,10 @@ void ReleaseFiles()
 {
 	WriteToConsole(L"Releasing files... ");
 
-	/*smartRelease(vs_main);
-	smartRelease(vs_debug);
-	smartRelease(ps_main);
-	smartRelease(ps_debug);*/
+	smartRelease(fw1factory);
+
+	smartRelease(fw_arial);
+	smartRelease(fw_courier);
 
 	WriteToConsole(L"done\n");
 }
@@ -582,7 +617,7 @@ void Log()
 		WriteToConsole(L" (X)");*/
 
 		WriteToConsole(L"\r                                                            \r");
-		WriteToConsole(to_wstring(timer.GetFPSStamp()) + L" FPS (" + to_wstring(timer.GetFramesCount()) + L")");
+		WriteToConsole(to_wstring(timer.GetFPSStamp()) + L" FPS (" + to_wstring(timer.GetFramesCount()) + L") " + to_wstring(cpu_usage.lastUsage));
 
 		//printf("\33[2K\r");
 		//system("CLS");

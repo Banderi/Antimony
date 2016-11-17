@@ -1,7 +1,8 @@
-#ifndef MAIN_H
-#define MAIN_H
+#pragma once
 
 #include <Windows.h>
+
+//
 
 void ReadConfig();
 void Log();
@@ -11,7 +12,6 @@ void CleanD3D();
 HRESULT InitControls();
 HRESULT LoadStartingFiles();
 HRESULT InitShaders();
+HRESULT InitFonts();
 HRESULT InitGraphics();
 void ReleaseFiles();
-
-#endif

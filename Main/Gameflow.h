@@ -1,5 +1,4 @@
-#ifndef GAMEFLOW_H
-#define GAMEFLOW_H
+#pragma once
 
 #define GAMESTATE_LOADING_1 0x00000000
 #define GAMESTATE_LOADING_2 0x00000001
@@ -19,5 +18,3 @@ extern unsigned int GameState;
 void SetGameState(unsigned int state);
 unsigned int GetGameState();
 bool ForGameState(unsigned int state);
-
-#endif

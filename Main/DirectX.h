@@ -1,5 +1,4 @@
-#ifndef DIRECTX_H
-#define DIRECTX_H
+#pragma once
 
 #include <d3d11_1.h>
 #pragma comment (lib, "d3d11.lib")
@@ -99,7 +98,5 @@ using namespace DirectX::SimpleMath;
 #define COLOR_BLUE color(0,0,1,1)
 
 typedef float RGBA[4];
-
-#endif
 
 #endif

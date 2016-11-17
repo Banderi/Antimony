@@ -1,5 +1,4 @@
-#ifndef SMARTR_H
-#define SMARTR_H
+#pragma once
 
 template <typename T> void smartRelease(T com)
 {
@@ -9,5 +8,3 @@ template <typename T> void smartRelease(T com)
 		com = nullptr;
 	}
 }
-
-#endif

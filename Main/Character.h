@@ -1,5 +1,4 @@
-#ifndef CHARA_H
-#define CHARA_H
+#pragma once
 
 #include "Entity.h"
 
@@ -12,5 +11,3 @@ public:
 
 	Character();
 };
-
-#endif
