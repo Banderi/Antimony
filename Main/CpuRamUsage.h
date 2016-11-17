@@ -34,7 +34,7 @@ private:
 
 	volatile LONG m_lRunCount;
 
-	char m_maxRecords;
+	unsigned char m_maxRecords;
 };
 
 extern CpuUsage cpu_usage;

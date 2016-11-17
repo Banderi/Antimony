@@ -1,4 +1,5 @@
 #include "CpuRamUsage.h"
+#include "Warnings.h"
 
 /**********************************************
 * CpuUsage::GetUsage
@@ -141,7 +142,7 @@ CpuUsage::CpuUsage(void)
 	ZeroMemory(&m_ftPrevProcUser, sizeof(FILETIME));
 
 	m_maxRecords = 100;
-	for (int i = 1; i < usageStream.size(); i++)
+	for (unsigned int i = 1; i < usageStream.size(); i++)
 	{
 		usageStream.push_back(0);
 	}

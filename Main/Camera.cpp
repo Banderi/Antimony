@@ -1,5 +1,6 @@
 #include "Camera.h"
 #include "DebugWin.h"
+#include "Warnings.h"
 
 void Camera::update(double delta)
 {
