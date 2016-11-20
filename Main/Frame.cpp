@@ -36,7 +36,7 @@ HRESULT Frame(double delta)
 {
 	PrepareFrame();
 
-	if (ForGameState(GAMESTATE_INGAME))
+	if (IfGameState(GAMESTATE_INGAME))
 	{
 		UpdatePlayerControls(&keys, &controller[0], delta);
 		UpdateCameraControls(&mouse, &keys, &controller[0], delta); // --> updates into mat_view
@@ -45,13 +45,12 @@ HRESULT Frame(double delta)
 	UpdateWorld(delta);
 	UpdateAI(delta);
 	UpdatePhysics(delta);
-	UpdateHUD(delta);
 
 	//
 
 	RenderWorld();
 	RenderEntities();
-	RenderHUD();
+	RenderHUD(delta);
 	Render_Debug(delta);
 
 	return PresentFrame();
@@ -110,7 +109,7 @@ void UpdatePlayerControls(KeysController *khandle, XInputController *xhandle, do
 void UpdateCameraControls(MouseController *mhandle, KeysController *khandle, XInputController *xhandle, double delta)
 {
 	float3 eye =  v3_origin;
-	float mSlide = 0.15 * mSensibility * (delta + 0.01 * (1 - delta));		// it's... complicated.
+	float mSlide = 0.005 * mSensibility;
 	float xSlide = 4 * xSensibility * delta;
 	float radius = 1;
 	float maxpitch = 0.1;
@@ -121,10 +120,10 @@ void UpdateCameraControls(MouseController *mhandle, KeysController *khandle, XIn
 	// camera rotation
 	if (khandle->RMB.GetState() == unpressed)
 	{
-		_theta -= mSlide * mhandle->X.vel * BoolToSign(mouseXAxis)
-			+ xSlide * xhandle->RX.vel * BoolToSign(controllerXAxis);
-		_phi += mSlide * mhandle->Y.vel * BoolToSign(mouseYAxis)
-			+ xSlide * xhandle->RY.vel * -BoolToSign(controllerYAxis);
+		_theta = mSlide * -mhandle->X.pos * BoolToSign(mouseXAxis) + DX_PI / 2;
+		_theta += xSlide * xhandle->RX.vel * BoolToSign(controllerXAxis);
+		_phi = mSlide * mhandle->Y.pos * BoolToSign(mouseYAxis) + DX_PI / 2;
+		_phi += xSlide * xhandle->RY.vel * -BoolToSign(controllerYAxis);
 	}
 	else // zoom
 		zoom += float(mhandle->Y.vel) * 0.005;
@@ -163,11 +162,6 @@ void UpdateCameraControls(MouseController *mhandle, KeysController *khandle, XIn
 	mat_view = MLookAtLH(camera.getPos(), camera.getLookAt(), float3(0, 1, 0));
 }
 
-void UpdateHUD(double delta)
-{
-	// TODO: Implement font/text printing
-	// TODO: Implement HUD
-}
 void UpdateAI(double delta)
 {
 	// TODO: Implement AI
@@ -190,9 +184,18 @@ void RenderEntities()
 {
 	//
 }
-void RenderHUD()
+void RenderHUD(double delta)
 {
-	//
+	// TODO: Implement HUD
+
+	if (IfGameState(GAMESTATE_INGAME))
+	{
+		//
+	}
+	else if (IfGameState(GAMESTATE_PAUSE))
+	{
+		Draw2DRectangle(windowMain.width, windowMain.height, 0, 0, color(0, 0, 0, 0.5));
+	}
 }
 void Render_Debug(double delta)
 {
@@ -875,6 +878,10 @@ void Render_DebugFPS(float2 pos)
 	fw_courier->DrawString(devcon, global_str64, 10, windowMain.width - 260, windowMain.height - 64, 0xffffffff, 0);
 	swprintf(global_str64, L"Alloc.: %.3f MB", physMemMB);
 	fw_courier->DrawString(devcon, global_str64, 10, windowMain.width - 260, windowMain.height - 50, 0xffffffff, 0);
+
+	swprintf(global_str64, L"%.3f", mouse.X.pos);
+	fw_courier->DrawString(devcon, global_str64, 10, windowMain.width/2 + 300, windowMain.height/2 - 150, 0xffffffff, 0);
+
 }
 
 void SetDepthBufferState(bool state)

@@ -617,7 +617,11 @@ void Log()
 		WriteToConsole(L" (X)");*/
 
 		WriteToConsole(L"\r                                                            \r");
-		WriteToConsole(to_wstring(timer.GetFPSStamp()) + L" FPS (" + to_wstring(timer.GetFramesCount()) + L") " + to_wstring(cpu_usage.lastUsage));
+		//WriteToConsole(to_wstring(timer.GetFPSStamp()) + L" FPS (" + to_wstring(timer.GetFramesCount()) + L") " + to_wstring(cpu_usage.lastUsage));
+		WriteToConsole(to_wstring(mouse.X.pos));
+		WriteToConsole(L" (X) ");
+		WriteToConsole(to_wstring(mouse.Y.pos));
+		WriteToConsole(L" (Y)");
 
 		//printf("\33[2K\r");
 		//system("CLS");

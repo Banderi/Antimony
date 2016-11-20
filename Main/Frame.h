@@ -21,14 +21,13 @@ HRESULT PresentFrame();
 void UpdatePlayerControls(KeysController *khandle, XInputController *xhandle, double delta);
 void UpdateCameraControls(MouseController *mhandle, KeysController *khandle, XInputController *xhandle, double delta);
 
-void UpdateHUD(double delta);
 void UpdateAI(double delta);
 void UpdatePhysics(double delta);
 void UpdateWorld(double delta);
 
 void RenderWorld();
 void RenderEntities();
-void RenderHUD();
+void RenderHUD(double delta);
 void Render_Debug(double delta);
 void Render_DebugKeyboard(float2 pos);
 void Render_DebugMouse(float2 pos);

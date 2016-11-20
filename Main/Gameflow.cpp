@@ -10,7 +10,7 @@ unsigned int GetGameState()
 {
 	return GameState;
 }
-bool ForGameState(unsigned int state)
+bool IfGameState(unsigned int state)
 {
 	if (GameState == state)
 		return true;

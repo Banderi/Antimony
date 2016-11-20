@@ -64,21 +64,40 @@ void Input::Set(std::string nm)
 {
 	name = nm;
 }
-void Input_Key::Set(unsigned short vk, std::string nm)
-{
-	vkey = vk;
-	name = nm;
-}
+
 void Input_Mouse::Set(unsigned short flup, unsigned short fldn, std::string nm)
 {
 	flagup = flup;
 	flagdown = fldn;
 	name = nm;
 }
+unsigned short Input_Mouse::GetFlagUp()
+{
+	return flagup;
+}
+unsigned short Input_Mouse::GetFlagDown()
+{
+	return flagdown;
+}
+
+void Input_Key::Set(unsigned short vk, std::string nm)
+{
+	vkey = vk;
+	name = nm;
+}
+unsigned short Input_Key::GetVKey()
+{
+	return vkey;
+}
+
 void Input_Button::Set(unsigned short mp, std::string nm)
 {
 	map = mp;
 	name = nm;
+}
+unsigned short Input_Button::GetMap()
+{
+	return map;
 }
 
 //
@@ -86,8 +105,10 @@ void Input_Button::Set(unsigned short mp, std::string nm)
 void MouseController::Update(RAWMOUSE rmouse)
 {
 	bool relative = (rmouse.usFlags & MOUSE_MOVE_RELATIVE);
-	X.Update(rmouse.lLastX); // "Last" is relative position a.k.a velocity
-	Y.Update(rmouse.lLastY);
+
+	X.Update((float)rmouse.lLastX); // "Last" is relative position a.k.a velocity
+	Y.Update((float)rmouse.lLastY);
+
 	if (rmouse.usButtonFlags & RI_MOUSE_WHEEL)
 		Z.Update((short)rmouse.usButtonData);
 }
@@ -104,9 +125,9 @@ void KeysController::UpdateMouse(RAWMOUSE rmouse)
 
 	for (unsigned char i = 0; i < sizeof(mousearray) / sizeof(Input_Mouse*); i++)
 	{
-		if (flags & mousearray[i]->flagdown)
+		if (flags & mousearray[i]->GetFlagDown())
 			mousearray[i]->Update(true);
-		else if (flags & mousearray[i]->flagup)
+		else if (flags & mousearray[i]->GetFlagUp())
 			mousearray[i]->Update(false);
 	}
 }
@@ -116,7 +137,7 @@ void KeysController::UpdateKeyboard(RAWKEYBOARD rkeys)
 	
 	for (unsigned char i = 0; i < sizeof(keyarray) / sizeof(Input_Key*); i++)
 	{
-		if (vk == keyarray[i]->vkey)
+		if (vk == keyarray[i]->GetVKey())
 		{
 			if (rkeys.Message == WM_KEYDOWN)
 				keyarray[i]->Update(true);
@@ -136,13 +157,13 @@ void KeysController::Reset()
 		keyarray[i]->Update(-1);
 	}
 }
-void KeysController::SetKey(Input_Key *key, unsigned short vk)
+void KeysController::SetKey(Input_Key *key, unsigned short vk, std::string nm)
 {
-	key->vkey = vk;
+	key->Set(vk, nm);
 }
 unsigned short KeysController::GetKey(Input_Key *key)
 {
-	return key->vkey;
+	return key->GetVKey();
 }
 
 void XInputController::Update()
@@ -206,9 +227,9 @@ void XInputController::Update()
 
 		for (unsigned char i = 0; i < sizeof(btnarray) / sizeof(Input_Key*); i++)
 		{
-			if (btnarray[i]->map != 0)
+			if (btnarray[i]->GetMap() != 0)
 			{
-				if (state.Gamepad.wButtons & btnarray[i]->map)
+				if (state.Gamepad.wButtons & btnarray[i]->GetMap())
 					btnarray[i]->Update(true);
 				else if (btnarray[i]->GetState() != unpressed)
 					btnarray[i]->Update(false);
@@ -220,7 +241,7 @@ void XInputController::Reset()
 {
 	for (unsigned char i = 0; i < sizeof(btnarray) / sizeof(Input_Key*); i++)
 	{
-		if (btnarray[i]->map != 0)
+		if (btnarray[i]->GetMap() != 0)
 			btnarray[i]->Update(-1);
 		else
 		{

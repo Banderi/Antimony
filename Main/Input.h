@@ -65,9 +65,15 @@ public:
 };
 struct Input_Mouse : Input
 {
-public:
+protected:
 	unsigned short flagup;
 	unsigned short flagdown;
+
+public:
+	void Set(unsigned short flup, unsigned short fldn, std::string nm);
+
+	unsigned short GetFlagUp();
+	unsigned short GetFlagDown();
 
 	Input_Mouse()
 	{
@@ -78,14 +84,15 @@ public:
 		name = "";
 		handletype = KEY_TYPE_MOUSE;
 	}
-
-public:
-	void Set(unsigned short flup, unsigned short fldn, std::string nm);
 };
 struct Input_Key : Input
 {
-public:
+protected:
 	unsigned short vkey;	
+
+public:
+	void Set(unsigned short vk, std::string nm);
+	unsigned short GetVKey();
 
 	Input_Key()
 	{
@@ -95,14 +102,15 @@ public:
 		name = "";
 		handletype = KEY_TYPE_KEYBOARD;
 	}
-
-public:
-	void Set(unsigned short vk, std::string nm);	
 };
 struct Input_Button : Input
 {
-public:
+protected:
 	unsigned short map;
+
+public:
+	void Set(unsigned short mp, std::string nm);
+	unsigned short GetMap();
 
 	Input_Button()
 	{
@@ -112,9 +120,6 @@ public:
 		name = "";
 		handletype = KEY_TYPE_CONTROLLER;
 	}
-
-public:
-	void Set(unsigned short mp, std::string nm);
 };
 
 //
@@ -159,6 +164,13 @@ public:
 	Input_Key jump;
 	Input_Key action;
 
+	Input_Key sk_enter;
+	Input_Key sk_escape;
+	Input_Key sk_shift;
+	Input_Key sk_ctrl;
+	Input_Key sk_alt;
+	Input_Key sk_space;
+
 	bool exclusive;
 
 	//
@@ -166,7 +178,7 @@ public:
 	void UpdateMouse(RAWMOUSE rmouse);
 	void UpdateKeyboard(RAWKEYBOARD rkeys);
 	void Reset();
-	void SetKey(Input_Key *key, unsigned short vk);
+	void SetKey(Input_Key *key, unsigned short vk, std::string nm);
 	unsigned short GetKey(Input_Key *key);
 
 	KeysController()
