@@ -5,129 +5,140 @@
 #include <ctime>
 #include <string>
 #include <Xinput.h>
+#include <vector>
 
-#define leftbutton 0
-#define middlebutton 1
-#define rightbutton 2
+///
 
-#define unpressed 0
-#define pressed 1
-#define held 2
-#define released 3
+#define MOUSE_LEFT 0
+#define MOUSE_MIDDLE 1
+#define MOUSE_RIGHT 2
 
-#define xcoord 0
-#define ycoord 1
-#define zcoord 2
+#define BTN_UNPRESSED 0
+#define BTN_PRESSED 1
+#define BTN_HELD 2
+#define BTN_RELEASED 3
+
+#define COORD_X 0
+#define COORD_Y 1
+#define COORD_Z 2
 
 #define KEY_TYPE_KEYBOARD 0x00
 #define KEY_TYPE_MOUSE 0x01
 #define KEY_TYPE_CONTROLLER 0x02
 
-#define MOUSE_COUNT 3
-#define KEY_COUNT 7
-#define BUTTON_COUNT 16
+#define CONTROLLER_1 0x00
+#define CONTROLLER_2 0x01
+#define CONTROLLER_3 0x02
+#define CONTROLLER_4 0x03
+
+///
 
 extern RAWINPUTDEVICE rid[4];
 
+///
+
 struct Axis
 {
-	float pos, oldpos, vel;
+protected:
+	float m_pos, m_oldPos, m_vel;
 
-	void Update(float v);
+public:
+	void catchState(float v);
+	void update();
+	float getPos();
+	float getVel();
+
 	Axis(float _a, float _b, float _c)
 	{
-		pos = _a;
-		oldpos = _b;
-		vel = _c;
+		m_pos = _a;
+		m_oldPos = _b;
+		m_vel = _c;
 	}
-
 	Axis()
 	{
-		pos = 0;
-		oldpos = 0;
-		vel = 0;
+		m_pos = 0;
+		m_oldPos = 0;
+		m_vel = 0;
 	}
 };
 struct Input
 {
 protected:
-	unsigned char press;
-	unsigned char handletype;
-	clock_t time;
+	unsigned char m_pressState;
+	unsigned char m_handleType;
+	clock_t m_pressTime;
 
 public:
 	std::string name;
 
-	void Update(char down);
-	unsigned char GetState();
-	float GetTime();
-	void Set(std::string nm);
+	void update(char down);
+	unsigned char getState();
+	float getTime();
+	void set(std::string nm);
 };
 struct Input_Mouse : Input
 {
 protected:
-	unsigned short flagup;
-	unsigned short flagdown;
+	unsigned short m_flagUp;
+	unsigned short m_flagDown;
 
 public:
-	void Set(unsigned short flup, unsigned short fldn, std::string nm);
+	void set(unsigned short flup, unsigned short fldn, std::string nm);
 
-	unsigned short GetFlagUp();
-	unsigned short GetFlagDown();
+	unsigned short getFlagUp();
+	unsigned short getFlagDown();
 
 	Input_Mouse()
 	{
-		flagup = 0x00;
-		flagdown = 0x00;
-		press = 0;
-		time = -1;
+		m_flagUp = 0x00;
+		m_flagDown = 0x00;
+		m_pressState = BTN_RELEASED;
+		m_pressTime = -1;
 		name = "";
-		handletype = KEY_TYPE_MOUSE;
+		m_handleType = KEY_TYPE_MOUSE;
 	}
 };
 struct Input_Key : Input
 {
 protected:
-	unsigned short vkey;	
+	unsigned short m_vKey;	
 
 public:
-	void Set(unsigned short vk, std::string nm);
-	unsigned short GetVKey();
+	void set(unsigned short vk, std::string nm);
+	unsigned short getVKey();
 
 	Input_Key()
 	{
-		vkey = 0x00;
-		press = 0;
-		time = -1;
+		m_vKey = 0x00;
+		m_pressState = BTN_RELEASED;
+		m_handleType = -1;
 		name = "";
-		handletype = KEY_TYPE_KEYBOARD;
+		m_handleType = KEY_TYPE_KEYBOARD;
 	}
 };
 struct Input_Button : Input
 {
 protected:
-	unsigned short map;
+	unsigned short m_map;
 
 public:
-	void Set(unsigned short mp, std::string nm);
-	unsigned short GetMap();
+	void set(unsigned short mp, std::string nm);
+	unsigned short getMap();
 
 	Input_Button()
 	{
-		map = 0x00;
-		press = 0;
-		time = -1;
+		m_map = 0x00;
+		m_pressState = BTN_RELEASED;
+		m_pressTime = -1;
 		name = "";
-		handletype = KEY_TYPE_CONTROLLER;
+		m_handleType = KEY_TYPE_CONTROLLER;
 	}
 };
-
-//
 
 class MouseController
 {
 private:
-	bool reset;
+	bool m_reset;
 
 public:
 	Axis X;
@@ -136,20 +147,20 @@ public:
 
 	bool exclusive;
 
-	void Update(RAWMOUSE rmouse);
-	void Reset();
+	void update(RAWMOUSE rmouse);
+	void reset();
 
 	MouseController()
 	{
 		exclusive = 1;
-		reset = 0;
+		m_reset = 0;
 	}
 };
 class KeysController
 {
 private:
-	Input_Mouse* mousearray[MOUSE_COUNT];
-	Input_Key* keyarray[KEY_COUNT];
+	std::vector<Input_Mouse*> m_mouseArray;
+	std::vector<Input_Key*> m_keyArray;
 
 public:
 	Input_Mouse LMB;
@@ -171,42 +182,66 @@ public:
 	Input_Key sk_alt;
 	Input_Key sk_space;
 
+	Input_Key sk_arrUp;
+	Input_Key sk_arrDown;
+	Input_Key sk_arrLeft;
+	Input_Key sk_arrRight;
+
 	bool exclusive;
 
 	//
 
-	void UpdateMouse(RAWMOUSE rmouse);
-	void UpdateKeyboard(RAWKEYBOARD rkeys);
-	void Reset();
-	void SetKey(Input_Key *key, unsigned short vk, std::string nm);
-	unsigned short GetKey(Input_Key *key);
+	void updateMouse(RAWMOUSE rmouse);
+	void updateKeyboard(RAWKEYBOARD rkeys);
+	void reset();
+	void setKey(Input_Key *key, unsigned short vk, std::string nm);
+	unsigned short getKey(Input_Key *key);
 
 	KeysController()
 	{
 		exclusive = 0;
 
-		LMB.Set(RI_MOUSE_LEFT_BUTTON_UP, RI_MOUSE_LEFT_BUTTON_DOWN, "Left Mouse Button");
-		MMB.Set(RI_MOUSE_MIDDLE_BUTTON_UP, RI_MOUSE_MIDDLE_BUTTON_DOWN, "Middle Mouse Button");
-		RMB.Set(RI_MOUSE_RIGHT_BUTTON_UP, RI_MOUSE_RIGHT_BUTTON_DOWN, "Right Mouse Button");
+		LMB.set(RI_MOUSE_LEFT_BUTTON_UP, RI_MOUSE_LEFT_BUTTON_DOWN, "Left Mouse Button");
+		MMB.set(RI_MOUSE_MIDDLE_BUTTON_UP, RI_MOUSE_MIDDLE_BUTTON_DOWN, "Middle Mouse Button");
+		RMB.set(RI_MOUSE_RIGHT_BUTTON_UP, RI_MOUSE_RIGHT_BUTTON_DOWN, "Right Mouse Button");
 
-		mousearray[0] = &LMB;
-		mousearray[1] = &MMB;
-		mousearray[2] = &RMB;
+		m_mouseArray.push_back(&LMB);
+		m_mouseArray.push_back(&MMB);
+		m_mouseArray.push_back(&RMB);
 
-		keyarray[0] = &forward;
-		keyarray[1] = &backward;
-		keyarray[2] = &left;
-		keyarray[3] = &right;
-		keyarray[4] = &sprint;
-		keyarray[5] = &jump;
-		keyarray[6] = &action;
+		m_keyArray.push_back(&sk_enter);
+		m_keyArray.push_back(&sk_escape);
+		m_keyArray.push_back(&sk_shift);
+		m_keyArray.push_back(&sk_ctrl);
+		m_keyArray.push_back(&sk_alt);
+		m_keyArray.push_back(&sk_space);
+
+		m_keyArray.push_back(&sk_arrUp);
+		m_keyArray.push_back(&sk_arrDown);
+		m_keyArray.push_back(&sk_arrLeft);
+		m_keyArray.push_back(&sk_arrRight);
+
+		m_keyArray.push_back(&forward);
+		m_keyArray.push_back(&backward);
+		m_keyArray.push_back(&left);
+		m_keyArray.push_back(&right);
+		m_keyArray.push_back(&sprint);
+		m_keyArray.push_back(&jump);
+		m_keyArray.push_back(&action);
+
+		sk_enter.set(0x0d, "Enter");
+		sk_escape.set(0x1b, "Escape");
+		sk_shift.set(0xa0, "Shift");
+		sk_ctrl.set(0xa2, "Ctrl");
+		sk_alt.set(0xa4, "Alt");
+		sk_space.set(0x20, "Space");
 	}
 };
 class XInputController
 {
 private:
-	XINPUT_STATE state;
-	Input_Button* btnarray[BUTTON_COUNT];
+	XINPUT_STATE m_state;
+	std::vector<Input_Button*> m_btnArray;
 
 public:
 	Axis RX, LX;
@@ -238,48 +273,48 @@ public:
 
 	//
 
-	void Update();
-	void Reset();
-	void Vibrate(float leftmotor = 0.0f, float rightmotor = 0.0f);
+	void update();
+	void reset();
+	void vibrate(float leftmotor = 0.0f, float rightmotor = 0.0f);
 
 	XInputController()
 	{
-		ZeroMemory(&state, sizeof(XINPUT_STATE));
+		ZeroMemory(&m_state, sizeof(XINPUT_STATE));
 		enabled = false;
 
-		LT.Set(0, "Left Trigger/L2");
-		RT.Set(0, "Right Trigger/R2");
-		LB.Set(XINPUT_GAMEPAD_LEFT_SHOULDER, "Left Bumper/L1");
-		RB.Set(XINPUT_GAMEPAD_RIGHT_SHOULDER, "Right Bumper/R1");
-		LS.Set(XINPUT_GAMEPAD_LEFT_THUMB, "Left Stick/L3");
-		RS.Set(XINPUT_GAMEPAD_RIGHT_THUMB, "Right Stick/R3");
-		A.Set(XINPUT_GAMEPAD_A, "A/Cross");
-		B.Set(XINPUT_GAMEPAD_B, "B/Circle");
-		X.Set(XINPUT_GAMEPAD_X, "X/Square");
-		Y.Set(XINPUT_GAMEPAD_Y, "Y/Triangle");
-		Up.Set(XINPUT_GAMEPAD_DPAD_UP, "D-Pad Up");
-		Down.Set(XINPUT_GAMEPAD_DPAD_DOWN, "D-Pad Down");
-		Left.Set(XINPUT_GAMEPAD_DPAD_LEFT, "D-Pad Left");
-		Right.Set(XINPUT_GAMEPAD_DPAD_RIGHT, "D-Pad Right");
-		Start.Set(XINPUT_GAMEPAD_START, "Start");
-		Back.Set(XINPUT_GAMEPAD_BACK, "Back/Select");
+		LT.set(0, "Left Trigger/L2");
+		RT.set(0, "Right Trigger/R2");
+		LB.set(XINPUT_GAMEPAD_LEFT_SHOULDER, "Left Bumper/L1");
+		RB.set(XINPUT_GAMEPAD_RIGHT_SHOULDER, "Right Bumper/R1");
+		LS.set(XINPUT_GAMEPAD_LEFT_THUMB, "Left Stick/L3");
+		RS.set(XINPUT_GAMEPAD_RIGHT_THUMB, "Right Stick/R3");
+		A.set(XINPUT_GAMEPAD_A, "A/Cross");
+		B.set(XINPUT_GAMEPAD_B, "B/Circle");
+		X.set(XINPUT_GAMEPAD_X, "X/Square");
+		Y.set(XINPUT_GAMEPAD_Y, "Y/Triangle");
+		Up.set(XINPUT_GAMEPAD_DPAD_UP, "D-Pad Up");
+		Down.set(XINPUT_GAMEPAD_DPAD_DOWN, "D-Pad Down");
+		Left.set(XINPUT_GAMEPAD_DPAD_LEFT, "D-Pad Left");
+		Right.set(XINPUT_GAMEPAD_DPAD_RIGHT, "D-Pad Right");
+		Start.set(XINPUT_GAMEPAD_START, "Start");
+		Back.set(XINPUT_GAMEPAD_BACK, "Back/Select");
 
-		btnarray[0] = &LT;
-		btnarray[1] = &RT;
-		btnarray[2] = &LB;
-		btnarray[3] = &RB;
-		btnarray[4] = &LS;
-		btnarray[5] = &RS;
-		btnarray[6] = &A;
-		btnarray[7] = &B;
-		btnarray[8] = &X;
-		btnarray[9] = &Y;
-		btnarray[10] = &Up;
-		btnarray[11] = &Down;
-		btnarray[12] = &Left;
-		btnarray[13] = &Right;
-		btnarray[14] = &Start;
-		btnarray[15] = &Back;
+		m_btnArray.push_back(&LT);
+		m_btnArray.push_back(&RT);
+		m_btnArray.push_back(&LB);
+		m_btnArray.push_back(&RB);
+		m_btnArray.push_back(&LS);
+		m_btnArray.push_back(&RS);
+		m_btnArray.push_back(&A);
+		m_btnArray.push_back(&B);
+		m_btnArray.push_back(&X);
+		m_btnArray.push_back(&Y);
+		m_btnArray.push_back(&Up);
+		m_btnArray.push_back(&Down);
+		m_btnArray.push_back(&Left);
+		m_btnArray.push_back(&Right);
+		m_btnArray.push_back(&Start);
+		m_btnArray.push_back(&Back);
 	}
 };
 
@@ -287,7 +322,7 @@ extern MouseController mouse;
 extern KeysController keys;
 extern XInputController controller[4];
 
-//
+///
 
 HRESULT RegisterRID();
 HRESULT HandleRaw(MSG msg);

@@ -1,5 +1,7 @@
 #pragma once
 
+///
+
 #define GAMESTATE_LOADING_1 0x00000000
 #define GAMESTATE_LOADING_2 0x00000001
 #define GAMESTATE_LOADING_3 0x00000002
@@ -13,7 +15,11 @@
 #define GAMESTATE_CUTSCENE 0x00000015
 #define GAMESTATE_FMV 0x00000016
 
+///
+
 extern unsigned int GameState;
+
+///
 
 void SetGameState(unsigned int state);
 unsigned int GetGameState();

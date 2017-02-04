@@ -2,7 +2,7 @@
 
 #include <Windows.h>
 
-//
+///
 
 void ReadConfig();
 void Log();
@@ -14,4 +14,5 @@ HRESULT LoadStartingFiles();
 HRESULT InitShaders();
 HRESULT InitFonts();
 HRESULT InitGraphics();
+HRESULT InitPhysics();
 void ReleaseFiles();

@@ -1,28 +1,28 @@
-#include "Warnings.h"
-
 #include <string>
 #include <Shlwapi.h>
 
+#include "Warnings.h"
 #include "Main.h"
-#include "Window.h"
-#include "Frame.h"
 #include "DebugWin.h"
 #include "Hresult.h"
-#include "Controls.h"
+#include "Frame.h"
 #include "Gameflow.h"
-#include "SmartRelease.h"
 #include "CpuRamUsage.h"
 #include "Timer.h"
+#include "Bullet.h"
 #include "Font.h"
+#include "SmartRelease.h"
+
+///
 
 using namespace std;
 
-//
+///
 
 double delta = 0;
 float worldSpeed = 1;
 
-//
+///
 
 int WINAPI WinMain(HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
@@ -43,44 +43,50 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		WriteToConsole(L"---> START OF DEBUG CONSOLE <---\n");
 	}
 
+	if (game.debug)
+		game.dbg_wireframe = false;
+	else
+		game.dbg_wireframe = false;
+
 	CreateMainWindow(hInstance);
-	ShowWindow(windowMain.hWnd, nCmdShow);
+	ShowWindow(window_main.hWnd, nCmdShow);
 
 	if (!Handle(&hr, HRH_MAIN_ENUMHW, EnumHardware()))
 		return 0;
-
-	if (!Handle(&hr, HRH_MAIN_INITD3D, InitD3D(windowMain.hWnd)))
+	if (!Handle(&hr, HRH_MAIN_INITD3D, InitD3D(window_main.hWnd)))
 		return 0;
-
 	if (!Handle(&hr, HRH_MAIN_REGHID, InitControls()))
 		return 0;
-
 	if (!Handle(&hr, HRH_MAIN_INITSHADERS, InitShaders()))
 		return 0;
-
 	if (!Handle(&hr, HRH_MAIN_INITFONTS, InitFonts()))
 		return 0;
-
 	if (!Handle(&hr, HRH_MAIN_INITGRAPHICS, InitGraphics()))
 		return 0;
-
+	if (!Handle(&hr, HRH_MAIN_INITPHYSICS, InitPhysics()))
+		return 0;
 	if (!Handle(&hr, HRH_MAIN_STARTINGFILES, LoadStartingFiles()))
 		return 0;
 
 	ShowCursor(false);
-	ClipCursor(&windowMain.plane);
+	ClipCursor(&window_main.plane);
 
-	//
+	///
 
 	MSG msg;
 	bool run = 1;
 
-	player.moveToPoint(float3(0, 0, -3), -1);
+	WriteToConsole(L"Entering main loop...\n");	
 
-	WriteToConsole(L"Entering main loop...\n");
+	SetGameState(GAMESTATE_SPLASH);
+
+	///
+
 	camera.unlock();
 
 	SetGameState(GAMESTATE_INGAME);
+
+	frame_count = 0;
 
 	while (run)
 	{
@@ -109,17 +115,18 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 		timer.UpdateDelta(TIMER_FRAME_GLOBAL);
 		delta = timer.GetDelta(TIMER_FRAME_GLOBAL);
+
 		Frame(delta * worldSpeed);
 
 		if (game.debug)
 			Log();
 
-		mouse.Reset();
-		keys.Reset();
+		mouse.reset();
+		keys.reset();
 		for (unsigned char i = 0; i< XUSER_MAX_COUNT; i++)
 		{
 			if (controller[i].enabled)
-				controller[i].Reset();
+				controller[i].reset();
 		}
 	}
 	WriteToConsole(L"Main loop terminated!\n");
@@ -145,7 +152,29 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			{
 				case VK_ESCAPE:
 				{
-					PostQuitMessage(0);
+					//PostQuitMessage(0);
+					break;
+				}
+				case VK_F7:
+				{
+					game.dbg_wireframe = !game.dbg_wireframe;
+					break;
+				}
+				case VK_OEM_COMMA:
+				{
+					game.dbg_entityfollow--;
+					break;
+				}
+				case VK_OEM_PERIOD:
+				{
+					game.dbg_entityfollow++;
+					break;
+				}
+				case 0x52:
+				{
+					// TODO: fix platform momentum
+					for (int i = 0; i < physEntities.size(); i++)
+						physEntities.at(i)->reset();
 					break;
 				}
 			}
@@ -158,69 +187,73 @@ void ReadConfig()
 {
 	WriteToConsole(L"Loading config files... ");
 
-	// Get window settings
-	windowMain.fullscreen = GetPrivateProfileIntW(L"display", L"Fullscreen", 0, L".\\config.ini");
+	// get window settings
+	window_main.fullscreen = GetPrivateProfileIntW(L"display", L"Fullscreen", 0, L".\\config.ini");
 
-	if (windowMain.fullscreen)
+	if (window_main.fullscreen)
 	{
 		RECT desktop;
 		const HWND hDesktop = GetDesktopWindow();
 		GetWindowRect(hDesktop, &desktop);
-		windowMain.width = desktop.right;
-		windowMain.height = desktop.bottom;
-		windowMain.X = 0;
-		windowMain.Y = 0;
-		windowMain.aspect = (float)windowMain.width / (float)windowMain.height;
+		window_main.width = desktop.right;
+		window_main.height = desktop.bottom;
+		window_main.x = 0;
+		window_main.y = 0;
+		window_main.aspect = (float)window_main.width / (float)window_main.height;
 	}
 	else
 	{
-		windowMain.width = GetPrivateProfileIntW(L"display", L"WindowWidth", 800, L".\\config.ini");
-		windowMain.height = GetPrivateProfileIntW(L"display", L"WindowHeight", 600, L".\\config.ini");
-		windowMain.X = GetPrivateProfileIntW(L"display", L"WindowX", 0, L".\\config.ini");
-		windowMain.Y = GetPrivateProfileIntW(L"display", L"WindowY", 0, L".\\config.ini");
-		windowMain.borderless = GetPrivateProfileIntW(L"display", L"Borderless", 0, L".\\config.ini");
-		windowMain.aspect = (float)windowMain.width / (float)windowMain.height;
+		window_main.width = GetPrivateProfileIntW(L"display", L"WindowWidth", 800, L".\\config.ini");
+		window_main.height = GetPrivateProfileIntW(L"display", L"WindowHeight", 600, L".\\config.ini");
+		window_main.x = GetPrivateProfileIntW(L"display", L"WindowX", 0, L".\\config.ini");
+		window_main.y = GetPrivateProfileIntW(L"display", L"WindowY", 0, L".\\config.ini");
+		window_main.borderless = GetPrivateProfileIntW(L"display", L"Borderless", 0, L".\\config.ini");
+		window_main.aspect = (float)window_main.width / (float)window_main.height;
 	}
 
-	windowMain.plane = { windowMain.X, windowMain.Y, windowMain.width + windowMain.X, windowMain.height + windowMain.Y};
+	window_main.plane = { window_main.x, window_main.y, window_main.width + window_main.x, window_main.height + window_main.y};
+	window_main.top = -window_main.height * 0.5;	//	-1,-1--------- 1,-1
+	window_main.bottom = window_main.height * 0.5;	//	  |             |
+	window_main.right = window_main.width * 0.5;	//	  |             |
+	window_main.left = -window_main.width * 0.5;	//	-1, 1--------- 1, 1
 
-	// Get display settings
-	display.v_sync = GetPrivateProfileIntW(L"display", L"VSync", 0, L".\\config.ini");
+	// get display settings
+	display.vsync = GetPrivateProfileIntW(L"display", L"VSync", 0, L".\\config.ini");
 	display.triple_buff = GetPrivateProfileIntW(L"display", L"TripleBuffering", 0, L".\\config.ini");
 
-	// Get game settings
+	// get game settings
 	game.debug = GetPrivateProfileIntW(L"game", L"Debug", 0, L".\\config.ini");
 	game.cheats = GetPrivateProfileIntW(L"game", L"Cheats", 1, L".\\config.ini");
 	game.difficulty = GetPrivateProfileIntW(L"game", L"Difficulty", 1, L".\\config.ini");
 	game.camera_friction = GetPrivateProfileIntW(L"game", L"CameraWobble", 1, L".\\config.ini");
 
-	// Get controls settings
+	// get controls settings
 	WCHAR buf[32];
 	GetPrivateProfileStringW(L"controls", L"mSensibility", L".5", buf, 32, L".\\config.ini");
-	mSensibility = _wtof(buf);
+	controls.m_sensitivity = _wtof(buf);
 	GetPrivateProfileStringW(L"controls", L"xSensibility", L".5", buf, 32, L".\\config.ini");
-	xSensibility = _wtof(buf);
+	controls.x_sensitivity = _wtof(buf);
 
-	mouseXAxis = GetPrivateProfileIntW(L"controls", L"InvertMouseXAxis", 0, L".\\config.ini");
-	mouseYAxis = GetPrivateProfileIntW(L"controls", L"InvertMouseYAxis", 0, L".\\config.ini");
-	controllerXAxis = GetPrivateProfileIntW(L"controls", L"InvertControllerXAxis", 0, L".\\config.ini");
-	controllerYAxis = GetPrivateProfileIntW(L"controls", L"InvertControllerYAxis", 0, L".\\config.ini");
+	controls.m_invertxaxis = GetPrivateProfileIntW(L"controls", L"InvertMouseXAxis", 0, L".\\config.ini");
+	controls.m_invertyaxis = GetPrivateProfileIntW(L"controls", L"InvertMouseYAxis", 0, L".\\config.ini");
+	controls.x_invertxaxis = GetPrivateProfileIntW(L"controls", L"InvertControllerXAxis", 0, L".\\config.ini");
+	controls.x_invertyaxis = GetPrivateProfileIntW(L"controls", L"InvertControllerYAxis", 0, L".\\config.ini");
 
 	GetPrivateProfileStringW(L"controls", L"kForward", L"0x57", buf, 32, L".\\config.ini");
-	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&kForward));
+	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&controls.k_forward));
 	GetPrivateProfileStringW(L"controls", L"kBackward", L"0x53", buf, 32, L".\\config.ini");
-	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&kBackward));
+	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&controls.k_backward));
 	GetPrivateProfileStringW(L"controls", L"kLeft", L"0x41", buf, 32, L".\\config.ini");
-	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&kLeft));
+	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&controls.k_left));
 	GetPrivateProfileStringW(L"controls", L"kRight", L"0x44", buf, 32, L".\\config.ini");
-	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&kRight));
+	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&controls.k_right));
 
 	GetPrivateProfileStringW(L"controls", L"kSprint", L"0xA0", buf, 32, L".\\config.ini");
-	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&kSprint));
+	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&controls.k_sprint));
 	GetPrivateProfileStringW(L"controls", L"kJump", L"0x20", buf, 32, L".\\config.ini");
-	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&kJump));
+	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&controls.k_jump));
 	GetPrivateProfileStringW(L"controls", L"kAction", L"0x45", buf, 32, L".\\config.ini");
-	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&kAction));
+	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&controls.k_action));
 
 	cpu_usage.SetMaxRecords(100);
 
@@ -248,26 +281,26 @@ HRESULT EnumHardware()
 	D3D11_VIEWPORT viewport;
 	float fieldOfView, screenAspect;*/
 
-	// Create a DirectX graphics interface factory.
+	// create a DirectX graphics interface factory
 	if (!Handle(&hr, HRH_ENUM_CREATEDXGIFACTORY, CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory)))
 		return hr;
 
-	// Use the factory to create an adapter for the primary graphics interface (video card).
+	// use the factory to create an adapter for the primary graphics interface (video card)
 	if (!Handle(&hr, HRH_ENUM_ENUMGPU, factory->EnumAdapters(0, &adapter)))
 		return hr;
 
-	// Enumerate the primary adapter output (monitor).
+	// enumerate the primary adapter output (monitor)
 	if (!Handle(&hr, HRH_ENUM_ENUMOUTPUTDEVICE, adapter->EnumOutputs(0, &adapterOutput)))
 		return hr;
 
-	// Get the number of modes that fit the DXGI_FORMAT_R8G8B8A8_UNORM display format for the adapter output (monitor).
+	// get the number of modes that fit the DXGI_FORMAT_R8G8B8A8_UNORM display format for the adapter output (monitor)
 	if (!Handle(&hr, HRH_ENUM_GETOUTPUTMODESNUMBER, adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &numModes, NULL)))
 		return hr;
 
-	// Create a list to hold all the possible display modes for this monitor/video card combination.
+	// create a list to hold all the possible display modes for this monitor/video card combination
 	displayModeList = new DXGI_MODE_DESC[numModes];
 
-	// Now fill the display mode list structures.
+	// fill the display mode list structures
 	if (!Handle(&hr, HRH_ENUM_FILLOUTPUTMODESLIST, adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &numModes, displayModeList)))
 		return hr;
 
@@ -275,8 +308,8 @@ HRESULT EnumHardware()
 	const HWND hDesktop = GetDesktopWindow();
 	GetWindowRect(hDesktop, &desktop);
 
-	// Now go through all the display modes and find the one that matches the screen width and height.
-	// When a match is found store thedisplay.gpu_num and display.gpu_denom of the refresh rate for that monitor.
+	// go through all the display modes and find the one that matches the screen width and height;
+	// when a match is found store thedisplay.gpu_num and display.gpu_denom of the refresh rate for that monitor
 	for (i = 0; i<numModes; i++)
 	{
 		if (displayModeList[i].Width == (unsigned int)desktop.right)
@@ -289,28 +322,28 @@ HRESULT EnumHardware()
 		}
 	}
 
-	// Get the adapter (video card) description.
+	// get the adapter (video card) description
 	if (!Handle(&hr, HRH_ENUM_GETGPUDESC, adapter->GetDesc(&adapterDesc)))
 		return hr;
 
-	// Store the dedicated video card memory in megabytes.
+	// store the dedicated video card memory in megabytes
 	display.gpu_vram = (int)(adapterDesc.DedicatedVideoMemory / 1024 / 1024);		WriteToConsole(to_wstring(display.gpu_vram) + L"mb ");
 
-	// Convert the name of the video card to a character array and store it.
+	// convert the name of the video card to a character array and store it
 	error = wcstombs_s(&stringLength, display.gpu_desc, 128, adapterDesc.Description, 128);
 	if (error != 0)
 		return error;
 
-	// Release the display mode list.
+	// release the display mode list
 	delete[] displayModeList;
 	displayModeList = 0;
 
-	// Release the adapter output, adapter and factory.
+	// release the adapter output, adapter and factory
 	smartRelease(adapterOutput);
 	smartRelease(adapter);
 	smartRelease(factory);
 
-	// Get RAM memory info
+	// get RAM memory info
 	memInfo.dwLength = sizeof(MEMORYSTATUSEX);
 	GlobalMemoryStatusEx(&memInfo);
 	if (!Handle(&hr, HRH_ENUM_GETMEMINFO, HRESULT_FROM_WIN32(GetLastError())))
@@ -347,12 +380,12 @@ HRESULT InitD3D(HWND hWnd)
 
 	// Fill swapchain description
 	scd.BufferCount = 1;
-	scd.BufferDesc.Width = windowMain.width;
-	scd.BufferDesc.Height = windowMain.height;
+	scd.BufferDesc.Width = window_main.width;
+	scd.BufferDesc.Height = window_main.height;
 	scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	scd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	scd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-	if (display.v_sync)
+	if (display.vsync)
 	{
 		scd.BufferDesc.RefreshRate.Numerator = display.gpu_num;
 		scd.BufferDesc.RefreshRate.Denominator = display.gpu_denom;
@@ -366,10 +399,10 @@ HRESULT InitD3D(HWND hWnd)
 		scd.BufferCount = 3;
 
 	scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	scd.OutputWindow = windowMain.hWnd;
+	scd.OutputWindow = window_main.hWnd;
 	scd.SampleDesc.Count = 1;
 	scd.SampleDesc.Quality = 0;
-	scd.Windowed = !windowMain.fullscreen;
+	scd.Windowed = !window_main.fullscreen;
 	scd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 	
@@ -397,8 +430,8 @@ HRESULT InitD3D(HWND hWnd)
 		return hr;
 
 	// Fill 2D texture description for the depth buffer
-	txd.Width = windowMain.width;
-	txd.Height = windowMain.height;
+	txd.Width = window_main.width;
+	txd.Height = window_main.height;
 	txd.MipLevels = 1;
 	txd.ArraySize = 1;
 	txd.Format = DXGI_FORMAT_D32_FLOAT;
@@ -453,8 +486,8 @@ HRESULT InitD3D(HWND hWnd)
 		return hr;
 
 	// Viewport setup
-	viewport.Width = windowMain.width;
-	viewport.Height = windowMain.height;
+	viewport.Width = window_main.width;
+	viewport.Height = window_main.height;
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
 	viewport.TopLeftX = 0.0f;
@@ -484,14 +517,14 @@ HRESULT InitControls()
 	if (FAILED(hr))
 		return hr;
 
-	keys.forward.Set(kForward, "W");
-	keys.backward.Set(kBackward, "S");
-	keys.left.Set(kLeft, "A");
-	keys.right.Set(kRight, "D");
+	keys.forward.set(controls.k_forward, "W");
+	keys.backward.set(controls.k_backward, "S");
+	keys.left.set(controls.k_left, "A");
+	keys.right.set(controls.k_right, "D");
 
-	keys.sprint.Set(kSprint, "Shift");
-	keys.jump.Set(kJump, "Space");
-	keys.action.Set(kAction, "E");
+	keys.sprint.set(controls.k_sprint, "Shift");
+	keys.jump.set(controls.k_jump, "Space");
+	keys.action.set(controls.k_action, "E");
 
 	return S_OK;
 }
@@ -554,17 +587,140 @@ HRESULT InitGraphics()
 	devcon->IASetIndexBuffer(indexbuffer, DXGI_FORMAT_R32_UINT, 0);
 	devcon->VSSetConstantBuffers(0, 1, &constantbuffer);
 
-	//
+	///
 
 	mat_identity = MIdentity();
 	mat_world = mat_identity;
 	mat_view = MLookAtLH(float3(0, 0, -1), float3(0, 0, 0), float3(0, 1, 0));
 	mat_orthoview = MLookAtLH(float3(0, 0, -1), float3(0, 0, 0), float3(0, 1, 0));
-	mat_proj = MPerspFovLH(DX_PI / 4, windowMain.aspect, 0.001f, 10000.0f);
-	mat_orthoproj = MOrthoLH(windowMain.width, windowMain.height, 0.001f, 10000.0f);
+	mat_proj = MPerspFovLH(DX_PI / 4, window_main.aspect, 0.001f, 10000.0f);
+	mat_orthoproj = MOrthoLH(window_main.width, window_main.height, 0.001f, 10000.0f);
 
-	camera.moveToPoint(v3_origin + float3(0, 0, -1), -1);
+	camera.moveToPoint(v3_origin + WORLD_SCALE * float3(0, 0, -1), -1);
 	camera.lookAtPoint(v3_origin, -1);
+
+	WriteToConsole(L"done\n");
+	return S_OK;
+}
+HRESULT InitPhysics()
+{
+	WriteToConsole(L"Loading physics... ");
+
+	btDefaultCollisionConfiguration *cfg = new btDefaultCollisionConfiguration();			// collision configuration contains default setup for memory, collision setup
+	btCollisionDispatcher *disp = new btCollisionDispatcher(cfg);							// use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
+	btDbvtBroadphase *bp = new btDbvtBroadphase();											// use the default broadphase
+	btSequentialImpulseConstraintSolver *sol = new btSequentialImpulseConstraintSolver;		// the default constraint solver. For parallel processing you can use a different solver (see Extras/BulletMultiThreaded)
+	/*btDantzigSolver *mlcp = new btDantzigSolver();
+	btMLCPSolver *sl = new btMLCPSolver(mlcp);*/
+
+	///
+
+	// debug (wireframe) drawer initialization
+	DXDebugDrawer *btDebugDrawer = new DXDebugDrawer;
+	btDebugDrawer->DBG_DrawWireframe;
+	btDebugDrawer->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
+
+	// btWorld initialization
+	btWorld = new btDiscreteDynamicsWorld(disp, bp, sol, cfg);
+	btWorld->setGravity(WORLD_SCALE * btVector3(0, -10, 0));
+	btWorld->setDebugDrawer(btDebugDrawer);
+	btWorld->setInternalTickCallback(TickCallback);
+	//btWorld->getSolverInfo().m_splitImpulse = 1;
+	//btWorld->getSolverInfo().m_splitImpulsePenetrationThreshold = -0.02;
+
+	///
+
+	btCollisionShape *cs;
+	btDefaultMotionState *ms;
+	btObject *phys_obj;
+
+	// infinite plane
+	cs = new btStaticPlaneShape(btVector3(0, 1, 0), 1);
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, -1, 0)));
+	phys_obj = new btObject(L"ground", 0.0f, cs, ms, &btVector3(0, 0, 0));
+	phys_obj->rb->setRestitution(0);
+	phys_obj->rb->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
+
+	// player's collision object
+	//cs = new btBoxShape(WORLD_SCALE * btVector3(0.15, 0.3, 0.15));
+	//cs = new btCapsuleShape(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3);
+	cs = new btCylinderShape(btVector3(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3, WORLD_SCALE * 0.15));
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(1, 2, -1)));
+	phys_obj = new btObject(L"player", 100.0f, cs, ms);
+	phys_obj->rb->setFriction(0);
+	phys_obj->rb->setRestitution(0);
+	//phys_obj->rb->setDamping(0, 0);	
+	//phys_obj->m_coll->rb->setCcdMotionThreshold(0.15f);
+	//phys_obj->m_coll->rb->setCcdSweptSphereRadius(0.03f);
+	//phys_obj->m_coll->cs->setMargin(0);
+	//phys_obj->m_coll->rb->setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT);
+	phys_obj->rb->setActivationState(DISABLE_DEACTIVATION);
+	phys_obj->rb->setAngularFactor(btVector3(0.0f, 1.0f, 0.0f));
+
+	/*btBroadphaseProxy* proxy = phys_obj->rb->getBroadphaseProxy();
+	proxy->m_collisionFilterGroup = 1;
+	proxy->m_collisionFilterMask = 3;*/
+
+	player.setCollisionObject(phys_obj);
+	//player.Warp(float3(0, 0, -3));
+
+	game.dbg_entityfollow = physEntities.size() - 1;
+
+	// test walls
+	cs = new btBoxShape(WORLD_SCALE * btVector3(0.3, 2, 5));
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(-3, 1, -1)));
+	phys_obj = new btObject(L"wall1", 0.0f, cs, ms, &btVector3(0, 0, 0));
+	phys_obj->rb->setRestitution(0);
+	phys_obj->rb->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
+	phys_obj->rb->setCcdMotionThreshold(0.15f);
+	phys_obj->rb->setCcdSweptSphereRadius(0.03f);
+
+	// moving platforms
+	cs = new btBoxShape(WORLD_SCALE * btVector3(0.45, 0.15, 0.45));
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 0.5, 0)));
+	phys_obj = new btObject(L"plat1", 0.0f, cs, ms, &btVector3(0, 0, 0));
+	phys_obj->rb->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
+	phys_obj->rb->setActivationState(DISABLE_DEACTIVATION);
+
+	cs = new btBoxShape(WORLD_SCALE * btVector3(0.45, 0.15, 0.45));
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 1, 0)));
+	phys_obj = new btObject(L"plat2", 0.0f, cs, ms, &btVector3(0, 0, 0));
+	phys_obj->rb->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
+	phys_obj->rb->setActivationState(DISABLE_DEACTIVATION);
+
+	// test cubes
+	cs = new btBoxShape(WORLD_SCALE * btVector3(0.3, 0.3, 0.3));
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 80, 0)));
+	phys_obj = new btObject(L"cube1", 10.0f, cs, ms);
+	phys_obj->rb->setRestitution(0);
+
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 6, 0)));
+	phys_obj = new btObject(L"cube2", 10.0f, cs, ms);
+	phys_obj->rb->setRestitution(0);
+
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 40, 0)));
+	phys_obj = new btObject(L"cube3", 10.0f, cs, ms);
+	phys_obj->rb->setRestitution(0);
+
+	//// player CharEntity
+	//btPairCachingGhostObject *gh = new btPairCachingGhostObject();
+	////gh->setWorldTransform(MatTobt(&MTranslation(0, 0.6, -1)));
+	//btConvexShape *xs = new btBoxShape(btVector3(0.15, 0.3, 0.15));
+	//CharEntity *char_obj = new CharEntity(L"player", gh, xs);
+	////bp->getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
+	//
+	////gh->setCollisionFlags(1);
+
+	////char_obj->cc->warp(btVector3(1, 0.6, -1));
+	//char_obj->cc->warp(Float3Tobt(&player.GetPosDest()));
+
+	///*btVector3 *in = new btVector3;
+	//cs->calculateLocalInertia(1, *in);
+	//btRigidBody::btRigidBodyConstructionInfo rbci = btRigidBody::btRigidBodyConstructionInfo(100, ms, xs, *in);
+	//btRigidBody *rb = new btRigidBody(rbci);
+	//btWorld->addRigidBody(rb);*/
+
+	//player.cont = char_obj;
 
 	WriteToConsole(L"done\n");
 	return S_OK;
@@ -595,7 +751,6 @@ void ReleaseFiles()
 	WriteToConsole(L"Releasing files... ");
 
 	smartRelease(fw1factory);
-
 	smartRelease(fw_arial);
 	smartRelease(fw_courier);
 
@@ -611,16 +766,16 @@ void Log()
 	{
 		/*WriteToConsole(L"\r                                    \r");
 		WriteToConsole(L"Mouse position: ");
-		WriteToConsole(to_wstring(mouse.GetCoord(xcoord).pos));
+		WriteToConsole(to_wstring(mouse.GetCoord(xcoord).getPos()));
 		WriteToConsole(L" (X) ");
-		WriteToConsole(to_wstring(mouse.GetCoord(ycoord).pos));
+		WriteToConsole(to_wstring(mouse.GetCoord(ycoord).getPos()));
 		WriteToConsole(L" (X)");*/
 
 		WriteToConsole(L"\r                                                            \r");
 		//WriteToConsole(to_wstring(timer.GetFPSStamp()) + L" FPS (" + to_wstring(timer.GetFramesCount()) + L") " + to_wstring(cpu_usage.lastUsage));
-		WriteToConsole(to_wstring(mouse.X.pos));
+		WriteToConsole(to_wstring(mouse.X.getPos()));
 		WriteToConsole(L" (X) ");
-		WriteToConsole(to_wstring(mouse.Y.pos));
+		WriteToConsole(to_wstring(mouse.Y.getPos()));
 		WriteToConsole(L" (Y)");
 
 		//printf("\33[2K\r");

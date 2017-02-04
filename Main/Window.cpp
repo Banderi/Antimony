@@ -1,5 +1,6 @@
-#include "Window.h"
 #include "DebugWin.h"
+
+///
 
 void CreateMainWindow(HINSTANCE hInstance)
 {
@@ -17,12 +18,12 @@ void CreateMainWindow(HINSTANCE hInstance)
 	wc.lpszClassName = L"WindowClass";
 	RegisterClassExW(&wc);
 
-	windowMain.hWnd = CreateWindowExW(0,
+	window_main.hWnd = CreateWindowExW(0,
 		L"WindowClass",
 		L"Project X",
-		DWORD(windowMain.borderless * WS_POPUP) | WS_VISIBLE | WS_SYSMENU,
-		windowMain.X, windowMain.Y,
-		windowMain.width, windowMain.height,
+		DWORD(window_main.borderless * WS_POPUP) | WS_VISIBLE | WS_SYSMENU,
+		window_main.x, window_main.y,
+		window_main.width, window_main.height,
 		NULL,
 		NULL,
 		hInstance,

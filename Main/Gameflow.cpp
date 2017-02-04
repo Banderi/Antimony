@@ -1,6 +1,10 @@
 #include "Gameflow.h"
 
+///
+
 unsigned int GameState;
+
+///
 
 void SetGameState(unsigned int state)
 {

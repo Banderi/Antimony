@@ -1,5 +1,12 @@
 #pragma once
 
+///
+
+#define TIMER_FRAME_GLOBAL	0x00000000
+#define TIMER_TEST			0x00000001
+
+///
+
 class Timer
 {
 	double m_previousClock[32];
@@ -21,7 +28,5 @@ public:
 
 	Timer();
 };
-extern Timer timer;
 
-#define TIMER_FRAME_GLOBAL	0x00000000
-#define TIMER_TEST			0x00000001
+extern Timer timer;

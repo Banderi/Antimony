@@ -3,7 +3,7 @@
 #include "DebugWin.h"
 #include "Hresult.h"
 
-//
+///
 
 IDXGISwapChain *swapchain;
 ID3D11Device *dev;
@@ -23,6 +23,9 @@ SHADER sh_main, sh_debug, sh_plain;
 mat mat_identity, mat_temp, mat_temp2, mat_world, mat_view, mat_proj, mat_orthoview, mat_orthoproj;
 float2  v2_origin = float2(0, 0);
 float3  v3_origin = float3(0, 0, 0);
+
+UINT vertex_stride = sizeof(VERTEX_BASIC);
+UINT vertex_offset = 0;
 
 D3D11_INPUT_ELEMENT_DESC ied_debug[] = {
 	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -46,13 +49,19 @@ D3D11_INPUT_ELEMENT_DESC ied_VS_OUTPUT[] = {
 	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 };
 
-//
+///
 
 mat TransposeMatrix(const mat &mIn)
 {
 	mat mat_temp;
 	mat_temp = MTranspose(mIn);
 	return mat_temp;
+}
+float3 MatToFloat3(mat *m)
+{
+	XMFLOAT4X4 f;
+	XMStoreFloat4x4(&f, *m);
+	return float3(f._41, f._42, f._43);
 }
 
 bool CompileShader(HRESULT *hr, std::wstring shader, SHADER *sh)
@@ -108,6 +117,8 @@ HRESULT SetView(mat *world, mat *view, mat *proj, color diffuse, ID3D11Device *d
 
 void Draw2DLineThin(float2 p1, float2 p2, color c1, color c2, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, ID3D11Buffer *vb, ID3D11Buffer *ib, ID3D11Buffer *cb)
 {
+	p1.y = -p1.y;
+	p2.y = -p2.y;
 	VERTEX_BASIC vertices[] =
 	{
 		{ p1.x, p1.y, 0, c1 },
@@ -121,6 +132,8 @@ void Draw2DLineThin(float2 p1, float2 p2, color c1, color c2, color diffuse, ID3
 }
 void Draw2DLineThick(float2 p1, float2 p2, float t, color c1, color c2, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, ID3D11Buffer *vb, ID3D11Buffer *ib, ID3D11Buffer *cb)
 {
+	p1.y = -p1.y;
+	p2.y = -p2.y;
 	float dist = *XMVector2Length(p1 - p2).m128_f32;
 
 	VERTEX_BASIC vertices[] =
@@ -144,6 +157,7 @@ void Draw2DLineThick(float2 p1, float2 p2, float t, color c1, color c2, color di
 }
 void Draw2DRectangle(float w, float h, float x, float y, color c, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, ID3D11Buffer *vb, ID3D11Buffer *ib, ID3D11Buffer *cb)
 {
+	y = -y;
 	VERTEX_BASIC vertices[] =
 	{
 		{ 0, 0, 0, c },
@@ -165,6 +179,7 @@ void Draw2DRectangle(float w, float h, float x, float y, color c, color diffuse,
 }
 void Draw2DRectBorderThick(float w, float h, float x, float y, float t, color c, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, ID3D11Buffer *vb, ID3D11Buffer *ib, ID3D11Buffer *cb)
 {
+	h = -h;
 	Draw2DLineThick(float2(x - 0.5 * t, y), float2(x + w + 0.5 * t, y), t, c, c, diffuse, dv, devc, vb, ib, cb);
 	Draw2DLineThick(float2(x + w, y + 0.5 * t), float2(x + w, y + h - 0.5 * t), t, c, c, diffuse, dv, devc, vb, ib, cb);
 	Draw2DLineThick(float2(x + w + 0.5 * t, y + h), float2(x - 0.5 * t, y + h), t, c, c, diffuse, dv, devc, vb, ib, cb);
@@ -177,6 +192,7 @@ void Draw2DFullRect(float w, float h, float x, float y, float t, color c1, color
 }
 void Draw2DEllipses(float w, float h, float x, float y, color c, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, ID3D11Buffer *vb, ID3D11Buffer *ib, ID3D11Buffer *cb)
 {
+	y = -y;
 	VERTEX_BASIC vertices[] =
 	{
 		{ 0, 0, 0, c },
@@ -450,6 +466,45 @@ void Draw3DEllipses(float w, float h, color c, bool dd, mat *world, color diffus
 }
 void Draw3DBox(float w, float h, float b, color c, mat *world, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, ID3D11Buffer *vb, ID3D11Buffer *ib, ID3D11Buffer *cb)
 {
+	VERTEX_BASIC vertices[] =
+	{
+		{ -w, -h, -b, c },	//			7 o
+		{ w, -h, -b, c },	//			  |		  6 o
+		{ w, h, -b, c },	//	  3 o	  |			|
+		{ -w, h, -b, c },	//		|	  |	2 o		|
+		{ -w, -h, b, c },	//		|	4 o   |		|
+		{ w, -h, b, c },	//		|		  |   5 o
+		{ w, h, b, c },		//	  0 o		  |
+		{ -w, h, b, c }		//				1 o
+	};
+	FillBuffer<VERTEX_BASIC[]>(dv, devc, &vb, vertices, sizeof(vertices));
+	UINT indices[] =
+	{
+		0, 3, 2,
+		0, 2, 1,
+		0, 4, 7,
+		0, 7, 3,
+		0, 1, 5,
+		0, 5, 4,
+		6, 2, 3,
+		6, 3, 7,
+		6, 5, 1,
+		6, 1, 2,
+		6, 4, 5,
+		4, 6, 7
+	};
+	FillBuffer<UINT[]>(dv, devc, &ib, indices, sizeof(indices));
+
+	SetView(world, &mat_view, &mat_proj, diffuse, dv, devc, cb);
+	devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	devc->DrawIndexed(36, 0, 0);
+}
+void Draw3DBox(Vector3 l, color c, mat *world, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, ID3D11Buffer *vb, ID3D11Buffer *ib, ID3D11Buffer *cb)
+{
+	float w = l.x;
+	float h = l.y;
+	float b = l.z;
+
 	VERTEX_BASIC vertices[] =
 	{
 		{ -w, -h, -b, c },	//			7 o

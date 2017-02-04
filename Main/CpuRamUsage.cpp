@@ -1,5 +1,14 @@
-#include "CpuRamUsage.h"
 #include "Warnings.h"
+#include "CpuRamUsage.h"
+
+///
+
+DWORDLONG totalPhysMem, physMemAvail;
+ULONG_PTR physMemUsedByMe;
+MEMORYSTATUSEX memInfo;
+PROCESS_MEMORY_COUNTERS_EX pmc;
+
+///
 
 /**********************************************
 * CpuUsage::GetUsage
@@ -149,7 +158,3 @@ CpuUsage::CpuUsage(void)
 }
 
 CpuUsage cpu_usage;
-DWORDLONG totalPhysMem, physMemAvail;
-ULONG_PTR physMemUsedByMe;
-MEMORYSTATUSEX memInfo;
-PROCESS_MEMORY_COUNTERS_EX pmc;

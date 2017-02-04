@@ -26,6 +26,9 @@
         - [ ] Basic Main Menu
             - [ ] Settings
         - [ ] Basic Pause Menu
+	- [ ] Implement advanced camera controller
+		- [ ] Flyby
+		- [ ] LookAt
     - [ ] Implement core asset file system
         - [ ] FBX models
             - [ ] Mesh container management/loading
@@ -38,26 +41,48 @@
         - [ ] Version build management/updater
         - [ ] GUI and text editor for config.ini
         - [ ] Compatibility and requirements check
-    - [X] Implement controller input
+    - [x] Implement controller input
     - [ ] Implement sound system
+	- [ ] Implement scripting system (Lua?)
+		- [ ] Link to AI, triggers, camera etc.
     - [ ] Implement core AI structure
     - [ ] Implement core triggers mechanics
     - [ ] Implement core physics
+		- [x] Core collision system
+		- [ ] Kinematic objects (moving platforms)
+		- [ ] Camera collisions
     - [ ] Implement core player controller mechanics
     - [ ] Implement core world mechanics
     - [ ] Implement core save/load system
     - [ ] Implement core cutscene/FMV system
-- [ ] SubSystem: 2D
-- [ ] SubSystem: Tiled 2D
-- [ ] SubSystem: 2.5D
-- [ ] SubSystem: 3D FPS/TPS
-- [ ] SubSystem: 3D RTS
-- [ ] SubSystem: 2D/3D Sidescroller
+	- [ ] Implement core multiplayer system
+		- [ ] LAN
+		- [ ] Server/client files
+	- [ ] Implement Steam integration
+		- [ ] Achievements
+		- [ ] Steamworks
+		- [ ] Steam Friends
+- [ ] SubSystem: Visual (2D/2.5D)
+- [ ] SubSystem: Tiled (2D/2.5D)
+- [ ] SubSystem: Fisheye (2.5D)
+- [ ] SubSystem: FPS/TPS (3D)
+- [ ] SubSystem: RTS (2D/2.5D/3D)
+- [ ] SubSystem: Sidescroller (2D/2.5D/3D)
+
+- [ ] Optimization
+	- [ ] 3D
+		- [ ] Buffer collection
+- [ ] Documentation
+	- [ ] Decent commenting
+	- [ ] Wiki
+	- [ ] Examples
 
 ### Bugs:
-- [X] Fix keyboard input setting to '1' repeatedly
-- [X] Fix camera interpolation
+- [x] Fix keyboard input setting to '1' repeatedly
+- [x] Fix camera interpolation
 - [x] Fix high framerate usage by the debug renderer -- compiling with `release` optimization gives expected results for the moment
+- [x] Fix character controller collisions
+- [x] Fix platform movements
 
 ### Roadmap:
 - [ ] Get basic gameplay engine working, test some assets against it

@@ -1,6 +1,9 @@
 #include "Param.h"
 
-windowParams windowMain;
-displayParams display;
-audioParams audio;
-gameParams game;
+///
+
+WindowParams window_main;
+DisplayParams display;
+AudioParams audio;
+GameParams game;
+ControlParams controls;

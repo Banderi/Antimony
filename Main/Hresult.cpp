@@ -6,7 +6,11 @@
 #include "DebugWin.h"
 #include "Warnings.h"
 
-//
+///
+
+HRESULT hr;
+
+///
 
 bool Handle(HRESULT *hOut, DWORD facing, HRESULT hr)
 {
@@ -45,6 +49,10 @@ bool Handle(HRESULT *hOut, DWORD facing, HRESULT hr)
 		case HRH_MAIN_INITGRAPHICS:
 			swprintf(buffer,
 				L"Graphics initialization failed! Program will now terminate.");
+			break;
+		case HRH_MAIN_INITPHYSICS:
+			swprintf(buffer,
+				L"Physics initialization failed! Program will now terminate.");
 			break;
 		case HRH_MAIN_STARTINGFILES:
 			swprintf(buffer,
@@ -154,11 +162,9 @@ bool Handle(HRESULT *hOut, DWORD facing, HRESULT hr)
 			break;
 		}
 
-		MessageBoxW(windowMain.hWnd, buffer, L"Error", MB_OK);
+		MessageBoxW(window_main.hWnd, buffer, L"Error", MB_OK);
 
 		return false;
 	}
 	return true;
 }
-
-HRESULT hr;

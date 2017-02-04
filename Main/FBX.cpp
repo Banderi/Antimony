@@ -2,7 +2,11 @@
 
 #include <assert.h>
 
+///
+
 FbxManager* g_pFbxSdkManager = nullptr;
+
+///
 
 HRESULT LoadFBX1(std::vector<MyVertex>* pOutVertexVector)
 {
@@ -67,7 +71,6 @@ HRESULT LoadFBX1(std::vector<MyVertex>* pOutVertexVector)
 	}
 	return S_OK;
 }
-
 HRESULT LoadFBX(std::vector<MyVertex>* pOutVertexVector)
 {
 	if (g_pFbxSdkManager == nullptr)

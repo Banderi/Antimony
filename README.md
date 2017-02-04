@@ -38,6 +38,7 @@ No other third-party library is currently required.
 ## Contributing
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
+Also be sure to take a look at [STANDARD.md](STANDARD.md) for details on the general coding conventions and guidelines.
 
 ## Authors
 

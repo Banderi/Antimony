@@ -26,11 +26,17 @@
 //#endif
 //#endif
 
+///
+
+extern FbxManager* g_pFbxSdkManager;
+
+///
+
 struct MyVertex
 {
 	float pos[3];
 };
 
-extern FbxManager* g_pFbxSdkManager;
+///
 
 HRESULT LoadFBX(std::vector<MyVertex>* pOutVertexVector);

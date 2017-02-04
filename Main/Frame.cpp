@@ -3,25 +3,27 @@
 #include <vector>
 
 #include "Warnings.h"
-#include "Window.h"
 #include "Frame.h"
 #include "DebugWin.h"
-#include "Controls.h"
 #include "Gameflow.h"
-#include "FBX.h"
 #include "CpuRamUsage.h"
 #include "Timer.h"
+#include "Bullet.h"
 #include "Font.h"
+#include "FBX.h"
 
 #pragma comment (lib, "Shlwapi.lib")
 
+///
+
 using namespace std;
 
-//
+///
 
 wchar_t global_str64[64];
+int frame_count;
 
-//
+///
 
 char BoolToSign(bool b)
 {
@@ -34,83 +36,153 @@ char BoolToSign(bool b)
 
 HRESULT Frame(double delta)
 {
-	PrepareFrame();
+	PrepareFrame();														// clear previous frame
 
-	if (IfGameState(GAMESTATE_INGAME))
-	{
-		UpdatePlayerControls(&keys, &controller[0], delta);
-		UpdateCameraControls(&mouse, &keys, &controller[0], delta); // --> updates into mat_view
+	if (IfGameState(GAMESTATE_INGAME))									// INGAME (non-paused, non-menu etc.)
+	{		
+		UpdateWorld(delta);												// update moving objects, triggers etc. (TBI)
+		
+		UpdatePlayerControls(&keys, &controller[0], delta);				// update player inputs		
+
+		UpdatePhysics(delta);											// btWorld step
+
+		UpdateCameraControls(&mouse, &keys, &controller[0], delta);		// update camera (--> mat_view)
+		
+		UpdateAI(delta);												// update AI/scripts etc. (TBI)
 	}
 
-	UpdateWorld(delta);
-	UpdateAI(delta);
-	UpdatePhysics(delta);
+	RenderWorld();														// render world
+	RenderEntities();													// render entities
+	
+	RenderHUD(delta);													// render HUD
+	Render_Debug();														// render debug info
+	
 
-	//
-
-	RenderWorld();
-	RenderEntities();
-	RenderHUD(delta);
-	Render_Debug(delta);
-
-	return PresentFrame();
+	return PresentFrame();												// present frame to GPU
 }
 
 HRESULT PrepareFrame()
 {
-	devcon->ClearRenderTargetView(targettview, RGBA{ 0.0f, 0.2f, 0.4f, 0.0f });
-	devcon->ClearDepthStencilView(depthstencilview, D3D11_CLEAR_DEPTH, 1.0f, 0);
+	devcon->ClearRenderTargetView(targettview, RGBA{ 0.0f, 0.2f, 0.4f, 0.0f });			// clear the render target view
+	devcon->ClearDepthStencilView(depthstencilview, D3D11_CLEAR_DEPTH, 1.0f, 0);		// clear depth stencil
 
-	UINT stride = sizeof(VERTEX_BASIC);
-	UINT offset = 0;
-	devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &stride, &offset);
-	devcon->IASetIndexBuffer(indexbuffer, DXGI_FORMAT_R32_UINT, 0);
-	devcon->VSSetConstantBuffers(0, 1, &constantbuffer);
+	devcon->IASetVertexBuffers(0, 1, &vertexbuffer,	&vertex_stride, &vertex_offset);	// set vertex buffer
+	devcon->IASetIndexBuffer(indexbuffer, DXGI_FORMAT_R32_UINT, 0);						// set index buffer
+	devcon->VSSetConstantBuffers(0, 1, &constantbuffer);								// set constant buffer
 
 	return S_OK;
 }
 HRESULT PresentFrame()
 {
-	if (display.v_sync)
+	if (display.vsync)
 		return swapchain->Present(1, 0);
 	else
 		return swapchain->Present(0, 0);
+	frame_count++;
 }
 
 void UpdatePlayerControls(KeysController *khandle, XInputController *xhandle, double delta)
 {
-	float speed = 4;
-	if (khandle->sprint.GetState() > unpressed || xhandle->B.GetState() > unpressed)
-		speed = 8;
+	float speed = 4 * player.mov_speed;
+	if (khandle->sprint.getState() > BTN_UNPRESSED || xhandle->B.getState() > BTN_UNPRESSED)
+		speed = 8 * player.mov_speed;
 
-	// = (player.getPosDest() - player.getPos()) / (speed * delta);
-	float3 mmov, cmov;
-	float th = camera.getAngle(theta);
+	float3 mmov, xmov;
+	float th = camera.getAngle(CAM_THETA);
 
-	if (khandle->forward.GetState() > unpressed)
+	if (khandle->forward.getState() > BTN_UNPRESSED)
 		mmov += float3(cosf(th), 0, sinf(th));
-	if (khandle->backward.GetState() > unpressed)
+	if (khandle->backward.getState() > BTN_UNPRESSED)
 		mmov += float3(-cosf(th), 0, -sinf(th));
-	if (khandle->left.GetState() > unpressed)
+	if (khandle->left.getState() > BTN_UNPRESSED)
 		mmov += float3(-sinf(th), 0, cosf(th));
-	if (khandle->right.GetState() > unpressed)
+	if (khandle->right.getState() > BTN_UNPRESSED)
 		mmov += float3(sinf(th), 0, -cosf(th));
 	
-	cmov = float3(sinf(th) * xhandle->LX.vel + cosf(th) * xhandle->LY.vel, 0, sinf(th) * xhandle->LY.vel + cosf(th) * (-xhandle->LX.vel));
+	xmov = float3(sinf(th) * xhandle->LX.getVel() + cosf(th) * xhandle->LY.getVel(), 0, sinf(th) * xhandle->LY.getVel() + cosf(th) * (-xhandle->LX.getVel()));
 	
-	float3 mov = mmov + cmov;
+	float3 mov = mmov + xmov;
 	if (mov.Length() > 1)
 		mov = XMVector3Normalize(mov);	
 
-	player.moveToPoint(player.getPosDest() + mov * speed * delta, .999999971);
+	//player.MoveToPoint(player.GetPosDest() + mov * speed * delta, .999999971);
 
 	player.update(delta);
+
+	btVector3 lv = bt_origin;
+	btVector3 av = bt_origin;
+
+	auto& mf = objectsCollisions[player.getColl()->rb];					// get current world manifolds
+
+	//player.rvel = bt_origin;
+
+	if (!mf.empty())
+	{
+		for (int i = 0; i < mf.size(); i++)								// cycle through manifolds
+		{
+			auto b = (btRigidBody*)mf.at(i)->getBody1();				// get manifold-ing object
+			int numContacts = mf.at(i)->getNumContacts();				// get contact points number
+			for (int j = 0; j < numContacts; j++)						// cycle through contact points
+			{
+				btManifoldPoint& pt = mf.at(i)->getContactPoint(j);		// get contact point
+				btVector3 n = pt.m_normalWorldOnB;						// get contact normal
+				float a = n.angle(btVector3(0, 1, 0));					// get angle between the normal and the 'up' vector
+				if (a <= DX_PI * 0.2)
+				{
+					player.jumping = 0;
+
+					// math hocus pocus
+					btVector3 d = player.getColl()->rb->getWorldTransform().getOrigin() - b->getWorldTransform().getOrigin();					
+					av = b->getAngularVelocity();
+					av.setX(0);
+					av.setZ(0);
+					lv = b->getLinearVelocity() - d.cross(av);			// linear vel. is object's vel. plus cross product of angular vel. and distance
+
+					goto contact;										// skip all other contact points/manifolds
+				}
+				//else if (a2 <= DX_PI * 0.2 && b1 == physEntities.at(0)->rb) // infinite plane has inverted normals (why???)
+				//{
+				//	player.jumping = 0;					
+				//	//p = b1->getLinearVelocity();
+
+				//	// no reason to calculate movement here
+
+				//	goto contact;
+				//}
+				else
+				{
+					player.jumping = 1;
+				}
+			}
+			player.jumping = 1;		
+		}
+	contact:;
+	}
+	else
+	{
+		player.jumping = 1;
+	}
+
+	btVector3 v = Float3Tobt(&mov);
+
+	if (!player.jumping)
+	{
+		player.getColl()->rb->setLinearVelocity(lv + v * speed);			// move with linear velocity when standing on an object
+		player.getColl()->rb->setAngularVelocity(av);
+	}
+	else
+	{
+		player.getColl()->rb->applyCentralForce(500 * v);					// move using force when not standing on anything
+	}
+
+	if (khandle->jump.getState() > BTN_UNPRESSED || xhandle->A.getState() > BTN_UNPRESSED)
+		player.jump();
 }
 void UpdateCameraControls(MouseController *mhandle, KeysController *khandle, XInputController *xhandle, double delta)
 {
 	float3 eye =  v3_origin;
-	float mSlide = 0.005 * mSensibility;
-	float xSlide = 4 * xSensibility * delta;
+	float m_slide = 0.005 * controls.m_sensitivity;
+	float x_slide = 6 * controls.x_sensitivity * delta;
 	float radius = 1;
 	float maxpitch = 0.1;
 	static float zoom = 1.2;
@@ -118,16 +190,16 @@ void UpdateCameraControls(MouseController *mhandle, KeysController *khandle, XIn
 	static float _phi = DX_PI / 2;
 
 	// camera rotation
-	if (khandle->RMB.GetState() == unpressed)
+	if (khandle->RMB.getState() == BTN_UNPRESSED)
 	{
-		_theta = mSlide * -mhandle->X.pos * BoolToSign(mouseXAxis) + DX_PI / 2;
-		_theta += xSlide * xhandle->RX.vel * BoolToSign(controllerXAxis);
-		_phi = mSlide * mhandle->Y.pos * BoolToSign(mouseYAxis) + DX_PI / 2;
-		_phi += xSlide * xhandle->RY.vel * -BoolToSign(controllerYAxis);
+		_theta -= m_slide * mhandle->X.getVel() * BoolToSign(controls.m_invertxaxis)
+			+ x_slide * xhandle->RX.getVel() * BoolToSign(controls.x_invertxaxis);
+		_phi += m_slide * mhandle->Y.getVel() * BoolToSign(controls.m_invertyaxis)
+			+ x_slide * xhandle->RY.getVel() * -BoolToSign(controls.x_invertyaxis);
 	}
 	else // zoom
-		zoom += float(mhandle->Y.vel) * 0.005;
-	zoom -= float(mhandle->Z.vel) * 0.005;
+		zoom += float(mhandle->Y.getVel()) * 0.005;
+	zoom -= float(mhandle->Z.getVel()) * 0.005;
 
 	if (zoom < 0)
 		zoom = 0;
@@ -140,21 +212,26 @@ void UpdateCameraControls(MouseController *mhandle, KeysController *khandle, XIn
 	eye.y = (radius + zoom * zoom) * cosf(_phi);
 	eye.z = (radius + zoom * zoom) * sinf(_theta) * sinf(_phi);
 
-	float3 height = float3(0, 0.75, 0);
+	float3 height = v3_origin;//float3(0, 0.75, 0);
 
-	if (camera.isfree())
-		camera.lookAtPoint(player.getPos() + height + eye, game.camera_friction * (.99999999) + !game.camera_friction);
+	float3 clook = MatToFloat3(&physEntities.at(game.dbg_entityfollow%physEntities.size())->getMatTransform());//player.getPos();
 
-	camera.moveToPoint(player.getPos() + height - eye * zoom, game.camera_friction * (.9999999) + !game.camera_friction);
+	if (camera.isFree())
+		camera.lookAtPoint(clook + WORLD_SCALE * (height + eye), game.camera_friction * (.99999999) + !game.camera_friction);
+		//camera.LookAtPoint(clook + WORLD_SCALE * (height), -1);
+
+	camera.moveToPoint(clook + WORLD_SCALE * (height - eye * zoom), game.camera_friction * (.9999999) + !game.camera_friction);
+	//camera.MoveToPoint(camera.GetLookAt() + WORLD_SCALE * (height - eye * zoom), -1);
 
 	// reset camera
-	if (khandle->MMB.GetState() == held || xhandle->RS.GetState() == held)
+	if (khandle->MMB.getState() == BTN_HELD || xhandle->RS.getState() == BTN_HELD)
 	{
 		camera.lock();
-		camera.lookAtPoint(v3_origin, .99999);
+		//camera.LookAtPoint(v3_origin, .99999);
+		camera.lookAtPoint(player.getColl()->getFlat3Pos(), .99999);
 		zoom = 1.2;
 	}
-	else if (!camera.isfree())
+	else if (!camera.isFree())
 		camera.unlock();
 
 	camera.update(delta);
@@ -169,11 +246,30 @@ void UpdateAI(double delta)
 void UpdatePhysics(double delta)
 {
 	// TODO: Implement physics
+
+	btWorld->stepSimulation(delta, 10, 1.f/240.f);
 }
 void UpdateWorld(double delta)
 {
 	// TODO: Implement world mechanics
 	// TODO: Implement triggers
+
+	static double h = 0;
+	if (IfGameState(GAMESTATE_INGAME))
+		h += 0.5f * DX_PI * delta;
+	if (h >= 2 * DX_PI)
+		h = 0;
+
+	if (0)
+	{
+		unsigned int f = 0;
+		f = abs(50 * cosf(h) - 40);
+		Sleep(f);
+	}
+
+	physEntities.at(3)->setMatTransform(&(MTranslation(WORLD_SCALE * 0, WORLD_SCALE * 0.5, WORLD_SCALE * 0) * MRotY(h)));
+	physEntities.at(4)->setMatTransform(&(MTranslation(WORLD_SCALE * 3, WORLD_SCALE * 1, WORLD_SCALE * sinf(h))));
+	physEntities.at(4)->updateKinematic(delta);
 }
 
 void RenderWorld()
@@ -188,56 +284,153 @@ void RenderHUD(double delta)
 {
 	// TODO: Implement HUD
 
-	if (IfGameState(GAMESTATE_INGAME))
+	devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &vertex_stride, &vertex_offset);
+	SetDepthBufferState(OFF);
+	SetShader(SHADERS_PLAIN);
+
+	if (IfGameState(GAMESTATE_INGAME))									// INGAME (non-paused, non-menu etc.)
 	{
-		//
+		if (keys.sk_escape.getState() == BTN_PRESSED)
+			//SetGameState(GAMESTATE_PAUSE);
+			PostQuitMessage(0);
 	}
-	else if (IfGameState(GAMESTATE_PAUSE))
+	else if (IfGameState(GAMESTATE_PAUSE))								// PAUSED (in-game inventory/pause menu)
 	{
-		Draw2DRectangle(windowMain.width, windowMain.height, 0, 0, color(0, 0, 0, 0.5));
+		if (keys.sk_escape.getState() == BTN_PRESSED)
+		{
+			SetGameState(GAMESTATE_INGAME);
+			//PostQuitMessage(0);
+		}
+		Draw2DRectangle(window_main.width, window_main.height, window_main.left, window_main.bottom, color(0, 0, 0, 0.25));
 	}
 }
-void Render_Debug(double delta)
+void Render_Debug()
 {
+	devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &vertex_stride, &vertex_offset);
+	SetDepthBufferState(ON);
 	SetShader(SHADERS_DEBUG);
 
-	static float h = 0;
-	h += 0.5f * DX_PI * delta;
-	if (h >= 2 * DX_PI)
-		h = 0;
-	mat_world = MRotY(h);
+	// test walls
+	mat_world = physEntities.at(2)->getMatTransform();
+	Draw3DBox(WORLD_SCALE * 0.3, WORLD_SCALE * 2, WORLD_SCALE * 5, COLOR_WHITE);
 
-	if (0)
+	// moving platforms
+	mat_world = physEntities.at(3)->getMatTransform();
+	Draw3DBox(WORLD_SCALE * Vector3(0.45, 0.15, 0.45), color(2, 1, 1, 1));
+
+	mat_world = physEntities.at(4)->getMatTransform();
+	Draw3DBox(WORLD_SCALE * Vector3(0.45, 0.15, 0.45), color(2, 1, 1, 1));
+
+	// test cubes
+	for (unsigned char i = physEntities.size() - 3; i < physEntities.size(); i++)
 	{
-		unsigned int f = 0;
-		f = abs(10 * cosf(h));
-		Sleep(f);
+		mat_world = physEntities.at(i)->getMatTransform();
+		color c;
+		int state = physEntities.at(i)->rb->getActivationState();
+
+		switch (state)
+		{
+			case ACTIVE_TAG:
+			{
+				c = color(0.9, 1.1, 2, 1);
+				break;
+			}
+			case ISLAND_SLEEPING:
+			{
+				c = COLOR_WHITE;
+				break;
+			}
+			case WANTS_DEACTIVATION:
+			{
+				c = COLOR_RED;
+				break;
+			}
+		}
+		Draw3DCube(WORLD_SCALE * 0.3, c);
 	}
 
-	Draw3DCube(0.15, color(2, 1, 1, 1), &(MTranslation(0, 1, 0) * mat_world));
+	// player
+	mat_world = player.getColl()->getMatTransform();
+	if (player.jumping)
+		Draw3DBox(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3, WORLD_SCALE * 0.15, color(1, 1.1, 1.5, 1));
+	else
+		Draw3DBox(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3, WORLD_SCALE * 0.15, COLOR_GREEN);
 
-	Draw3DLineThin(float3(-2, 0, -2), float3(-2, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-	Draw3DLineThin(float3(0, 0, -2), float3(0, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-	Draw3DLineThin(float3(2, 0, -2), float3(2, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-	Draw3DLineThin(float3(-2, 0, -2), float3(2, 0, -2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-	Draw3DLineThin(float3(-2, 0, 0), float3(2, 0, 0), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-	Draw3DLineThin(float3(-2, 0, 2), float3(2, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-	Draw3DLineThin(float3(0, 0, 0), float3(0, 1, 0), COLOR_BLACK, COLOR_BLACK, &mat_identity);
+	///
 
-	mat_world = MTranslVector(player.getPos() + float3(0, 0.3, 0));
-	Draw3DBox(0.15, 0.3, 0.15, COLOR_WHITE);
+	// ground wireframe
+	Draw3DLineThin(WORLD_SCALE * float3(-2, 0, -2), WORLD_SCALE * float3(-2, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
+	Draw3DLineThin(WORLD_SCALE * float3(0, 0, -2), WORLD_SCALE * float3(0, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
+	Draw3DLineThin(WORLD_SCALE * float3(2, 0, -2), WORLD_SCALE * float3(2, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
+	Draw3DLineThin(WORLD_SCALE * float3(-2, 0, -2), WORLD_SCALE * float3(2, 0, -2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
+	Draw3DLineThin(WORLD_SCALE * float3(-2, 0, 0), WORLD_SCALE * float3(2, 0, 0), COLOR_BLACK, COLOR_BLACK, &mat_identity);
+	Draw3DLineThin(WORLD_SCALE * float3(-2, 0, 2), WORLD_SCALE * float3(2, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
+	Draw3DLineThin(WORLD_SCALE * float3(0, 0, 0), WORLD_SCALE * float3(0, 0.5, 0), COLOR_BLACK, COLOR_BLACK, &mat_identity);
 
-	//
+	///
 
 	SetDepthBufferState(OFF);
 	SetShader(SHADERS_PLAIN);
 
-	Render_DebugKeyboard(float2(0, 300));
-	Render_DebugMouse(float2(0, 300) + float2(90, 30));
-	Render_DebugController(float2(0, 300), 0);
-	Render_DebugFPS(float2(windowMain.width * 0.5, -windowMain.height * 0.5));
+	if (game.dbg_wireframe)
+	{		
+		btWorld->debugDrawWorld();
 
-	SetDepthBufferState(ON);
+		float3 p;
+		float3 n;
+
+		for (int i = 0; i < physEntities.size(); i++)
+		{
+			p = physEntities.at(i)->getFlat3Pos();
+			n = btToFloat3(&physEntities.at(i)->rb->getLinearVelocity());
+
+			Draw3DLineThin(p, p + WORLD_SCALE * 0.1 * n, COLOR_GREEN, COLOR_GREEN, &mat_identity);
+
+			n = btToFloat3(&physEntities.at(i)->rb->getAngularVelocity());
+
+			Draw3DLineThin(p, p + WORLD_SCALE * 0.1 * n, COLOR_RED, COLOR_RED, &mat_identity);
+		}
+
+		auto& mfp = objectsCollisionPoints[player.getColl()->rb];
+		if (!mfp.empty())
+		{
+			for (int i = 0; i < mfp.size(); i++)
+			{				
+				p = btToFloat3(&mfp.at(i)->getPositionWorldOnB());
+				n = btToFloat3(&mfp.at(i)->m_normalWorldOnB);
+
+				Draw3DLineThin(p, p + WORLD_SCALE * 0.1 * n, COLOR_BLACK, COLOR_RED, &mat_identity);
+			}
+		}
+		/*auto& mf = objectsCollisions[player.getColl()->rb];
+		if (!mf.empty())
+		{
+			for (int i = 0; i < mf.size(); i++)
+			{
+				auto b0 = (btRigidBody*)mf.at(i)->getBody0();
+				auto b1 = (btRigidBody*)mf.at(i)->getBody1();
+
+				Vector3 p = btToFloat3(&b1->getWorldTransform().getOrigin());
+				Vector3 n = btToFloat3(&b1->getTotalTorque());
+
+				Draw3DLineThin(p, p + WORLD_SCALE * 0.1 * n, COLOR_RED, COLOR_RED, &mat_identity);
+			}
+		}*/
+	}		
+
+	Render_DebugKeyboard(float2(0, -300));
+	Render_DebugMouse(float2(0, -300) + float2(90, -30));
+	Render_DebugController(float2(0, -300), CONTROLLER_1);
+
+	swprintf(global_str64, L"%.3f", mouse.X.getPos());
+	fw_courier->DrawString(devcon, global_str64, 10, window_main.right + 260, window_main.bottom - 180, 0xffffffff, 0);
+	swprintf(global_str64, L"%.3f", mouse.Y.getPos());
+	fw_courier->DrawString(devcon, global_str64, 10, window_main.right + 320, window_main.bottom - 150, 0xffffffff, 0);
+
+	devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &vertex_stride, &vertex_offset);
+	SetShader(SHADERS_PLAIN);
+
+	Render_DebugFPS(float2(window_main.right, window_main.bottom));
 }
 void Render_DebugKeyboard(float2 pos)
 {
@@ -276,7 +469,7 @@ void Render_DebugKeyboard(float2 pos)
 	FillBuffer<UINT[]>(dev, devcon, &indexbuffer, indices, sizeof(indices));
 
 	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	mat_world = MScaling(2200, 2200, 1) * MTranslation(pos.x, pos.y, 0);
+	mat_world = MScaling(2200, 2200, 1) * MTranslation(pos.x, -pos.y, 0);
 
 	// Esc
 	mat_temp = MScaling(0.01, 0.009, 1) * MTranslation(0.107775, -0.090, 0);
@@ -667,7 +860,7 @@ void Render_DebugMouse(float2 pos)
 	FillBuffer<UINT[]>(dev, devcon, &indexbuffer, indices, sizeof(indices));
 
 	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	mat_world = MScaling(2200, 2200, 1) * MTranslation(pos.x, pos.y, 0);
+	mat_world = MScaling(2200, 2200, 1) * MTranslation(pos.x, -pos.y, 0);
 
 	// Left
 	mat_temp = MScaling(0.0075, 0.01, 1) * MTranslation(0.1, -0.050, 0);
@@ -726,7 +919,7 @@ void Render_DebugController(float2 pos, unsigned char c)
 	FillBuffer<UINT[]>(dev, devcon, &indexbuffer, indices, sizeof(indices));
 
 	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	mat_world = MScaling(2200, 2200, 1) * MTranslation(pos.x, pos.y, 0);
+	mat_world = MScaling(2200, 2200, 1) * MTranslation(pos.x, -pos.y, 0);
 
 	// Layout
 	mat_temp = MRotZ(DX_PI) * MScaling(0.0175, 0.0175, 1) * MTranslation(0.23, -0.050, 0);
@@ -804,16 +997,16 @@ void Render_DebugController(float2 pos, unsigned char c)
 	devcon->DrawIndexed(6, 0, 0);
 	
 	// Left Circle
-	Draw2DEllipses(15.4, 15.4, pos.x + 487.3, pos.y - 116.6, color(.4, .4, .4, 1));
+	Draw2DEllipses(15.4, 15.4, pos.x + 487.3, pos.y + 116.6, color(.4, .4, .4, 1));
 
 	// Right Circle
-	Draw2DEllipses(15.4, 15.4, pos.x + 524.7, pos.y - 116.6, color(.4, .4, .4, 1));
+	Draw2DEllipses(15.4, 15.4, pos.x + 524.7, pos.y + 116.6, color(.4, .4, .4, 1));
 
 	// Left Stick
-	Draw2DEllipses(9.9, 9.9, pos.x + 487.3 + controller[c].LX.vel * 4.4, pos.y - 116.6 + controller[c].LY.vel * 4.4, BtnStateColor(controller[c].LS));
+	Draw2DEllipses(9.9, 9.9, pos.x + 487.3 + controller[c].LX.getVel() * 4.4, pos.y + 116.6 + controller[c].LY.getVel() * 4.4, BtnStateColor(controller[c].LS));
 
 	// Right Stick
-	Draw2DEllipses(9.9, 9.9, pos.x + 524.7 + controller[c].RX.vel * 4.4, pos.y - 116.6 + controller[c].RY.vel * 4.4, BtnStateColor(controller[c].RS));
+	Draw2DEllipses(9.9, 9.9, pos.x + 524.7 + controller[c].RX.getVel() * 4.4, pos.y + 116.6 + controller[c].RY.getVel() * 4.4, BtnStateColor(controller[c].RS));
 
 }
 void Render_DebugFPS(float2 pos)
@@ -826,6 +1019,9 @@ void Render_DebugFPS(float2 pos)
 	double physMemMB = double(physMemUsedByMe) / 1000000;
 
 	color fps_bar;
+	color transp = color(0, 0, 0, 0.2);
+	color border = color(0, 0.73, 0.73, 1);
+	color border2 = color(1, 0.06, 0.6, 1);
 	int fps_line = 0;
 	if (timer.GetFramesCount() < 256)
 	{
@@ -837,51 +1033,44 @@ void Render_DebugFPS(float2 pos)
 		fps_bar = color(0, (float)(510 - timer.GetFramesCount()) / (float)255, (float)(timer.GetFramesCount() - 255) / (float)255, 1);
 		fps_line = 0.7843 * 256 + pos.x - 260;
 	}
-	Draw2DRectangle(200, 10, pos.x - 260, pos.y + 174, color(0, 0, 0, 0.2));
-	Draw2DLineThick(float2(pos.x - 260, pos.y + 179), float2(fps_line, pos.y + 179), 10, fps_bar, fps_bar);
-	Draw2DRectBorderThick(200, 10, pos.x - 260, pos.y + 174, 1, color(0, 0.73, 0.73, 1));
-	Draw2DLineThick(float2(pos.x - 252.157, pos.y + 174), float2(pos.x - 252.157, pos.y + 184), 1, color(0, 0.73, 0.73, 1), color(0, 0.73, 0.73, 1)); // 10 FPS
-	Draw2DLineThick(float2(pos.x - 236.471, pos.y + 174), float2(pos.x - 236.471, pos.y + 184), 1, color(0, 0.73, 0.73, 1), color(0, 0.73, 0.73, 1)); // 30 FPS
-	Draw2DLineThick(float2(pos.x - 212.942, pos.y + 174), float2(pos.x - 212.942, pos.y + 184), 1, color(0, 0.73, 0.73, 1), color(0, 0.73, 0.73, 1)); // 60 FPS
-	Draw2DLineThick(float2(pos.x - 181.57, pos.y + 174), float2(pos.x - 181.57, pos.y + 184), 1, color(0, 0.73, 0.73, 1), color(0, 0.73, 0.73, 1)); // 100 FPS
-	Draw2DLineThick(float2(pos.x - 103.14, pos.y + 174), float2(pos.x - 103.14, pos.y + 184), 1, color(0, 0.73, 0.73, 1), color(0, 0.73, 0.73, 1)); // 200 FPS
+	Draw2DRectangle(200, 10, pos.x - 260, pos.y - 174, color(0, 0, 0, 0.2)); // FPS bg
+	Draw2DLineThick(float2(pos.x - 260, pos.y - 179), float2(fps_line, pos.y - 179), 10, fps_bar, fps_bar); // FPS bar
+	Draw2DRectBorderThick(200, 10, pos.x - 260, pos.y - 174, 1, color(0, 0.73, 0.73, 1)); // FPS edge
+	Draw2DLineThick(float2(pos.x - 252.157, pos.y - 174), float2(pos.x - 252.157, pos.y - 184), 1, border, border); // 10 FPS
+	Draw2DLineThick(float2(pos.x - 236.471, pos.y - 174), float2(pos.x - 236.471, pos.y - 184), 1, border, border); // 30 FPS
+	Draw2DLineThick(float2(pos.x - 212.942, pos.y - 174), float2(pos.x - 212.942, pos.y - 184), 1, border, border); // 60 FPS
+	Draw2DLineThick(float2(pos.x - 181.57, pos.y - 174), float2(pos.x - 181.57, pos.y - 184), 1, border, border); // 100 FPS
+	Draw2DLineThick(float2(pos.x - 103.14, pos.y - 174), float2(pos.x - 103.14, pos.y - 184), 1, border, border); // 200 FPS
 
-	Draw2DRectangle(200, 54, pos.x - 260, pos.y + 98, color(0, 0, 0, 0.2));
+	Draw2DRectangle(200, 54, pos.x - 260, pos.y - 108, transp);
 	for (unsigned int i = 1; i < cpu_usage.usageStream.size(); i++)
 	{
 		Draw2DLineThin(
-			float2(pos.x - 260 + 2 * (i - 1) * ((float)100 / ((float)cpu_usage.GetMaxRecords() - 1)), pos.y + 100 + (float)cpu_usage.usageStream.at(i - 1) * 0.5),
-			float2(pos.x - 260 + 2 * (i) * ((float)100 / ((float)cpu_usage.GetMaxRecords() - 1)), pos.y + 100 + (float)cpu_usage.usageStream.at(i) * 0.5),
+			float2(
+				pos.x - 260 + 2 * (i - 1) * ((float)100 / ((float)cpu_usage.GetMaxRecords() - 1)),
+				pos.y - 110 - (float)cpu_usage.usageStream.at(i - 1) * 0.5),
+			float2(
+				pos.x - 260 + 2 * (i) * ((float)100 / ((float)cpu_usage.GetMaxRecords() - 1)),
+				pos.y - 110 - (float)cpu_usage.usageStream.at(i) * 0.5),
 			color(1, 0.06, 0.6, 1), color(1, 0.06, 0.6, 1));
 	}
-	Draw2DRectBorderThick(200, 54, pos.x - 260, pos.y + 98, 1, color(0, 0.73, 0.73, 1));
+	Draw2DRectBorderThick(200, 54, pos.x - 260, pos.y - 108, 1, border);
 
-	Draw2DRectangle(200, 10, pos.x - 260, pos.y + 83, color(0, 0, 0, 0.2));
-	Draw2DLineThick(float2(pos.x - 260, pos.y + 88), float2(1.945 * cpu + pos.x - 258, pos.y + 88), 10, color(1, 0.06, 0.6, 1), color(1, 0.06, 0.6, 1));
-	Draw2DRectBorderThick(200, 10, pos.x - 260, pos.y + 83, 1, color(0, 0.73, 0.73, 1));
-	
-	/*sprintf(global_text, "CPU usage: %d%%", cpu4);
-	PrintText(global_text, Tiny, pos.x - 260, pos.y + 78, D3DCOLOR_XRGB(255, 255, 255));
-	sprintf(global_text, "RAM usage: %.2f%%", physMemPercent);
-	PrintText(global_text, Tiny, pos.x - 260, pos.y + 64, D3DCOLOR_XRGB(255, 255, 255));
-	sprintf(global_text, "Alloc.: %.3f MB", physMemMB);
-	PrintText(global_text, Tiny, pos.x - 260, pos.y + 50, D3DCOLOR_XRGB(255, 255, 255));*/
+	Draw2DRectangle(200, 10, pos.x - 260, pos.y - 83, transp);
+	Draw2DLineThick(float2(pos.x - 260, pos.y - 88), float2(1.945 * cpu + pos.x - 258, pos.y - 88), 10, border2, border2);
+	Draw2DRectBorderThick(200, 10, pos.x - 260, pos.y - 83, 1, border);
 
 	swprintf(global_str64, L"FPS: %.2f (%i)", timer.GetFPSStamp(), timer.GetFramesCount());
-	fw_courier->DrawString(devcon, global_str64, 10, windowMain.width - 260, windowMain.height - 200, 0xffffffff, 0);
+	fw_courier->DrawString(devcon, global_str64, 10, window_main.width - 260, window_main.height - 200, 0xffffffff, 0);
 	swprintf(global_str64, L"Max: %.2f", timer.maxFps);
-	fw_courier->DrawString(devcon, global_str64, 10, windowMain.width - 125, windowMain.height - 200, 0xffffffff, 0);
+	fw_courier->DrawString(devcon, global_str64, 10, window_main.width - 125, window_main.height - 200, 0xffffffff, 0);
 
 	swprintf(global_str64, L"CPU usage: %d%%", cpu);
-	fw_courier->DrawString(devcon, global_str64, 10, windowMain.width - 260, windowMain.height - 78, 0xffffffff, 0);
+	fw_courier->DrawString(devcon, global_str64, 10, window_main.width - 260, window_main.height - 78, 0xffffffff, 0);
 	swprintf(global_str64, L"RAM usage: %.2f%%", physMemPercent);
-	fw_courier->DrawString(devcon, global_str64, 10, windowMain.width - 260, windowMain.height - 64, 0xffffffff, 0);
+	fw_courier->DrawString(devcon, global_str64, 10, window_main.width - 260, window_main.height - 64, 0xffffffff, 0);
 	swprintf(global_str64, L"Alloc.: %.3f MB", physMemMB);
-	fw_courier->DrawString(devcon, global_str64, 10, windowMain.width - 260, windowMain.height - 50, 0xffffffff, 0);
-
-	swprintf(global_str64, L"%.3f", mouse.X.pos);
-	fw_courier->DrawString(devcon, global_str64, 10, windowMain.width/2 + 300, windowMain.height/2 - 150, 0xffffffff, 0);
-
+	fw_courier->DrawString(devcon, global_str64, 10, window_main.width - 260, window_main.height - 50, 0xffffffff, 0);
 }
 
 void SetDepthBufferState(bool state)
@@ -894,15 +1083,15 @@ void SetDepthBufferState(bool state)
 
 color BtnStateColor(Input bt)
 {
-	switch (bt.GetState())
+	switch (bt.getState())
 	{
-	case unpressed:
+	case BTN_UNPRESSED:
 		return color(1, 1, 1, 1);
-	case pressed:
+	case BTN_PRESSED:
 		return color(0, 1, 0, 1);
-	case held:
+	case BTN_HELD:
 		return color(0, 0, 1, 1);
-	case released:
+	case BTN_RELEASED:
 		return color(1, 0, 0, 1);
 	default:
 		return color(1, 1, 1, 1);

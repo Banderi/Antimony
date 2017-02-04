@@ -2,73 +2,67 @@
 #include "DebugWin.h"
 #include "Warnings.h"
 
+///
+
 void Camera::update(double delta)
 {
 	updatePos(delta);
+	updateLookAt(delta);
 
-	th += th_vel * delta;
-	ph += ph_vel * delta;
+	m_th += m_thVel * delta;
+	m_ph += m_phVel * delta;
 
-	th_vel *= friction * delta;
-	ph_vel *= friction * delta;	
+	m_thVel *= m_friction * delta;
+	m_phVel *= m_friction * delta;
 
-	float3 dir = XMVector3Normalize(lookat - pos);
+	float3 dir = XMVector3Normalize(m_lookat - m_pos);
 	float3 n = dir.Cross(float3(0, 1, 0));
 	float det = n.Dot(n);
 
-	th = -atan2f(-dir.z, dir.Dot(float3(1, 0, 0)));
-	ph = atan2f(n.Dot(n), dir.Dot(float3(0, 1, 0)));
+	m_th = -atan2f(-dir.z, dir.Dot(float3(1, 0, 0)));
+	m_ph = atan2f(n.Dot(n), dir.Dot(float3(0, 1, 0)));
 }
-
 void Camera::rotate(bool angle, float accelaration)
 {
 	if (angle == 0)
-		th_vel += accelaration;
+		m_thVel += accelaration;
 	else if (angle == 1)
-		ph_vel += accelaration;
+		m_phVel += accelaration;
 	else
 		return;
 }
 void Camera::setAngles(float t, float p)
 {
 	if (t != -1)
-		th = t;
+		m_th = t;
 	if (p != -1)
-		ph = p;
+		m_ph = p;
 }
 float Camera::getAngle(bool angle)
 {
 	if (angle == 0)
-		return th;
+		return m_th;
 	else if (angle == 1)
-		return ph;
+		return m_ph;
 	else
 		return -1;
 }
-
 void Camera::setFriction(float f)
 {
-	friction = f;
+	m_friction = f;
 }
 float Camera::getFriction()
 {
-	return friction;
+	return m_friction;
 }
 
 Camera::Camera()
 {
-	free = false;
-	pos = float3(0, 0, 0);
-	pos_dest = float3(0, 0, 0);
-	lookat = float3(0, 0, 0);
-	lookat_dest = float3(0, 0, 0);
-	pos_response = 0;
-	lookat_response = 0;
-	friction = 0.99f;
-	th = 0.0f;
-	th_vel = 0.0f;
-	ph = 0.0f;
-	ph_vel = 0.0f;
+	m_friction = 0.99f;
+	m_th = 0.0f;
+	m_thVel = 0.0f;
+	m_ph = 0.0f;
+	m_phVel = 0.0f;
 }
 
 Camera camera;

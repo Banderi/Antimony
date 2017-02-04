@@ -2,15 +2,20 @@
 
 #include "Entity.h"
 
-#define theta 0
-#define phi 1
+///
 
-class Camera : public Entity
+#define CAM_THETA 0
+#define CAM_PHI 1
+
+///
+
+class Camera : public SimpleEntity, public LookAtEntity // TODO: implement camera collisions
 {
-	float friction;
-	float th, th_vel;
-	float ph, ph_vel;
-	float quake;
+protected:
+	float m_friction;
+	float m_th, m_thVel;
+	float m_ph, m_phVel;
+	float m_quake;
 
 public:
 	void update(double delta);
@@ -22,7 +27,7 @@ public:
 	void setFriction(float f);
 	float getFriction();
 
-	void addQuake(float q);
+	void addQuake(float q); // TODO: implement quake
 
 	Camera();
 };

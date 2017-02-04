@@ -7,7 +7,7 @@
 #include "DebugWin.h"
 #include "Param.h"
 
-//
+///
 
 void InitializeDebugConsole()
 {

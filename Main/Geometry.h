@@ -3,7 +3,13 @@
 #include "DirectX.h"
 #include "SmartRelease.h"
 
-//
+///
+
+#define SHADERS_MAIN &sh_main
+#define SHADERS_DEBUG &sh_debug
+#define SHADERS_PLAIN &sh_plain
+
+///
 
 extern IDXGISwapChain *swapchain;
 extern ID3D11Device *dev;
@@ -17,6 +23,14 @@ extern ID3D11BlendState *blendstate;
 extern ID3D11DepthStencilState *dss_enabled, *dss_disabled;
 
 extern ID3D11Buffer *vertexbuffer, *indexbuffer, *constantbuffer;
+
+extern mat mat_identity, mat_temp, mat_temp2, mat_world, mat_view, mat_proj, mat_orthoview, mat_orthoproj;
+extern float2  v2_origin;
+extern float3  v3_origin;
+
+extern D3D11_INPUT_ELEMENT_DESC ied_main[], ied_debug[];
+
+///
 
 struct SHADER
 {
@@ -45,16 +59,6 @@ struct SHADER
 
 extern SHADER sh_main, sh_debug, sh_plain;
 
-#define SHADERS_MAIN &sh_main
-#define SHADERS_DEBUG &sh_debug
-#define SHADERS_PLAIN &sh_plain
-
-extern mat mat_identity, mat_temp, mat_temp2, mat_world, mat_view, mat_proj, mat_orthoview, mat_orthoproj;
-extern float2  v2_origin;
-extern float3  v3_origin;
-
-extern D3D11_INPUT_ELEMENT_DESC ied_main[], ied_debug[];
-
 struct ConstantBuffer
 {
 	mat world;
@@ -64,29 +68,41 @@ struct ConstantBuffer
 };
 struct VERTEX_BASIC
 {
-	FLOAT X, Y, Z;
-	color Color;
+	FLOAT x, y, z;
+	color color;
 };
 struct VERTEX
 {
-	float3 Position;
-	float3 Normal;
-	float2 TextureCoordinate;
+	float3 position;
+	float3 normal;
+	float2 textureCoordinate;
 };
+
+extern UINT vertex_stride;
+extern UINT vertex_offset;
+
 struct VS_INPUT
 {
-	float4 Position;
-	float3 Normal;
-	float2 TextureCoordinate;
-	mat BlendWeights;
-	mat BlendIndices;
+	float4 position;
+	float3 normal;
+	float2 textureCoordinate;
+	mat blendWeights;
+	mat blendIndices;
 };
 struct VS_OUTPUT
 {
-	float4 Position;
-	float2 TextureCoordinate;
-	float3 Normal;
+	float4 position;
+	float2 textureCoordinate;
+	float3 normal;
 };
+
+struct cursor
+{
+	float x, y;
+	ID3D11Texture2D *icon;
+};
+
+///
 
 template <typename T> HRESULT FillBuffer(ID3D11Device *dev, ID3D11DeviceContext *devcon, ID3D11Buffer **out, T in, UINT size)
 {
@@ -103,6 +119,7 @@ template <typename T> HRESULT FillBuffer(ID3D11Device *dev, ID3D11DeviceContext 
 }
 
 mat TransposeMatrix(const mat &mIn);
+float3 MatToFloat3(mat *m);
 
 bool CompileShader(HRESULT *hr, std::wstring shader, SHADER *sh);
 bool SetShader(SHADER *sh, ID3D11DeviceContext *devc = devcon);
@@ -122,4 +139,5 @@ void Draw3DTriangle(float3 p1, float3 p2, float3 p3, color c, bool dd = false, m
 void Draw3DRectangle(float w, float h, color c, bool dd = false, mat *world = &mat_world, color diffuse = COLOR_WHITE, ID3D11Device *dv = dev, ID3D11DeviceContext *devc = devcon, ID3D11Buffer *vb = vertexbuffer, ID3D11Buffer *ib = indexbuffer, ID3D11Buffer *cb = constantbuffer);
 void Draw3DEllipses(float w, float h, color c, bool dd = false, mat *world = &mat_world, color diffuse = COLOR_WHITE, ID3D11Device *dv = dev, ID3D11DeviceContext *devc = devcon, ID3D11Buffer *vb = vertexbuffer, ID3D11Buffer *ib = indexbuffer, ID3D11Buffer *cb = constantbuffer);
 void Draw3DBox(float w, float h, float b, color c, mat *world = &mat_world, color diffuse = COLOR_WHITE, ID3D11Device *dv = dev, ID3D11DeviceContext *devc = devcon, ID3D11Buffer *vb = vertexbuffer, ID3D11Buffer *ib = indexbuffer, ID3D11Buffer *cb = constantbuffer);
+void Draw3DBox(Vector3 l, color c, mat *world = &mat_world, color diffuse = COLOR_WHITE, ID3D11Device *dv = dev, ID3D11DeviceContext *devc = devcon, ID3D11Buffer *vb = vertexbuffer, ID3D11Buffer *ib = indexbuffer, ID3D11Buffer *cb = constantbuffer);
 void Draw3DCube(float r, color c, mat *world = &mat_world, color diffuse = COLOR_WHITE, ID3D11Device *dv = dev, ID3D11DeviceContext *devc = devcon, ID3D11Buffer *vb = vertexbuffer, ID3D11Buffer *ib = indexbuffer, ID3D11Buffer *cb = constantbuffer);

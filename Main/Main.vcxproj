@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\directxtk12_desktop_2015.2016.10.6.1\build\native\directxtk12_desktop_2015.props" Condition="Exists('..\packages\directxtk12_desktop_2015.2016.10.6.1\build\native\directxtk12_desktop_2015.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug_Static|Win32">
       <Configuration>Debug_Static</Configuration>
@@ -78,29 +79,29 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)\Debug\</OutDir>
     <TargetName>game_dbg</TargetName>
-    <LibraryPath>$(FBXSDKDIR)\lib\x86;$(FW1DIR)\lib\x86;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
-    <IncludePath>$(FBXSDKDIR)\include;$(FW1DIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(FBXSDKDIR)\lib\x86;$(FW1DIR)\lib\x86;$(BLT3DIR)\lib\x86\dbg;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+    <IncludePath>$(FBXSDKDIR)\include;$(FW1DIR)\include;$(BLT3DIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Static|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)\Debug\</OutDir>
     <TargetName>game_dbgStatic</TargetName>
-    <LibraryPath>$(FBXSDKDIR)\lib\x86;$(FW1DIR)\lib\x86;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
-    <IncludePath>$(FBXSDKDIR)\include;$(FW1DIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(FBXSDKDIR)\lib\x86;$(FW1DIR)\lib\x86;$(BLT3DIR)\lib\x86\dbg;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+    <IncludePath>$(FBXSDKDIR)\include;$(FW1DIR)\include;$(BLT3DIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)\Debug\</OutDir>
     <TargetName>game</TargetName>
-    <LibraryPath>$(FBXSDKDIR)\lib\x86;$(FW1DIR)\lib\x86;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
-    <IncludePath>$(FBXSDKDIR)\include;$(FW1DIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(FBXSDKDIR)\lib\x86;$(FW1DIR)\lib\x86;$(BLT3DIR)\lib\x86\rel;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+    <IncludePath>$(FBXSDKDIR)\include;$(FW1DIR)\include;$(BLT3DIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Static|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)\Debug\</OutDir>
     <TargetName>game_static</TargetName>
-    <LibraryPath>$(FBXSDKDIR)\lib\x86;$(FW1DIR)\lib\x86;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
-    <IncludePath>$(FBXSDKDIR)\include;$(FW1DIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(FBXSDKDIR)\lib\x86;$(FW1DIR)\lib\x86;$(BLT3DIR)\lib\x86\rel;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+    <IncludePath>$(FBXSDKDIR)\include;$(FW1DIR)\include;$(BLT3DIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -185,9 +186,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Bullet.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Character.cpp" />
-    <ClCompile Include="Controls.cpp" />
     <ClCompile Include="CpuRamUsage.cpp" />
     <ClCompile Include="DebugWin.cpp" />
     <ClCompile Include="Entity.cpp" />
@@ -201,13 +202,14 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Param.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Bullet.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Character.h" />
-    <ClInclude Include="Controls.h" />
     <ClInclude Include="CpuRamUsage.h" />
     <ClInclude Include="DebugWin.h" />
     <ClInclude Include="DirectX.h" />
@@ -224,6 +226,7 @@
     <ClInclude Include="pchfx.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="SmartRelease.h" />
+    <ClInclude Include="Texture.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Warnings.h" />
     <ClInclude Include="Window.h" />
@@ -242,6 +245,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_Static|Win32'">true</ExcludedFromBuild>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\Debug\Shaders\effects\toon3.fx">
@@ -313,5 +317,13 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\directxtk12_desktop_2015.2016.10.6.1\build\native\directxtk12_desktop_2015.targets" Condition="Exists('..\packages\directxtk12_desktop_2015.2016.10.6.1\build\native\directxtk12_desktop_2015.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\directxtk12_desktop_2015.2016.10.6.1\build\native\directxtk12_desktop_2015.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxtk12_desktop_2015.2016.10.6.1\build\native\directxtk12_desktop_2015.props'))" />
+    <Error Condition="!Exists('..\packages\directxtk12_desktop_2015.2016.10.6.1\build\native\directxtk12_desktop_2015.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxtk12_desktop_2015.2016.10.6.1\build\native\directxtk12_desktop_2015.targets'))" />
+  </Target>
 </Project>

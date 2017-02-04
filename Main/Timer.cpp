@@ -1,10 +1,9 @@
 #include <ctime>
-
-#include "Shlwapi.h"
+#include <Shlwapi.h>
 
 #include "Timer.h"
 
-//
+///
 
 void Timer::UpdateDelta(char d)
 {

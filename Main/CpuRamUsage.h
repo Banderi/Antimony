@@ -4,6 +4,15 @@
 #include <vector>
 #include <Psapi.h>
 
+///
+
+extern DWORDLONG totalPhysMem, physMemAvail;
+extern ULONG_PTR physMemUsedByMe;
+extern MEMORYSTATUSEX memInfo;
+extern PROCESS_MEMORY_COUNTERS_EX pmc;
+
+///
+
 class CpuUsage
 {
 
@@ -38,8 +47,3 @@ private:
 };
 
 extern CpuUsage cpu_usage;
-
-extern DWORDLONG totalPhysMem, physMemAvail;
-extern ULONG_PTR physMemUsedByMe;
-extern MEMORYSTATUSEX memInfo;
-extern PROCESS_MEMORY_COUNTERS_EX pmc;

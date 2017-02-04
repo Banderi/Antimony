@@ -3,6 +3,10 @@
 #include <stdio.h>
 #include <iostream>
 
+#include "Window.h"
+
+///
+
 void InitializeDebugConsole();
 void ShutdownDebugConsole();
 
