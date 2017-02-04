@@ -164,7 +164,6 @@
       <Filter>Shader Files\include</Filter>
     </None>
     <None Include="..\Debug\config.ini" />
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\Debug\Shaders\effects\toon3.fx">
