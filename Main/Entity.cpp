@@ -124,8 +124,8 @@ LookAtEntity::LookAtEntity()
 
 void PhysEntity::reset()
 {
-	m_coll->rb->clearForces();
-	this->m_coll->setMatTransform(&m_initialTransform);
+	/*m_coll->rb->clearForces();
+	this->m_coll->setMatTransform(&m_initialTransform);*/
 }
 PhysEntity::PhysEntity(LPCWSTR name, float mass, btCollisionShape *cs, btDefaultMotionState *ms, btDiscreteDynamicsWorld *w)
 {
@@ -134,7 +134,7 @@ PhysEntity::PhysEntity(LPCWSTR name, float mass, btCollisionShape *cs, btDefault
 
 	btVector3 *in = new btVector3;
 	cs->calculateLocalInertia(mass, *in);
-	
+
 	btRigidBody::btRigidBodyConstructionInfo rbci = btRigidBody::btRigidBodyConstructionInfo(mass, ms, cs, *in);
 	btRigidBody *rb = new btRigidBody(rbci);
 	w->addRigidBody(rb);
@@ -173,12 +173,12 @@ PhysEntity::PhysEntity(LPCWSTR name, float mass, btCollisionShape *cs, btDefault
 }
 PhysEntity::~PhysEntity()
 {
-	m_world->removeRigidBody(m_coll->rb);
-	//delete m_coll->rb->getMotionState();
-	delete m_coll->cs;
-	delete m_coll->ms;
-	delete m_coll->rb;
-	delete m_coll->in;
+	//m_world->removeRigidBody(m_coll->rb);
+	////delete m_coll->rb->getMotionState();
+	//delete m_coll->cs;
+	//delete m_coll->ms;
+	//delete m_coll->rb;
+	//delete m_coll->in;
 }
 
 //std::vector<PhysEntity*> physEntities;

@@ -16,11 +16,11 @@ void SimpleCharacter::jump()
 {
 	if (!cont->cc->canJump() || !jumping)
 		return;
-	
+
 
 	// add force to collision object
 	cont->cc->jump(btVector3(0, jump_speed, 0));
-	coll->m_coll->rb->applyCentralForce(btVector3(0, jump_speed, 0));
+	coll->m_coll->getRigidBody()->applyCentralForce(btVector3(0, jump_speed, 0));
 	//coll->m_coll->rb->setLinearVelocity(btVector3(coll->m_coll->rb->getLinearVelocity().getX(), jump_speed, coll->m_coll->rb->getLinearVelocity().getZ()));
 }
 SimpleCharacter::SimpleCharacter()
@@ -33,14 +33,59 @@ SimpleCharacter::SimpleCharacter()
 
 void Character::update(double delta)
 {
-	//
+	lin_worldvel = bt_origin;
+	ang_worldvel = bt_origin;
 
-	/*if (GetPos().y <= WORLD_SCALE * 0.6)
-		jumping = false;
+	auto& mf = objectsCollisions[m_collisionObject->getRigidBody()];	// get current world manifolds
+
+	if (!mf.empty())
+	{
+		for (int i = 0; i < mf.size(); i++)								// cycle through manifolds
+		{
+			auto b = (btRigidBody*)mf.at(i)->getBody1();				// get manifold-ing object
+			int numContacts = mf.at(i)->getNumContacts();				// get contact points number
+			for (int j = 0; j < numContacts; j++)						// cycle through contact points
+			{
+				btManifoldPoint& pt = mf.at(i)->getContactPoint(j);		// get contact point
+				btVector3 n = pt.m_normalWorldOnB;						// get contact normal
+				float a = n.angle(btVector3(0, 1, 0));					// get angle between the normal and the 'up' vector
+				if (a <= DX_PI * 0.2)
+				{
+					jumping = 0;
+
+					// math hocus pocus
+					btVector3 d = m_collisionObject->getbtPos() - b->getWorldTransform().getOrigin();
+					ang_worldvel = b->getAngularVelocity();
+					ang_worldvel.setX(0);
+					ang_worldvel.setZ(0);
+					lin_worldvel = b->getLinearVelocity() - d.cross(ang_worldvel);			// linear vel. is object's vel. plus cross product of angular vel. and distance
+
+					goto contact;										// skip all other contact points/manifolds
+				}
+				//else if (a2 <= DX_PI * 0.2 && b1 == physEntities.at(0)->rb) // infinite plane has inverted normals (why???)
+				//{
+				//	player.jumping = 0;
+				//	//p = b1->getLinearVelocity();
+
+				//	// no reason to calculate movement here
+
+				//	goto contact;
+				//}
+				else
+				{
+					jumping = 1;
+				}
+			}
+			jumping = 1;
+		}
+	contact:;
+	}
 	else
-		jumping = true;*/
+	{
+		jumping = 1;
+	}
 
-	m_collisionObject->rb->setAngularVelocity(btVector3(0, 0, 0));
+	m_collisionObject->getRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
 }
 void Character::warp(Vector3 d)
 {
@@ -55,14 +100,25 @@ void Character::warp(Vector3 d)
 	t2.setOrigin(Float3Tobt(&d));
 	m_collisionObject->setbtTransform(&t2);
 }
-void Character::jump()
+void Character::move(btVector3 *v, float s)
+{
+	if (!jumping)
+	{
+		m_collisionObject->getRigidBody()->setLinearVelocity(lin_worldvel + (*v) * s);		// move with linear velocity when standing on an object
+		m_collisionObject->getRigidBody()->setAngularVelocity(ang_worldvel);
+	}
+	else
+	{
+		m_collisionObject->getRigidBody()->applyCentralForce(500 * (*v));					// move using force when not standing on anything
+	}
+}
+void Character::attemptJump()
 {
 	if (jumping)
 		return;
 
-	btVector3 v = btVector3(m_collisionObject->rb->getLinearVelocity().getX() * 0.3, jump_speed, m_collisionObject->rb->getLinearVelocity().getZ() * 0.3);
-	//v.normalize();
-	m_collisionObject->rb->setLinearVelocity(v);
+	btVector3 v = btVector3(m_collisionObject->getRigidBody()->getLinearVelocity().getX() * 0.3, jump_speed, m_collisionObject->getRigidBody()->getLinearVelocity().getZ() * 0.3);
+	m_collisionObject->getRigidBody()->setLinearVelocity(v);
 }
 void Character::setCollisionObject(btObject *pc)
 {

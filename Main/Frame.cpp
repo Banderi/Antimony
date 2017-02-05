@@ -39,24 +39,24 @@ HRESULT Frame(double delta)
 	PrepareFrame();														// clear previous frame
 
 	if (IfGameState(GAMESTATE_INGAME))									// INGAME (non-paused, non-menu etc.)
-	{		
+	{
 		UpdateWorld(delta);												// update moving objects, triggers etc. (TBI)
-		
-		UpdatePlayerControls(&keys, &controller[0], delta);				// update player inputs		
+
+		UpdatePlayerControls(&keys, &controller[0], delta);				// update player inputs
 
 		UpdatePhysics(delta);											// btWorld step
 
 		UpdateCameraControls(&mouse, &keys, &controller[0], delta);		// update camera (--> mat_view)
-		
+
 		UpdateAI(delta);												// update AI/scripts etc. (TBI)
 	}
 
 	RenderWorld();														// render world
 	RenderEntities();													// render entities
-	
+
 	RenderHUD(delta);													// render HUD
 	Render_Debug();														// render debug info
-	
+
 
 	return PresentFrame();												// present frame to GPU
 }
@@ -98,85 +98,20 @@ void UpdatePlayerControls(KeysController *khandle, XInputController *xhandle, do
 		mmov += float3(-sinf(th), 0, cosf(th));
 	if (khandle->right.getState() > BTN_UNPRESSED)
 		mmov += float3(sinf(th), 0, -cosf(th));
-	
+
 	xmov = float3(sinf(th) * xhandle->LX.getVel() + cosf(th) * xhandle->LY.getVel(), 0, sinf(th) * xhandle->LY.getVel() + cosf(th) * (-xhandle->LX.getVel()));
-	
+
 	float3 mov = mmov + xmov;
 	if (mov.Length() > 1)
-		mov = XMVector3Normalize(mov);	
+		mov = XMVector3Normalize(mov);
 
 	//player.MoveToPoint(player.GetPosDest() + mov * speed * delta, .999999971);
 
 	player.update(delta);
-
-	btVector3 lv = bt_origin;
-	btVector3 av = bt_origin;
-
-	auto& mf = objectsCollisions[player.getColl()->rb];					// get current world manifolds
-
-	//player.rvel = bt_origin;
-
-	if (!mf.empty())
-	{
-		for (int i = 0; i < mf.size(); i++)								// cycle through manifolds
-		{
-			auto b = (btRigidBody*)mf.at(i)->getBody1();				// get manifold-ing object
-			int numContacts = mf.at(i)->getNumContacts();				// get contact points number
-			for (int j = 0; j < numContacts; j++)						// cycle through contact points
-			{
-				btManifoldPoint& pt = mf.at(i)->getContactPoint(j);		// get contact point
-				btVector3 n = pt.m_normalWorldOnB;						// get contact normal
-				float a = n.angle(btVector3(0, 1, 0));					// get angle between the normal and the 'up' vector
-				if (a <= DX_PI * 0.2)
-				{
-					player.jumping = 0;
-
-					// math hocus pocus
-					btVector3 d = player.getColl()->rb->getWorldTransform().getOrigin() - b->getWorldTransform().getOrigin();					
-					av = b->getAngularVelocity();
-					av.setX(0);
-					av.setZ(0);
-					lv = b->getLinearVelocity() - d.cross(av);			// linear vel. is object's vel. plus cross product of angular vel. and distance
-
-					goto contact;										// skip all other contact points/manifolds
-				}
-				//else if (a2 <= DX_PI * 0.2 && b1 == physEntities.at(0)->rb) // infinite plane has inverted normals (why???)
-				//{
-				//	player.jumping = 0;					
-				//	//p = b1->getLinearVelocity();
-
-				//	// no reason to calculate movement here
-
-				//	goto contact;
-				//}
-				else
-				{
-					player.jumping = 1;
-				}
-			}
-			player.jumping = 1;		
-		}
-	contact:;
-	}
-	else
-	{
-		player.jumping = 1;
-	}
-
-	btVector3 v = Float3Tobt(&mov);
-
-	if (!player.jumping)
-	{
-		player.getColl()->rb->setLinearVelocity(lv + v * speed);			// move with linear velocity when standing on an object
-		player.getColl()->rb->setAngularVelocity(av);
-	}
-	else
-	{
-		player.getColl()->rb->applyCentralForce(500 * v);					// move using force when not standing on anything
-	}
+	player.move(&Float3Tobt(&mov), speed);
 
 	if (khandle->jump.getState() > BTN_UNPRESSED || xhandle->A.getState() > BTN_UNPRESSED)
-		player.jump();
+		player.attemptJump();
 }
 void UpdateCameraControls(MouseController *mhandle, KeysController *khandle, XInputController *xhandle, double delta)
 {
@@ -270,6 +205,8 @@ void UpdateWorld(double delta)
 	physEntities.at(3)->setMatTransform(&(MTranslation(WORLD_SCALE * 0, WORLD_SCALE * 0.5, WORLD_SCALE * 0) * MRotY(h)));
 	physEntities.at(4)->setMatTransform(&(MTranslation(WORLD_SCALE * 3, WORLD_SCALE * 1, WORLD_SCALE * sinf(h))));
 	physEntities.at(4)->updateKinematic(delta);
+	physEntities.at(5)->setMatTransform(&(MTranslation(WORLD_SCALE * 4, WORLD_SCALE * (1 + sinf(h)), 2)));
+	physEntities.at(5)->updateKinematic(delta);
 }
 
 void RenderWorld()
@@ -310,43 +247,44 @@ void Render_Debug()
 	SetDepthBufferState(ON);
 	SetShader(SHADERS_DEBUG);
 
-	// test walls
-	mat_world = physEntities.at(2)->getMatTransform();
-	Draw3DBox(WORLD_SCALE * 0.3, WORLD_SCALE * 2, WORLD_SCALE * 5, COLOR_WHITE);
-
-	// moving platforms
-	mat_world = physEntities.at(3)->getMatTransform();
-	Draw3DBox(WORLD_SCALE * Vector3(0.45, 0.15, 0.45), color(2, 1, 1, 1));
-
-	mat_world = physEntities.at(4)->getMatTransform();
-	Draw3DBox(WORLD_SCALE * Vector3(0.45, 0.15, 0.45), color(2, 1, 1, 1));
-
-	// test cubes
-	for (unsigned char i = physEntities.size() - 3; i < physEntities.size(); i++)
+	for (unsigned char i = 0; i < physEntities.size(); i++)
 	{
 		mat_world = physEntities.at(i)->getMatTransform();
 		color c;
-		int state = physEntities.at(i)->rb->getActivationState();
+		int state = physEntities.at(i)->getRigidBody()->getActivationState();
 
-		switch (state)
+		if (i >= 2 && i < 3)															// walls
 		{
-			case ACTIVE_TAG:
-			{
-				c = color(0.9, 1.1, 2, 1);
-				break;
-			}
-			case ISLAND_SLEEPING:
-			{
-				c = COLOR_WHITE;
-				break;
-			}
-			case WANTS_DEACTIVATION:
-			{
-				c = COLOR_RED;
-				break;
-			}
+			Draw3DBox(WORLD_SCALE * 0.3, WORLD_SCALE * 2, WORLD_SCALE * 5, COLOR_WHITE);
 		}
-		Draw3DCube(WORLD_SCALE * 0.3, c);
+		else if (i >= 3 && i < 6)														// moving platforms
+		{
+			Draw3DBox(WORLD_SCALE * Vector3(0.45, 0.15, 0.45), color(2, 1, 1, 1));
+		}
+		else if (i >= physEntities.size() - 3 && i < physEntities.size() - 0)			// test cubes
+		{
+			switch (state)
+			{
+				case ACTIVE_TAG:
+				{
+					c = color(0.9, 1.1, 2, 1);
+					break;
+				}
+				case ISLAND_SLEEPING:
+				{
+					c = COLOR_WHITE;
+					break;
+				}
+				case WANTS_DEACTIVATION:
+				{
+					c = COLOR_RED;
+					break;
+				}
+			}
+			Draw3DCube(WORLD_SCALE * 0.3, c);
+		}
+
+		mat_world = mat_identity;
 	}
 
 	// player
@@ -373,7 +311,7 @@ void Render_Debug()
 	SetShader(SHADERS_PLAIN);
 
 	if (game.dbg_wireframe)
-	{		
+	{
 		btWorld->debugDrawWorld();
 
 		float3 p;
@@ -382,20 +320,20 @@ void Render_Debug()
 		for (int i = 0; i < physEntities.size(); i++)
 		{
 			p = physEntities.at(i)->getFlat3Pos();
-			n = btToFloat3(&physEntities.at(i)->rb->getLinearVelocity());
+			n = btToFloat3(&physEntities.at(i)->getRigidBody()->getLinearVelocity());
 
 			Draw3DLineThin(p, p + WORLD_SCALE * 0.1 * n, COLOR_GREEN, COLOR_GREEN, &mat_identity);
 
-			n = btToFloat3(&physEntities.at(i)->rb->getAngularVelocity());
+			n = btToFloat3(&physEntities.at(i)->getRigidBody()->getAngularVelocity());
 
 			Draw3DLineThin(p, p + WORLD_SCALE * 0.1 * n, COLOR_RED, COLOR_RED, &mat_identity);
 		}
 
-		auto& mfp = objectsCollisionPoints[player.getColl()->rb];
+		auto& mfp = objectsCollisionPoints[player.getColl()->getRigidBody()];
 		if (!mfp.empty())
 		{
 			for (int i = 0; i < mfp.size(); i++)
-			{				
+			{
 				p = btToFloat3(&mfp.at(i)->getPositionWorldOnB());
 				n = btToFloat3(&mfp.at(i)->m_normalWorldOnB);
 
@@ -416,7 +354,7 @@ void Render_Debug()
 				Draw3DLineThin(p, p + WORLD_SCALE * 0.1 * n, COLOR_RED, COLOR_RED, &mat_identity);
 			}
 		}*/
-	}		
+	}
 
 	Render_DebugKeyboard(float2(0, -300));
 	Render_DebugMouse(float2(0, -300) + float2(90, -30));
@@ -995,7 +933,7 @@ void Render_DebugController(float2 pos, unsigned char c)
 	mat_temp = MScaling(0.01, 0.0025, 1) * MTranslation(0.2475, -0.0325, 0);
 	SetView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(controller[c].RB));
 	devcon->DrawIndexed(6, 0, 0);
-	
+
 	// Left Circle
 	Draw2DEllipses(15.4, 15.4, pos.x + 487.3, pos.y + 116.6, color(.4, .4, .4, 1));
 

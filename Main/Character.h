@@ -31,19 +31,21 @@ protected:
 
 public:
 	bool moving;
-	char jumping;	
+	char jumping;
 	char action;
 	// TODO: 3D character asset
 	float mov_speed;
 	float jump_speed;
 
-	//btVector3 rvel;
+	btVector3 lin_worldvel;
+	btVector3 ang_worldvel;
 
-	
+	//btVector3 rvel;
 
 	void update(double delta);
 	void warp(Vector3 d);
-	void jump();
+	void move(btVector3 *v, float s);
+	void attemptJump();
 
 	void setCollisionObject(btObject *pc);
 	btObject* getColl();

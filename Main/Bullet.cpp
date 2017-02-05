@@ -11,27 +11,17 @@ std::map<const btCollisionObject*, std::vector<btPersistentManifold*>> objectsCo
 
 ///
 
-btTransform btObject::getbtTransform()
+btRigidBody* btObject::getRigidBody()
 {
-	btTransform t;
-	ms->getWorldTransform(t);
-	return t;
+	return m_rigidBody;
 }
-mat btObject::getMatTransform()
+int btObject::getKind()
 {
-	btTransform t;
-	ms->getWorldTransform(t);
-	return btToMat(&t);
+	return m_kind;
 }
-void btObject::setbtTransform(btTransform *m)
+float btObject::getMass()
 {
-	rb->setWorldTransform(*m);
-	ms->setWorldTransform(*m); // required for kinematic objects
-}
-void btObject::setMatTransform(mat *m)
-{
-	rb->setWorldTransform(MatTobt(m));
-	ms->setWorldTransform(MatTobt(m)); // required for kinematic objects
+	return m_mass;
 }
 btVector3 btObject::getbtPos()
 {
@@ -41,67 +31,128 @@ float3 btObject::getFlat3Pos()
 {
 	return MatToFloat3(&getMatTransform());
 }
-void btObject::reset()
+btTransform btObject::getbtTransform()
 {
-	rb->clearForces();
-	rb->setLinearVelocity(btVector3(0, 0, 0));
-	rb->setAngularVelocity(btVector3(0, 0, 0));
-	this->setMatTransform(&m_initialtransform);
-	rb->activate();
+	btTransform t;
+	m_motionState->getWorldTransform(t);
+	return t;
+}
+mat btObject::getMatTransform()
+{
+	btTransform t;
+	m_motionState->getWorldTransform(t);
+	return btToMat(&t);
+}
+void btObject::setbtTransform(btTransform *m)
+{
+	m_rigidBody->setWorldTransform(*m);
+	m_motionState->setWorldTransform(*m); // required for kinematic objects
+}
+void btObject::setMatTransform(mat *m)
+{
+	m_rigidBody->setWorldTransform(MatTobt(m));
+	m_motionState->setWorldTransform(MatTobt(m)); // required for kinematic objects
 }
 btVector3 btObject::updateKinematic(double delta)
 {
 	btTransform t;
-	ms->getWorldTransform(t);
+	m_motionState->getWorldTransform(t);
 
 	btVector3 v = t.getOrigin() - m_oldKinematicTransform.getOrigin();
 
 	m_oldKinematicTransform = t;
 
-	rb->setLinearVelocity(v / delta);
+	m_rigidBody->setLinearVelocity(v / delta);
 
 	return v / delta;
 }
-btObject::btObject(LPCWSTR n, float m, btCollisionShape *cshape, btDefaultMotionState *mstate, btDiscreteDynamicsWorld *w)
+void btObject::reset()
 {
-	name = n;
-	mass = m;
-	cs = cshape;
-	ms = mstate;
-	m_world = w;
+	m_rigidBody->clearForces();
+	m_rigidBody->setLinearVelocity(btVector3(0, 0, 0));
+	m_rigidBody->setAngularVelocity(btVector3(0, 0, 0));
+	this->setbtTransform(&m_initialtransform);
+	m_rigidBody->activate();
+}
+void btObject::initObject()
+{
+	btRigidBody::btRigidBodyConstructionInfo rbci = btRigidBody::btRigidBodyConstructionInfo(m_mass, m_motionState, m_collisionShape, *m_inertia);
+	m_rigidBody = new btRigidBody(rbci);
 
-	in = new btVector3;
-	cs->calculateLocalInertia(mass, *in);
+	switch (m_kind)
+	{
+		case BTOBJECT_INFINITEGROUND:
+		{
+			//m_rigidBody->setRestitution(0);
+			m_rigidBody->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
+			break;
+		}
+		case BTOBJECT_STATICWORLD:
+		{
+			//m_rigidBody->setRestitution(0);
+			m_rigidBody->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
+			m_rigidBody->setCcdMotionThreshold(0.15f);
+			m_rigidBody->setCcdSweptSphereRadius(0.03f);
+			//m_rigidBody->setActivationState(DISABLE_DEACTIVATION);
+			break;
+		}
+		case BTOBJECT_KINEMATICWORLD:
+		{
+			m_rigidBody->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
+			m_rigidBody->setActivationState(DISABLE_DEACTIVATION);
+			break;
+		}
+		case BTOBJECT_PLAYER:
+		{
+			m_rigidBody->setFriction(0);
+			//m_rigidBody->setRestitution(0);
+			//m_rigidBody->setCcdMotionThreshold(0.15f);
+			//m_rigidBody->setCcdSweptSphereRadius(0.03f);
+			m_rigidBody->setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT);
+			m_rigidBody->setActivationState(DISABLE_DEACTIVATION);
+			m_rigidBody->setAngularFactor(btVector3(0.0f, 1.0f, 0.0f));
 
-	btRigidBody::btRigidBodyConstructionInfo rbci = btRigidBody::btRigidBodyConstructionInfo(mass, ms, cs, *in);
-	rb = new btRigidBody(rbci);
-	m_world->addRigidBody(rb);
+			/*btBroadphaseProxy* proxy = phys_obj->rb->getBroadphaseProxy();
+			proxy->m_collisionFilterGroup = 1;
+			proxy->m_collisionFilterMask = 3;*/
+			break;
+		}
+	}
 
-	m_initialtransform = this->getMatTransform();
+	m_initialtransform = this->getbtTransform();
+	m_world->addRigidBody(m_rigidBody);
 	physEntities.push_back(this);
 }
-btObject::btObject(LPCWSTR n, float m, btCollisionShape *cshape, btDefaultMotionState *mstate, btVector3 *inertia, btDiscreteDynamicsWorld *w)
+btObject::btObject(int k, float m, btCollisionShape *c, btDefaultMotionState *s, btDiscreteDynamicsWorld *w)
 {
-	name = n;
-	mass = m;
-	cs = cshape;
-	ms = mstate;
-	in = inertia;
 	m_world = w;
+	m_motionState = s;
+	m_collisionShape = c;
+	m_kind = k;
+	m_mass = m;
 
-	btRigidBody::btRigidBodyConstructionInfo rbci = btRigidBody::btRigidBodyConstructionInfo(mass, ms, cs, *in);
-	rb = new btRigidBody(rbci);
-	m_world->addRigidBody(rb);
+	m_inertia = new btVector3;
+	m_collisionShape->calculateLocalInertia(m_mass, *m_inertia);
 
-	m_initialtransform = this->getMatTransform();
-	physEntities.push_back(this);
+	initObject();
+}
+btObject::btObject(int k, float m, btCollisionShape *c, btDefaultMotionState *s, btVector3 *i, btDiscreteDynamicsWorld *w)
+{
+	m_world = w;
+	m_motionState = s;
+	m_collisionShape = c;
+	m_inertia = i;
+	m_kind = k;
+	m_mass = m;
+
+	initObject();
 }
 btObject::~btObject()
 {
-	delete cs;
-	delete ms;
-	delete rb;
-	delete in;
+	delete m_motionState;
+	delete m_collisionShape;
+	delete m_inertia;
+	delete m_rigidBody;
 }
 
 std::vector<btObject*> physEntities;

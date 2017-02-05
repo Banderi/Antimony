@@ -19,7 +19,20 @@
 
 ///
 
-#define WORLD_SCALE 1.1f
+#define BTOBJECT_NULL				0x000
+#define BTOBJECT_INFINITEGROUND		0x001
+#define BTOBJECT_STATICWORLD		0x002
+#define BTOBJECT_KINEMATICWORLD		0x003
+#define BTOBJECT_DYNAMIC			0x004
+#define BTOBJECT_SOFT				0x005
+#define BTOBJECT_SHATTER			0x006
+#define BTOBJECT_RAGDOLL			0x007
+
+#define BTOBJECT_NPC				0x010
+#define BTOBJECT_VEHICLE			0x011
+#define BTOBJECT_PLAYER				0x014
+
+#define WORLD_SCALE 1.0f
 
 ///
 
@@ -35,28 +48,35 @@ __declspec(align(16)) class btObject
 {
 protected:
 	btDiscreteDynamicsWorld *m_world;
-	mat m_initialtransform;
+
+	btCollisionShape *m_collisionShape;
+	btDefaultMotionState *m_motionState;
+	btVector3 *m_inertia;
+	btRigidBody *m_rigidBody;
+
+	btTransform m_initialtransform;
 	btTransform m_oldKinematicTransform;
 
-public:
-	LPCWSTR name;
-	float mass;
-	btCollisionShape *cs;
-	btDefaultMotionState *ms;
-	btVector3 *in;
-	btRigidBody *rb;
+	int m_kind;
+	float m_mass;
 
+public:
+	btRigidBody* getRigidBody();
+	int getKind();
+	float getMass();
+	btVector3 getbtPos();
+	float3 getFlat3Pos();
 	btTransform getbtTransform();
 	mat getMatTransform();
 	void setbtTransform(btTransform *m);
 	void setMatTransform(mat *m);
-	btVector3 getbtPos();
-	float3 getFlat3Pos();
-	void reset();
-	btVector3 updateKinematic(double delta);
 
-	btObject(LPCWSTR n, float m, btCollisionShape *cshape, btDefaultMotionState *mstate, btDiscreteDynamicsWorld *w = btWorld);
-	btObject(LPCWSTR n, float m, btCollisionShape *cshape, btDefaultMotionState *mstate, btVector3 *inertia, btDiscreteDynamicsWorld *w = btWorld);
+	btVector3 updateKinematic(double delta);
+	void reset();
+	void initObject();
+
+	btObject(int k, float m, btCollisionShape *c, btDefaultMotionState *s, btDiscreteDynamicsWorld *w = btWorld);
+	btObject(int k, float m, btCollisionShape *c, btDefaultMotionState *s, btVector3 *i, btDiscreteDynamicsWorld *w = btWorld);
 	~btObject();
 
 	void* operator new(size_t i)

@@ -76,7 +76,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	MSG msg;
 	bool run = 1;
 
-	WriteToConsole(L"Entering main loop...\n");	
+	WriteToConsole(L"Entering main loop...\n");
 
 	SetGameState(GAMESTATE_SPLASH);
 
@@ -145,7 +145,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			PostQuitMessage(0);
 			return 0;
 			break;
-		} 
+		}
 		case WM_KEYDOWN:
 		{
 			switch (wParam)
@@ -405,7 +405,7 @@ HRESULT InitD3D(HWND hWnd)
 	scd.Windowed = !window_main.fullscreen;
 	scd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-	
+
 
 	D3D_FEATURE_LEVEL featurelevel = D3D_FEATURE_LEVEL_11_0;
 
@@ -500,7 +500,7 @@ HRESULT InitD3D(HWND hWnd)
 	bsd.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
 	bsd.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
 	bsd.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-	bsd.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;	
+	bsd.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
 	bsd.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
 	bsd.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 	if (!Handle(&hr, HRH_ALPHABLEND_STATE, dev->CreateBlendState(&bsd, &blendstate)))
@@ -610,8 +610,6 @@ HRESULT InitPhysics()
 	btCollisionDispatcher *disp = new btCollisionDispatcher(cfg);							// use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
 	btDbvtBroadphase *bp = new btDbvtBroadphase();											// use the default broadphase
 	btSequentialImpulseConstraintSolver *sol = new btSequentialImpulseConstraintSolver;		// the default constraint solver. For parallel processing you can use a different solver (see Extras/BulletMultiThreaded)
-	/*btDantzigSolver *mlcp = new btDantzigSolver();
-	btMLCPSolver *sl = new btMLCPSolver(mlcp);*/
 
 	///
 
@@ -637,29 +635,14 @@ HRESULT InitPhysics()
 	// infinite plane
 	cs = new btStaticPlaneShape(btVector3(0, 1, 0), 1);
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, -1, 0)));
-	phys_obj = new btObject(L"ground", 0.0f, cs, ms, &btVector3(0, 0, 0));
-	phys_obj->rb->setRestitution(0);
-	phys_obj->rb->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
+	phys_obj = new btObject(BTOBJECT_INFINITEGROUND, 0.0f, cs, ms, &btVector3(0, 0, 0));
 
 	// player's collision object
 	//cs = new btBoxShape(WORLD_SCALE * btVector3(0.15, 0.3, 0.15));
 	//cs = new btCapsuleShape(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3);
 	cs = new btCylinderShape(btVector3(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3, WORLD_SCALE * 0.15));
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(1, 2, -1)));
-	phys_obj = new btObject(L"player", 100.0f, cs, ms);
-	phys_obj->rb->setFriction(0);
-	phys_obj->rb->setRestitution(0);
-	//phys_obj->rb->setDamping(0, 0);	
-	//phys_obj->m_coll->rb->setCcdMotionThreshold(0.15f);
-	//phys_obj->m_coll->rb->setCcdSweptSphereRadius(0.03f);
-	//phys_obj->m_coll->cs->setMargin(0);
-	//phys_obj->m_coll->rb->setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT);
-	phys_obj->rb->setActivationState(DISABLE_DEACTIVATION);
-	phys_obj->rb->setAngularFactor(btVector3(0.0f, 1.0f, 0.0f));
-
-	/*btBroadphaseProxy* proxy = phys_obj->rb->getBroadphaseProxy();
-	proxy->m_collisionFilterGroup = 1;
-	proxy->m_collisionFilterMask = 3;*/
+	phys_obj = new btObject(BTOBJECT_PLAYER, 100.0f, cs, ms);
 
 	player.setCollisionObject(phys_obj);
 	//player.Warp(float3(0, 0, -3));
@@ -669,38 +652,31 @@ HRESULT InitPhysics()
 	// test walls
 	cs = new btBoxShape(WORLD_SCALE * btVector3(0.3, 2, 5));
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(-3, 1, -1)));
-	phys_obj = new btObject(L"wall1", 0.0f, cs, ms, &btVector3(0, 0, 0));
-	phys_obj->rb->setRestitution(0);
-	phys_obj->rb->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
-	phys_obj->rb->setCcdMotionThreshold(0.15f);
-	phys_obj->rb->setCcdSweptSphereRadius(0.03f);
+	phys_obj = new btObject(BTOBJECT_STATICWORLD, 0.0f, cs, ms, &btVector3(0, 0, 0));
 
 	// moving platforms
 	cs = new btBoxShape(WORLD_SCALE * btVector3(0.45, 0.15, 0.45));
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 0.5, 0)));
-	phys_obj = new btObject(L"plat1", 0.0f, cs, ms, &btVector3(0, 0, 0));
-	phys_obj->rb->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
-	phys_obj->rb->setActivationState(DISABLE_DEACTIVATION);
+	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, 0.0f, cs, ms, &btVector3(0, 0, 0));
 
 	cs = new btBoxShape(WORLD_SCALE * btVector3(0.45, 0.15, 0.45));
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 1, 0)));
-	phys_obj = new btObject(L"plat2", 0.0f, cs, ms, &btVector3(0, 0, 0));
-	phys_obj->rb->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
-	phys_obj->rb->setActivationState(DISABLE_DEACTIVATION);
+	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, 0.0f, cs, ms, &btVector3(0, 0, 0));
+
+	cs = new btBoxShape(WORLD_SCALE * btVector3(0.45, 0.15, 0.45));
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 1, 0)));
+	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, 0.0f, cs, ms, &btVector3(0, 0, 0));
 
 	// test cubes
 	cs = new btBoxShape(WORLD_SCALE * btVector3(0.3, 0.3, 0.3));
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 80, 0)));
-	phys_obj = new btObject(L"cube1", 10.0f, cs, ms);
-	phys_obj->rb->setRestitution(0);
+	phys_obj = new btObject(BTOBJECT_DYNAMIC, 10.0f, cs, ms);
 
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 6, 0)));
-	phys_obj = new btObject(L"cube2", 10.0f, cs, ms);
-	phys_obj->rb->setRestitution(0);
+	phys_obj = new btObject(BTOBJECT_DYNAMIC, 10.0f, cs, ms);
 
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 40, 0)));
-	phys_obj = new btObject(L"cube3", 10.0f, cs, ms);
-	phys_obj->rb->setRestitution(0);
+	phys_obj = new btObject(BTOBJECT_DYNAMIC, 10.0f, cs, ms);
 
 	//// player CharEntity
 	//btPairCachingGhostObject *gh = new btPairCachingGhostObject();
