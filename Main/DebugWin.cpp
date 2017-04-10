@@ -1,11 +1,18 @@
 #include <Windows.h>
 #include <fcntl.h>
 #include <io.h>
-#include <fstream>
 #include <string>
+#include <chrono>
+#include <ctime>
+#include <time.h>
+#include <vector>
 
 #include "DebugWin.h"
 #include "Param.h"
+
+///
+
+std::wofstream logfile;
 
 ///
 
@@ -59,8 +66,26 @@ void ShutdownDebugConsole()
 	ReadConsoleW(ConsoleInput, &InputBuffer, 1, &CharsRead, 0);
 }
 
-HRESULT WriteToConsole(std::wstring string)
+HRESULT WriteToConsole(std::wstring string, bool t, bool logf)
 {
+	//char buf[32];
+	//std::time_t timestamp = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	//ctime_s(buf, 32, &timestamp);
+
+	char buf[1000];
+	time_t ts = time(NULL);
+	struct tm p;
+	localtime_s(&p, &ts);
+	strftime(buf, 1000, "[%H:%M:%S] ", &p);
+	printf("%s", buf);
+
+	if (logf)
+	{
+		if (t)
+			logfile << buf << std::flush;
+		logfile << string.c_str() << std::flush;
+	}
+
 	if (game.debug == true)
 	{
 		HANDLE ConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -82,3 +107,10 @@ void LogError(HRESULT hr)
 	WriteToConsole(L"\n");
 }
 
+std::wstring ctowstring(char* c)
+{
+	std::vector<char> v(c, c + 32);
+	std::string str(v.begin(), v.end());
+	std::wstring wstr(v.begin(), v.end());
+	return wstr;
+}

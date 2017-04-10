@@ -3,6 +3,8 @@
 
 # User-specific files
 *.suo
+*.v12.suo
+*.sdf
 *.user
 *.userosscache
 *.sln.docstates
@@ -283,3 +285,4 @@ ext/Bullet3/lib/x86/rel/BulletInverseDynamics.lib
 ext/Bullet3/lib/x86/rel/BulletInverseDynamicsUtils.lib
 ext/Bullet3/lib/x86/rel/BulletSoftBody.lib
 ext/Bullet3/lib/x86/rel/BulletWorldImporter.lib
+Projects.txt

@@ -46,6 +46,8 @@ HRESULT Frame(double delta)
 
 		UpdatePhysics(delta);											// btWorld step
 
+
+
 		UpdateCameraControls(&mouse, &keys, &controller[0], delta);		// update camera (--> mat_view)
 
 		UpdateAI(delta);												// update AI/scripts etc. (TBI)
@@ -83,9 +85,9 @@ HRESULT PresentFrame()
 
 void UpdatePlayerControls(KeysController *khandle, XInputController *xhandle, double delta)
 {
-	float speed = 4 * player.mov_speed;
+	float speed = 4 * player.m_movSpeed;
 	if (khandle->sprint.getState() > BTN_UNPRESSED || xhandle->B.getState() > BTN_UNPRESSED)
-		speed = 8 * player.mov_speed;
+		speed = 8 * player.m_movSpeed;
 
 	float3 mmov, xmov;
 	float th = camera.getAngle(CAM_THETA);
@@ -205,8 +207,11 @@ void UpdateWorld(double delta)
 	physEntities.at(3)->setMatTransform(&(MTranslation(WORLD_SCALE * 0, WORLD_SCALE * 0.5, WORLD_SCALE * 0) * MRotY(h)));
 	physEntities.at(4)->setMatTransform(&(MTranslation(WORLD_SCALE * 3, WORLD_SCALE * 1, WORLD_SCALE * sinf(h))));
 	physEntities.at(4)->updateKinematic(delta);
-	physEntities.at(5)->setMatTransform(&(MTranslation(WORLD_SCALE * 4, WORLD_SCALE * (1 + sinf(h)), 2)));
-	physEntities.at(5)->updateKinematic(delta);
+	physEntities.at(5)->setMatTransform(&(MTranslation(WORLD_SCALE * 3, WORLD_SCALE * (1 - 0.5 * sinf(h)), 2)));
+	//physEntities.at(5)->updateKinematic(delta);
+	//physEntities.at(5)->getRigidBody()->setLinearVelocity(btVector3(0, WORLD_SCALE * (sinf(h)), 0));
+	//physEntities.at(5)->getRigidBody()->setLinearFactor(btVector3(0, WORLD_SCALE * (sinf(h)), 0));
+	//physEntities.at(5)->getRigidBody()->setLinearVelocity(bt_origin);
 }
 
 void RenderWorld()
@@ -238,7 +243,7 @@ void RenderHUD(double delta)
 			SetGameState(GAMESTATE_INGAME);
 			//PostQuitMessage(0);
 		}
-		Draw2DRectangle(window_main.width, window_main.height, window_main.left, window_main.bottom, color(0, 0, 0, 0.25));
+		Draw2DRectangle(display.width, display.height, display.left, display.bottom, color(0, 0, 0, 0.25));
 	}
 }
 void Render_Debug()
@@ -261,7 +266,7 @@ void Render_Debug()
 		{
 			Draw3DBox(WORLD_SCALE * Vector3(0.45, 0.15, 0.45), color(2, 1, 1, 1));
 		}
-		else if (i >= physEntities.size() - 3 && i < physEntities.size() - 0)			// test cubes
+		else if (i >= 6 && i < physEntities.size() - 0)			// test cubes
 		{
 			switch (state)
 			{
@@ -289,7 +294,7 @@ void Render_Debug()
 
 	// player
 	mat_world = player.getColl()->getMatTransform();
-	if (player.jumping)
+	if (player.getJumpState() != JUMPSTATE_ONGROUND)
 		Draw3DBox(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3, WORLD_SCALE * 0.15, color(1, 1.1, 1.5, 1));
 	else
 		Draw3DBox(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3, WORLD_SCALE * 0.15, COLOR_GREEN);
@@ -361,14 +366,14 @@ void Render_Debug()
 	Render_DebugController(float2(0, -300), CONTROLLER_1);
 
 	swprintf(global_str64, L"%.3f", mouse.X.getPos());
-	fw_courier->DrawString(devcon, global_str64, 10, window_main.right + 260, window_main.bottom - 180, 0xffffffff, 0);
+	fw_courier->DrawString(devcon, global_str64, 10, display.right + 260, display.bottom - 180, 0xffffffff, 0);
 	swprintf(global_str64, L"%.3f", mouse.Y.getPos());
-	fw_courier->DrawString(devcon, global_str64, 10, window_main.right + 320, window_main.bottom - 150, 0xffffffff, 0);
+	fw_courier->DrawString(devcon, global_str64, 10, display.right + 320, display.bottom - 150, 0xffffffff, 0);
 
 	devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &vertex_stride, &vertex_offset);
 	SetShader(SHADERS_PLAIN);
 
-	Render_DebugFPS(float2(window_main.right, window_main.bottom));
+	Render_DebugFPS(float2(display.right, display.bottom));
 }
 void Render_DebugKeyboard(float2 pos)
 {
@@ -999,16 +1004,16 @@ void Render_DebugFPS(float2 pos)
 	Draw2DRectBorderThick(200, 10, pos.x - 260, pos.y - 83, 1, border);
 
 	swprintf(global_str64, L"FPS: %.2f (%i)", timer.GetFPSStamp(), timer.GetFramesCount());
-	fw_courier->DrawString(devcon, global_str64, 10, window_main.width - 260, window_main.height - 200, 0xffffffff, 0);
+	fw_courier->DrawString(devcon, global_str64, 10, display.width - 260, display.height - 200, 0xffffffff, 0);
 	swprintf(global_str64, L"Max: %.2f", timer.maxFps);
-	fw_courier->DrawString(devcon, global_str64, 10, window_main.width - 125, window_main.height - 200, 0xffffffff, 0);
+	fw_courier->DrawString(devcon, global_str64, 10, display.width - 125, display.height - 200, 0xffffffff, 0);
 
 	swprintf(global_str64, L"CPU usage: %d%%", cpu);
-	fw_courier->DrawString(devcon, global_str64, 10, window_main.width - 260, window_main.height - 78, 0xffffffff, 0);
+	fw_courier->DrawString(devcon, global_str64, 10, display.width - 260, display.height - 78, 0xffffffff, 0);
 	swprintf(global_str64, L"RAM usage: %.2f%%", physMemPercent);
-	fw_courier->DrawString(devcon, global_str64, 10, window_main.width - 260, window_main.height - 64, 0xffffffff, 0);
+	fw_courier->DrawString(devcon, global_str64, 10, display.width - 260, display.height - 64, 0xffffffff, 0);
 	swprintf(global_str64, L"Alloc.: %.3f MB", physMemMB);
-	fw_courier->DrawString(devcon, global_str64, 10, window_main.width - 260, window_main.height - 50, 0xffffffff, 0);
+	fw_courier->DrawString(devcon, global_str64, 10, display.width - 260, display.height - 50, 0xffffffff, 0);
 }
 
 void SetDepthBufferState(bool state)

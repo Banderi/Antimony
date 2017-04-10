@@ -33,8 +33,8 @@ SimpleCharacter::SimpleCharacter()
 
 void Character::update(double delta)
 {
-	lin_worldvel = bt_origin;
-	ang_worldvel = bt_origin;
+	m_linWorldVel = bt_origin;
+	m_angWorldVel = bt_origin;
 
 	auto& mf = objectsCollisions[m_collisionObject->getRigidBody()];	// get current world manifolds
 
@@ -51,14 +51,21 @@ void Character::update(double delta)
 				float a = n.angle(btVector3(0, 1, 0));					// get angle between the normal and the 'up' vector
 				if (a <= DX_PI * 0.2)
 				{
-					jumping = 0;
+					m_jumping = 0;
 
 					// math hocus pocus
 					btVector3 d = m_collisionObject->getbtPos() - b->getWorldTransform().getOrigin();
-					ang_worldvel = b->getAngularVelocity();
-					ang_worldvel.setX(0);
-					ang_worldvel.setZ(0);
-					lin_worldvel = b->getLinearVelocity() - d.cross(ang_worldvel);			// linear vel. is object's vel. plus cross product of angular vel. and distance
+					m_angWorldVel = b->getAngularVelocity();
+					m_angWorldVel.setX(0);
+					m_angWorldVel.setZ(0);
+					m_linWorldVel = b->getLinearVelocity() - d.cross(m_angWorldVel);			// linear vel. is object's vel. plus cross product of angular vel. and distance
+					//m_linWorldVel.setY(m_collisionObject->getRigidBody()->getLinearVelocity().getY());
+					m_linWorldVel.setY(0);
+
+					/*m_linWorldVel = m_collisionObject->getRigidBody()->getLinearVelocity();
+					m_linWorldVel.setX(0);
+					m_linWorldVel.setZ(0);*/
+					//m_linWorldVel = bt_origin;
 
 					goto contact;										// skip all other contact points/manifolds
 				}
@@ -73,19 +80,48 @@ void Character::update(double delta)
 				//}
 				else
 				{
-					jumping = 1;
+					m_jumping = 1;
 				}
 			}
-			jumping = 1;
+			m_jumping = 1;
 		}
 	contact:;
 	}
 	else
 	{
-		jumping = 1;
+		m_jumping = 1;
 	}
 
 	m_collisionObject->getRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
+}
+void Character::updateContact(char contact)
+{
+	if (contact == 1)			// no contact
+	{
+		if (m_jumping != JUMPSTATE_INAIR)
+		{
+			m_jumping = JUMPSTATE_JUMPING;
+		}
+		else
+		{
+			m_jumping = JUMPSTATE_INAIR;
+		}
+	}
+	else if (contact == 0)		// contact is firing
+	{
+		m_jumping = JUMPSTATE_ONGROUND;
+	}
+	else if (contact == -1)		// default (no changes)
+	{
+		if (m_jumping == JUMPSTATE_JUMPING)
+		{
+			m_jumping = JUMPSTATE_INAIR;
+		}
+		else if (m_jumping == JUMPSTATE_LANDING)
+		{
+			m_jumping = JUMPSTATE_ONGROUND;
+		}
+	}
 }
 void Character::warp(Vector3 d)
 {
@@ -102,10 +138,10 @@ void Character::warp(Vector3 d)
 }
 void Character::move(btVector3 *v, float s)
 {
-	if (!jumping)
+	if (!m_jumping)
 	{
-		m_collisionObject->getRigidBody()->setLinearVelocity(lin_worldvel + (*v) * s);		// move with linear velocity when standing on an object
-		m_collisionObject->getRigidBody()->setAngularVelocity(ang_worldvel);
+		m_collisionObject->getRigidBody()->setLinearVelocity(m_linWorldVel + (*v) * s);		// move with linear velocity when standing on an object
+		m_collisionObject->getRigidBody()->setAngularVelocity(m_angWorldVel);
 	}
 	else
 	{
@@ -114,10 +150,10 @@ void Character::move(btVector3 *v, float s)
 }
 void Character::attemptJump()
 {
-	if (jumping)
+	if (m_jumping)
 		return;
 
-	btVector3 v = btVector3(m_collisionObject->getRigidBody()->getLinearVelocity().getX() * 0.3, jump_speed, m_collisionObject->getRigidBody()->getLinearVelocity().getZ() * 0.3);
+	btVector3 v = btVector3(m_collisionObject->getRigidBody()->getLinearVelocity().getX() * 0.3, m_jumpSpeed, m_collisionObject->getRigidBody()->getLinearVelocity().getZ() * 0.3);
 	m_collisionObject->getRigidBody()->setLinearVelocity(v);
 }
 void Character::setCollisionObject(btObject *pc)
@@ -132,14 +168,26 @@ Vector3 Character::getPos()
 {
 	return m_collisionObject->getFlat3Pos();
 }
+bool Character::getMovingState()
+{
+	return m_moving;
+}
+char Character::getJumpState()
+{
+	return m_jumping;
+}
+char Character::getActionState()
+{
+	return m_action;
+}
 Character::Character()
 {
-	moving = false;
-	jumping = 0;
-	action = 0;
+	m_moving = false;
+	m_jumping = 0;
+	m_action = 0;
 	//rvel = btVector3(0, 0, 0);
-	mov_speed = WORLD_SCALE * 0.5f;
-	jump_speed = WORLD_SCALE * 5;
+	m_movSpeed = WORLD_SCALE * 0.5f;
+	m_jumpSpeed = WORLD_SCALE * 5;
 	m_collisionObject = nullptr;
 }
 Character::~Character()

@@ -30,8 +30,10 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	int nCmdShow)
 {
 	SetGameState(GAMESTATE_LOADING_1);
+	SetSubSystem(SUBSYS_FPS_TPS);
 
 	ReadConfig();
+	logfile.open("log.txt");
 
 #ifdef _DEBUG
 	game.debug = true;
@@ -163,11 +165,15 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 				case VK_OEM_COMMA:
 				{
 					game.dbg_entityfollow--;
+					if (game.dbg_entityfollow < 0)
+						game.dbg_entityfollow = physEntities.size() - 1;
 					break;
 				}
 				case VK_OEM_PERIOD:
 				{
 					game.dbg_entityfollow++;
+					if (game.dbg_entityfollow > physEntities.size() - 1)
+						game.dbg_entityfollow = 0;
 					break;
 				}
 				case 0x52:
@@ -186,6 +192,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 void ReadConfig()
 {
 	WriteToConsole(L"Loading config files... ");
+
+	WCHAR buf[32];			// buffer for floating point values
 
 	// get window settings
 	window_main.fullscreen = GetPrivateProfileIntW(L"display", L"Fullscreen", 0, L".\\config.ini");
@@ -211,7 +219,7 @@ void ReadConfig()
 		window_main.aspect = (float)window_main.width / (float)window_main.height;
 	}
 
-	window_main.plane = { window_main.x, window_main.y, window_main.width + window_main.x, window_main.height + window_main.y};
+	window_main.plane = { window_main.x, window_main.y, window_main.width + window_main.x, window_main.height + window_main.y };
 	window_main.top = -window_main.height * 0.5;	//	-1,-1--------- 1,-1
 	window_main.bottom = window_main.height * 0.5;	//	  |             |
 	window_main.right = window_main.width * 0.5;	//	  |             |
@@ -221,14 +229,53 @@ void ReadConfig()
 	display.vsync = GetPrivateProfileIntW(L"display", L"VSync", 0, L".\\config.ini");
 	display.triple_buff = GetPrivateProfileIntW(L"display", L"TripleBuffering", 0, L".\\config.ini");
 
+	display.width = GetPrivateProfileIntW(L"display", L"ResolutionX", window_main.width, L".\\config.ini");
+	display.height = GetPrivateProfileIntW(L"display", L"ResolutionY", window_main.height, L".\\config.ini");
+	display.top = -display.height * 0.5;	//	-1,-1--------- 1,-1
+	display.bottom = display.height * 0.5;	//	  |             |
+	display.right = display.width * 0.5;	//	  |             |
+	display.left = -display.width * 0.5;	//	-1, 1--------- 1, 1
+
+	display.tex_filtering = GetPrivateProfileIntW(L"display", L"TexFiltering", 0, L".\\config.ini");
+	display.tex_mipmap = GetPrivateProfileIntW(L"display", L"TexMipMap", 1, L".\\config.ini");
+	display.tex_quality = GetPrivateProfileIntW(L"display", L"TexQuality", 1, L".\\config.ini");
+	display.aa_technique = GetPrivateProfileIntW(L"display", L"AAKind", 0, L".\\config.ini");
+	display.aa_resolution = GetPrivateProfileIntW(L"display", L"AAMult", AA_2X, L".\\config.ini");
+	display.ao_technique = GetPrivateProfileIntW(L"display", L"AOKind", 0, L".\\config.ini");
+	display.ao_resolution = GetPrivateProfileIntW(L"display", L"AOResolution", 1024, L".\\config.ini");
+	display.sh_technique = GetPrivateProfileIntW(L"display", L"ShadKind", 0, L".\\config.ini");
+	display.sh_resolution = GetPrivateProfileIntW(L"display", L"ShadResolution", 1024, L".\\config.ini");
+
+	display.reflect = GetPrivateProfileIntW(L"display", L"Reflections", 1, L".\\config.ini");
+	display.postproc = GetPrivateProfileIntW(L"display", L"PostProcessing", 1, L".\\config.ini");
+	display.particles = GetPrivateProfileIntW(L"display", L"Particles", 1, L".\\config.ini");
+	display.miscfx = GetPrivateProfileIntW(L"display", L"MiscFX", 1, L".\\config.ini");
+
+	GetPrivateProfileStringW(L"display", L"RenderDistance1", L"1024.0", buf, 32, L".\\config.ini");
+	display.render_dist1 = _wtof(buf);
+	GetPrivateProfileStringW(L"display", L"RenderDistance2", L"1024.0", buf, 32, L".\\config.ini");
+	display.render_dist2 = _wtof(buf);
+
+	display.subtitles = GetPrivateProfileIntW(L"display", L"Subtitles", 1, L".\\config.ini");
+	display.subt_kind = GetPrivateProfileIntW(L"display", L"SubtitlesSettings", 1, L".\\config.ini");
+
+	// get audio settings
+	audio.vol_master = GetPrivateProfileIntW(L"audio", L"MasterVolume", 50, L".\\config.ini");
+	audio.vol_dialogue = GetPrivateProfileIntW(L"audio", L"DialogueVolume", 50, L".\\config.ini");
+	audio.vol_fx = GetPrivateProfileIntW(L"audio", L"FXVolume", 50, L".\\config.ini");
+	audio.vol_music = GetPrivateProfileIntW(L"audio", L"MusicVolume", 50, L".\\config.ini");
+
 	// get game settings
 	game.debug = GetPrivateProfileIntW(L"game", L"Debug", 0, L".\\config.ini");
 	game.cheats = GetPrivateProfileIntW(L"game", L"Cheats", 1, L".\\config.ini");
 	game.difficulty = GetPrivateProfileIntW(L"game", L"Difficulty", 1, L".\\config.ini");
 	game.camera_friction = GetPrivateProfileIntW(L"game", L"CameraWobble", 1, L".\\config.ini");
 
+	game.lang_main = GetPrivateProfileIntW(L"game", L"LanguageMain", 1, L".\\config.ini");
+	game.lang_audio = GetPrivateProfileIntW(L"game", L"LanguageAudio", 1, L".\\config.ini");
+	game.lang_subtitles = GetPrivateProfileIntW(L"game", L"LanguageSub", 1, L".\\config.ini");
+
 	// get controls settings
-	WCHAR buf[32];
 	GetPrivateProfileStringW(L"controls", L"mSensibility", L".5", buf, 32, L".\\config.ini");
 	controls.m_sensitivity = _wtof(buf);
 	GetPrivateProfileStringW(L"controls", L"xSensibility", L".5", buf, 32, L".\\config.ini");
@@ -257,20 +304,19 @@ void ReadConfig()
 
 	cpu_usage.SetMaxRecords(100);
 
-	WriteToConsole(L"done\n");
+	WriteToConsole(L"done!\n", false);
 }
 HRESULT EnumHardware()
 {
-	WriteToConsole(L"Enumerating hardware... ");
+	WriteToConsole(L"Enumerating hardware...\n");
 
 	HRESULT hr;
 	IDXGIFactory* factory;
 	IDXGIAdapter* adapter;
 	IDXGIOutput* adapterOutput;
-	unsigned int numModes, i, stringLength;
+	UINT numModes;
 	DXGI_MODE_DESC* displayModeList;
 	DXGI_ADAPTER_DESC adapterDesc;
-	int error;
 	/*DXGI_SWAP_CHAIN_DESC swapChainDesc;
 	D3D_FEATURE_LEVEL featureLevel;
 	ID3D11Texture2D* backBufferPtr;
@@ -308,31 +354,29 @@ HRESULT EnumHardware()
 	const HWND hDesktop = GetDesktopWindow();
 	GetWindowRect(hDesktop, &desktop);
 
+	// get the adapter (video card) description
+	if (!Handle(&hr, HRH_ENUM_GETGPUDESC, adapter->GetDesc(&adapterDesc)))
+		return hr;
+
+	// convert the name of the video card to a character array and store it
+	wcscpy(display.gpu_desc, adapterDesc.Description);								WriteToConsole(L"> " + wstring(display.gpu_desc) + L"\n");
+
 	// go through all the display modes and find the one that matches the screen width and height;
 	// when a match is found store thedisplay.gpu_num and display.gpu_denom of the refresh rate for that monitor
-	for (i = 0; i<numModes; i++)
+	for (UINT i = 0; i < numModes; i++)
 	{
 		if (displayModeList[i].Width == (unsigned int)desktop.right)
 		{
 			if (displayModeList[i].Height == (unsigned int)desktop.bottom)
 			{
-				display.gpu_num = displayModeList[i].RefreshRate.Numerator;			WriteToConsole(to_wstring(display.gpu_num) + L" ");
-				display.gpu_denom = displayModeList[i].RefreshRate.Denominator;		WriteToConsole(to_wstring(display.gpu_num) + L" ");
+				display.gpu_num = displayModeList[i].RefreshRate.Numerator;			WriteToConsole(L"> " + to_wstring(display.gpu_num) + L"/");
+				display.gpu_denom = displayModeList[i].RefreshRate.Denominator;		WriteToConsole(L"" + to_wstring(display.gpu_denom) + L"/", false);
 			}
 		}
 	}
 
-	// get the adapter (video card) description
-	if (!Handle(&hr, HRH_ENUM_GETGPUDESC, adapter->GetDesc(&adapterDesc)))
-		return hr;
-
 	// store the dedicated video card memory in megabytes
-	display.gpu_vram = (int)(adapterDesc.DedicatedVideoMemory / 1024 / 1024);		WriteToConsole(to_wstring(display.gpu_vram) + L"mb ");
-
-	// convert the name of the video card to a character array and store it
-	error = wcstombs_s(&stringLength, display.gpu_desc, 128, adapterDesc.Description, 128);
-	if (error != 0)
-		return error;
+	display.gpu_vram = (int)(adapterDesc.DedicatedVideoMemory / 1024 / 1024);		WriteToConsole(L"" + to_wstring(display.gpu_vram) + L"MB\n", false);
 
 	// release the display mode list
 	delete[] displayModeList;
@@ -351,7 +395,7 @@ HRESULT EnumHardware()
 	totalPhysMem = memInfo.ullTotalPhys;
 	physMemAvail = memInfo.ullAvailPhys;
 
-	WriteToConsole(L"done\n");
+	WriteToConsole(L"done!\n");
 
 	return S_OK;
 }
@@ -380,8 +424,8 @@ HRESULT InitD3D(HWND hWnd)
 
 	// Fill swapchain description
 	scd.BufferCount = 1;
-	scd.BufferDesc.Width = window_main.width;
-	scd.BufferDesc.Height = window_main.height;
+	scd.BufferDesc.Width = display.width;
+	scd.BufferDesc.Height = display.height;
 	scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	scd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	scd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
@@ -430,8 +474,8 @@ HRESULT InitD3D(HWND hWnd)
 		return hr;
 
 	// Fill 2D texture description for the depth buffer
-	txd.Width = window_main.width;
-	txd.Height = window_main.height;
+	txd.Width = display.width;
+	txd.Height = display.height;
 	txd.MipLevels = 1;
 	txd.ArraySize = 1;
 	txd.Format = DXGI_FORMAT_D32_FLOAT;
@@ -486,8 +530,8 @@ HRESULT InitD3D(HWND hWnd)
 		return hr;
 
 	// Viewport setup
-	viewport.Width = window_main.width;
-	viewport.Height = window_main.height;
+	viewport.Width = display.width;
+	viewport.Height = display.height;
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
 	viewport.TopLeftX = 0.0f;
@@ -507,7 +551,7 @@ HRESULT InitD3D(HWND hWnd)
 		return hr;
 	devcon->OMSetBlendState(blendstate, 0, 0xffffffff);
 
-	WriteToConsole(L"done\n");
+	WriteToConsole(L"done!\n", false);
 
 	return S_OK;
 }
@@ -539,7 +583,7 @@ HRESULT InitShaders()
 	if (!CompileShader(&hr, L"plain", &sh_plain))
 		return hr;
 
-	WriteToConsole(L"done\n");
+	WriteToConsole(L"done!\n", false);
 	return S_OK;
 }
 HRESULT InitFonts()
@@ -554,7 +598,7 @@ HRESULT InitFonts()
 	if (!Handle(&hr, HRH_FONTS_CREATEWRAPPER, fw1factory->CreateFontWrapper(dev, L"Courier", &fw_courier)))
 		return hr;
 
-	WriteToConsole(L"done\n");
+	WriteToConsole(L"done!\n", false);
 	return S_OK;
 }
 HRESULT InitGraphics()
@@ -594,12 +638,12 @@ HRESULT InitGraphics()
 	mat_view = MLookAtLH(float3(0, 0, -1), float3(0, 0, 0), float3(0, 1, 0));
 	mat_orthoview = MLookAtLH(float3(0, 0, -1), float3(0, 0, 0), float3(0, 1, 0));
 	mat_proj = MPerspFovLH(DX_PI / 4, window_main.aspect, 0.001f, 10000.0f);
-	mat_orthoproj = MOrthoLH(window_main.width, window_main.height, 0.001f, 10000.0f);
+	mat_orthoproj = MOrthoLH(display.width, display.height, 0.001f, 10000.0f);
 
 	camera.moveToPoint(v3_origin + WORLD_SCALE * float3(0, 0, -1), -1);
 	camera.lookAtPoint(v3_origin, -1);
 
-	WriteToConsole(L"done\n");
+	WriteToConsole(L"done!\n", false);
 	return S_OK;
 }
 HRESULT InitPhysics()
@@ -664,18 +708,21 @@ HRESULT InitPhysics()
 	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, 0.0f, cs, ms, &btVector3(0, 0, 0));
 
 	cs = new btBoxShape(WORLD_SCALE * btVector3(0.45, 0.15, 0.45));
-	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 1, 0)));
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 2, 2)));
 	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, 0.0f, cs, ms, &btVector3(0, 0, 0));
 
 	// test cubes
 	cs = new btBoxShape(WORLD_SCALE * btVector3(0.3, 0.3, 0.3));
-	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 80, 0)));
-	phys_obj = new btObject(BTOBJECT_DYNAMIC, 10.0f, cs, ms);
-
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 6, 0)));
 	phys_obj = new btObject(BTOBJECT_DYNAMIC, 10.0f, cs, ms);
 
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 40, 0)));
+	phys_obj = new btObject(BTOBJECT_DYNAMIC, 10.0f, cs, ms);
+
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 80, 0)));
+	phys_obj = new btObject(BTOBJECT_DYNAMIC, 10.0f, cs, ms);
+
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 4, 2)));
 	phys_obj = new btObject(BTOBJECT_DYNAMIC, 10.0f, cs, ms);
 
 	//// player CharEntity
@@ -698,7 +745,7 @@ HRESULT InitPhysics()
 
 	//player.cont = char_obj;
 
-	WriteToConsole(L"done\n");
+	WriteToConsole(L"done!\n", false);
 	return S_OK;
 }
 HRESULT LoadStartingFiles()
@@ -718,7 +765,7 @@ void CleanD3D()
 	targettview->Release();
 	depthstencilview->Release();
 
-	WriteToConsole(L"done\n");
+	WriteToConsole(L"done!\n", false);
 
 	ReleaseFiles();
 }
@@ -730,7 +777,9 @@ void ReleaseFiles()
 	smartRelease(fw_arial);
 	smartRelease(fw_courier);
 
-	WriteToConsole(L"done\n");
+	WriteToConsole(L"done!\n", false);
+	WriteToConsole(L"----> END OF DEBUG CONSOLE <----\n");
+	logfile.close();
 }
 
 void Log()
@@ -747,12 +796,19 @@ void Log()
 		WriteToConsole(to_wstring(mouse.GetCoord(ycoord).getPos()));
 		WriteToConsole(L" (X)");*/
 
-		WriteToConsole(L"\r                                                            \r");
-		//WriteToConsole(to_wstring(timer.GetFPSStamp()) + L" FPS (" + to_wstring(timer.GetFramesCount()) + L") " + to_wstring(cpu_usage.lastUsage));
-		WriteToConsole(to_wstring(mouse.X.getPos()));
-		WriteToConsole(L" (X) ");
-		WriteToConsole(to_wstring(mouse.Y.getPos()));
-		WriteToConsole(L" (Y)");
+		//WriteToConsole(L"\r                                                            \r");
+		////WriteToConsole(to_wstring(timer.GetFPSStamp()) + L" FPS (" + to_wstring(timer.GetFramesCount()) + L") " + to_wstring(cpu_usage.lastUsage));
+		//WriteToConsole(to_wstring(mouse.X.getPos()));
+		//WriteToConsole(L" (X) ");
+		//WriteToConsole(to_wstring(mouse.Y.getPos()));
+		//WriteToConsole(L" (Y)");
+
+		WriteToConsole(L"\r                                     \r", false, false);
+		WriteToConsole(L"Camera: ", false, false);
+		WriteToConsole(to_wstring(game.dbg_entityfollow), false, false);
+		WriteToConsole(L" (entity ", false, false);
+		WriteToConsole(to_wstring(game.dbg_entityfollow%physEntities.size()), false, false);
+		WriteToConsole(L")", false, false);
 
 		//printf("\33[2K\r");
 		//system("CLS");

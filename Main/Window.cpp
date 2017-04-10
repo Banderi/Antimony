@@ -29,5 +29,5 @@ void CreateMainWindow(HINSTANCE hInstance)
 		hInstance,
 		NULL);
 
-	WriteToConsole(L" done\n");
+	WriteToConsole(L" done\n", false);
 }

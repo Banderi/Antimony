@@ -37,28 +37,29 @@ float Axis::getVel()
 
 void Input::update(char down)
 {
-	if (down == 1) // input is activated
+	if (down == 1)			// input is activated
 	{
-		if (m_pressState != 2)
+		if (m_pressState != BTN_HELD)
 		{
-			m_pressState = 1;
+			m_pressState = BTN_PRESSED;
 			m_pressTime = clock();
 		}
 		else
-			m_pressState = 2;
+			m_pressState = BTN_HELD;
 	}
-	else if (down == 0) // input is released
+	else if (down == 0)		// input is released
 	{
-		m_pressState = 3;
-		m_pressTime = -1;
+		m_pressState = BTN_RELEASED;
 	}
-	else if (down == -1) // input does not change state
+	else if (down == -1)	// input does not change state
 	{
-		if (m_pressState == 1)
-			m_pressState = 2;
-		else if (m_pressState == 3)
+		if (m_pressState == BTN_PRESSED)
 		{
-			m_pressState = 0;
+			m_pressState = BTN_HELD;
+		}
+		else if (m_pressState == BTN_RELEASED)
+		{
+			m_pressState = BTN_UNPRESSED;
 			m_pressTime = -1;
 		}
 	}
@@ -143,7 +144,7 @@ void KeysController::updateMouse(RAWMOUSE rmouse)
 void KeysController::updateKeyboard(RAWKEYBOARD rkeys)
 {
 	USHORT vk = rkeys.VKey;
-	
+
 	for (unsigned char i = 0; i < m_keyArray.size(); i++)
 	{
 		if (vk == m_keyArray.at(i)->getVKey())
@@ -247,7 +248,7 @@ void XInputController::update()
 					m_btnArray.at(i)->update(true);
 				else if (m_btnArray.at(i)->getState() != BTN_UNPRESSED)
 					m_btnArray.at(i)->update(false);
-			}			
+			}
 		}
 	}
 }
@@ -265,7 +266,7 @@ void XInputController::reset()
 }
 void XInputController::vibrate(float leftmotor, float rightmotor)
 {
-	// Create a new Vibraton 
+	// Create a new Vibraton
 	XINPUT_VIBRATION Vibration;
 
 	memset(&Vibration, 0, sizeof(XINPUT_VIBRATION));
@@ -315,7 +316,7 @@ HRESULT RegisterRID()
 	{
 		XINPUT_STATE state;
 		for (unsigned char i = 0; i< XUSER_MAX_COUNT; i++)
-		{ 
+		{
 			controller[i].enabled = false;
 			controller[i].number = i;
 			ZeroMemory(&state, sizeof(XINPUT_STATE));
@@ -324,7 +325,7 @@ HRESULT RegisterRID()
 				controller[i].enabled = true;
 		}
 
-		WriteToConsole(L"done\n");
+		WriteToConsole(L"done!\n", false);
 		return S_OK;
 	}
 }

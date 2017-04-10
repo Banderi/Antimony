@@ -20,7 +20,7 @@ PROCESS_MEMORY_COUNTERS_EX pmc;
 ***********************************************/
 short CpuUsage::GetUsage(bool costant)
 {
-	//create a local copy to protect against race conditions in setting the 
+	//create a local copy to protect against race conditions in setting the
 	//member variable
 	short nCpuCopy = m_nCpuUsage;
 	if (::InterlockedIncrement(&m_lRunCount) == 1)

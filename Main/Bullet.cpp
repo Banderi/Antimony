@@ -56,13 +56,15 @@ void btObject::setMatTransform(mat *m)
 btVector3 btObject::updateKinematic(double delta)
 {
 	btTransform t;
-	m_motionState->getWorldTransform(t);
+	//m_motionState->getWorldTransform(t);
+	t = m_rigidBody->getWorldTransform();
 
 	btVector3 v = t.getOrigin() - m_oldKinematicTransform.getOrigin();
 
 	m_oldKinematicTransform = t;
 
-	m_rigidBody->setLinearVelocity(v / delta);
+	//m_rigidBody->setLinearVelocity(v / delta);
+	//m_rigidBody->setLinearVelocity(bt_origin);
 
 	return v / delta;
 }
@@ -133,6 +135,8 @@ btObject::btObject(int k, float m, btCollisionShape *c, btDefaultMotionState *s,
 
 	m_inertia = new btVector3;
 	m_collisionShape->calculateLocalInertia(m_mass, *m_inertia);
+
+	// TODO: join the two constructors (local inertia --> rigidbody is dynamic if and only if mass is non zero, otherwise static)
 
 	initObject();
 }

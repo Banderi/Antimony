@@ -3,6 +3,7 @@
 ///
 
 unsigned int GameState;
+unsigned char SubSystem;
 
 ///
 
@@ -17,6 +18,22 @@ unsigned int GetGameState()
 bool IfGameState(unsigned int state)
 {
 	if (GameState == state)
+		return true;
+	else
+		return false;
+}
+
+void SetSubSystem(unsigned char subs)
+{
+	SubSystem = subs;
+}
+unsigned char GetSubSystem()
+{
+	return SubSystem;
+}
+bool IfSubSystem(unsigned char subs)
+{
+	if (SubSystem == subs)
 		return true;
 	else
 		return false;

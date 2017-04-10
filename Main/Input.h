@@ -9,27 +9,27 @@
 
 ///
 
-#define MOUSE_LEFT 0
-#define MOUSE_MIDDLE 1
-#define MOUSE_RIGHT 2
+#define MOUSE_LEFT		0
+#define MOUSE_MIDDLE	1
+#define MOUSE_RIGHT		2
 
-#define BTN_UNPRESSED 0
-#define BTN_PRESSED 1
-#define BTN_HELD 2
-#define BTN_RELEASED 3
+#define BTN_UNPRESSED	0
+#define BTN_PRESSED		1
+#define BTN_HELD		2
+#define BTN_RELEASED	3
 
-#define COORD_X 0
-#define COORD_Y 1
-#define COORD_Z 2
+#define COORD_X			0
+#define COORD_Y			1
+#define COORD_Z			2
 
-#define KEY_TYPE_KEYBOARD 0x00
-#define KEY_TYPE_MOUSE 0x01
-#define KEY_TYPE_CONTROLLER 0x02
+#define KEY_TYPE_KEYBOARD		0x00
+#define KEY_TYPE_MOUSE			0x01
+#define KEY_TYPE_CONTROLLER		0x02
 
-#define CONTROLLER_1 0x00
-#define CONTROLLER_2 0x01
-#define CONTROLLER_3 0x02
-#define CONTROLLER_4 0x03
+#define CONTROLLER_1			0x00
+#define CONTROLLER_2			0x01
+#define CONTROLLER_3			0x02
+#define CONTROLLER_4			0x03
 
 ///
 
@@ -101,7 +101,7 @@ public:
 struct Input_Key : Input
 {
 protected:
-	unsigned short m_vKey;	
+	unsigned short m_vKey;
 
 public:
 	void set(unsigned short vk, std::string nm);
@@ -267,7 +267,7 @@ public:
 
 	Input_Button Start;
 	Input_Button Back;
-	
+
 	unsigned char number;
 	bool enabled;
 

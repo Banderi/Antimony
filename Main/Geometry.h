@@ -37,7 +37,7 @@ struct SHADER
 	bool ready;
 
 	ID3D11VertexShader *vs;
-	ID3D11PixelShader *ps;	
+	ID3D11PixelShader *ps;
 	ID3D11InputLayout *il;
 
 	ID3D11GeometryShader *gs;

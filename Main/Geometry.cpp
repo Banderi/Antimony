@@ -90,7 +90,7 @@ bool CompileShader(HRESULT *hr, std::wstring shader, SHADER *sh)
 bool SetShader(SHADER *sh, ID3D11DeviceContext *devc)
 {
 	if (sh->ready)
-	{		
+	{
 		devc->VSSetShader(sh->vs, 0, 0);
 		devc->PSSetShader(sh->ps, 0, 0);
 		devc->IASetInputLayout(sh->il);
@@ -453,7 +453,7 @@ void Draw3DEllipses(float w, float h, color c, bool dd, mat *world, color diffus
 		SetView(&(MScaling(-w, h, 1) * (*world)), &mat_view, &mat_proj, diffuse, dv, devc, cb);
 		devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		devc->DrawIndexed(120, 0, 0);
-	}		
+	}
 	else
 	{
 		SetView(&(MScaling(-w, h, 1) * (*world)), &mat_view, &mat_proj, diffuse, dv, devc, cb);
@@ -462,7 +462,7 @@ void Draw3DEllipses(float w, float h, color c, bool dd, mat *world, color diffus
 		SetView(&(MScaling(w, h, 1) * (*world)), &mat_view, &mat_proj, diffuse, dv, devc, cb);
 		devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		devc->DrawIndexed(120, 0, 0);
-	}	
+	}
 }
 void Draw3DBox(float w, float h, float b, color c, mat *world, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, ID3D11Buffer *vb, ID3D11Buffer *ib, ID3D11Buffer *cb)
 {
