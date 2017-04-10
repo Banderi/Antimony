@@ -23,23 +23,23 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>MainWrapper_0</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
-    <ProjectName>Main</ProjectName>
+    <ProjectName>Antimony</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Static|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -47,7 +47,7 @@
     <UseOfMfc>false</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Static|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -76,29 +76,29 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)\Debug\</OutDir>
-    <TargetName>game_dbg</TargetName>
+    <OutDir>$(SolutionDir)\Debug\lib\$(Configuration)\</OutDir>
+    <TargetName>antimony</TargetName>
     <LibraryPath>$(FBXSDKDIR)\lib\x86;$(FW1DIR)\lib\x86;$(BLT3DIR)\lib\x86\dbg;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
     <IncludePath>$(FBXSDKDIR)\include;$(FW1DIR)\include;$(BLT3DIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Static|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)\Debug\</OutDir>
-    <TargetName>game_dbgStatic</TargetName>
+    <OutDir>$(SolutionDir)\Debug\lib\$(Configuration)\</OutDir>
+    <TargetName>antimony</TargetName>
     <LibraryPath>$(FBXSDKDIR)\lib\x86;$(FW1DIR)\lib\x86;$(BLT3DIR)\lib\x86\dbg;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
     <IncludePath>$(FBXSDKDIR)\include;$(FW1DIR)\include;$(BLT3DIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)\Debug\</OutDir>
-    <TargetName>game</TargetName>
+    <OutDir>$(SolutionDir)\Debug\lib\$(Configuration)\</OutDir>
+    <TargetName>antimony</TargetName>
     <LibraryPath>$(FBXSDKDIR)\lib\x86;$(FW1DIR)\lib\x86;$(BLT3DIR)\lib\x86\rel;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
     <IncludePath>$(FBXSDKDIR)\include;$(FW1DIR)\include;$(BLT3DIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Static|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)\Debug\</OutDir>
-    <TargetName>game_static</TargetName>
+    <OutDir>$(SolutionDir)\Debug\lib\$(Configuration)\</OutDir>
+    <TargetName>antimony</TargetName>
     <LibraryPath>$(FBXSDKDIR)\lib\x86;$(FW1DIR)\lib\x86;$(BLT3DIR)\lib\x86\rel;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
     <IncludePath>$(FBXSDKDIR)\include;$(FW1DIR)\include;$(BLT3DIR)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
@@ -198,7 +198,6 @@
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="Hresult.cpp" />
     <ClCompile Include="Input.cpp" />
-    <ClCompile Include="Main.cpp" />
     <ClCompile Include="Param.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Texture.cpp" />
@@ -220,7 +219,7 @@
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="Hresult.h" />
     <ClInclude Include="Input.h" />
-    <ClInclude Include="Main.h" />
+    <ClInclude Include="Antimony.h" />
     <ClInclude Include="Param.h" />
     <ClInclude Include="pchfx.h" />
     <ClInclude Include="Player.h" />

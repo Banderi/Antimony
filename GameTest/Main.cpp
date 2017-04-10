@@ -1,17 +1,5 @@
-#include <string>
-#include <Shlwapi.h>
-
-#include "Warnings.h"
 #include "Main.h"
-#include "DebugWin.h"
-#include "Hresult.h"
-#include "Frame.h"
-#include "Gameflow.h"
-#include "CpuRamUsage.h"
-#include "Timer.h"
-#include "Bullet.h"
-#include "Font.h"
-#include "SmartRelease.h"
+#include "resource.h"
 
 ///
 
@@ -96,22 +84,22 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		{
 			switch (msg.message)
 			{
-				case WM_QUIT:
-				{
-					run = 0;
-					break;
-				}
-				case WM_INPUT:
-				{
-					HandleRaw(msg);
-					break;
-				}
-				default:
-				{
-					TranslateMessage(&msg);
-					DispatchMessageW(&msg);
-					break;
-				}
+			case WM_QUIT:
+			{
+				run = 0;
+				break;
+			}
+			case WM_INPUT:
+			{
+				HandleRaw(msg);
+				break;
+			}
+			default:
+			{
+				TranslateMessage(&msg);
+				DispatchMessageW(&msg);
+				break;
+			}
 			}
 		}
 
@@ -142,49 +130,49 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 {
 	switch (message)
 	{
-		case WM_DESTROY:
+	case WM_DESTROY:
+	{
+		PostQuitMessage(0);
+		return 0;
+		break;
+	}
+	case WM_KEYDOWN:
+	{
+		switch (wParam)
 		{
-			PostQuitMessage(0);
-			return 0;
+		case VK_ESCAPE:
+		{
+			//PostQuitMessage(0);
 			break;
 		}
-		case WM_KEYDOWN:
+		case VK_F7:
 		{
-			switch (wParam)
-			{
-				case VK_ESCAPE:
-				{
-					//PostQuitMessage(0);
-					break;
-				}
-				case VK_F7:
-				{
-					game.dbg_wireframe = !game.dbg_wireframe;
-					break;
-				}
-				case VK_OEM_COMMA:
-				{
-					game.dbg_entityfollow--;
-					if (game.dbg_entityfollow < 0)
-						game.dbg_entityfollow = physEntities.size() - 1;
-					break;
-				}
-				case VK_OEM_PERIOD:
-				{
-					game.dbg_entityfollow++;
-					if (game.dbg_entityfollow > physEntities.size() - 1)
-						game.dbg_entityfollow = 0;
-					break;
-				}
-				case 0x52:
-				{
-					// TODO: fix platform momentum
-					for (int i = 0; i < physEntities.size(); i++)
-						physEntities.at(i)->reset();
-					break;
-				}
-			}
+			game.dbg_wireframe = !game.dbg_wireframe;
+			break;
 		}
+		case VK_OEM_COMMA:
+		{
+			game.dbg_entityfollow--;
+			if (game.dbg_entityfollow < 0)
+				game.dbg_entityfollow = physEntities.size() - 1;
+			break;
+		}
+		case VK_OEM_PERIOD:
+		{
+			game.dbg_entityfollow++;
+			if (game.dbg_entityfollow > physEntities.size() - 1)
+				game.dbg_entityfollow = 0;
+			break;
+		}
+		case 0x52:
+		{
+			// TODO: fix platform momentum
+			for (int i = 0; i < physEntities.size(); i++)
+				physEntities.at(i)->reset();
+			break;
+		}
+		}
+	}
 	}
 	return DefWindowProcW(hWnd, message, wParam, lParam);
 }
@@ -195,7 +183,7 @@ void ReadConfig()
 
 	WCHAR buf[32];			// buffer for floating point values
 
-	// get window settings
+							// get window settings
 	window_main.fullscreen = GetPrivateProfileIntW(L"display", L"Fullscreen", 0, L".\\config.ini");
 
 	if (window_main.fullscreen)
@@ -225,7 +213,7 @@ void ReadConfig()
 	window_main.right = window_main.width * 0.5;	//	  |             |
 	window_main.left = -window_main.width * 0.5;	//	-1, 1--------- 1, 1
 
-	// get display settings
+													// get display settings
 	display.vsync = GetPrivateProfileIntW(L"display", L"VSync", 0, L".\\config.ini");
 	display.triple_buff = GetPrivateProfileIntW(L"display", L"TripleBuffering", 0, L".\\config.ini");
 
@@ -458,11 +446,11 @@ HRESULT InitD3D(HWND hWnd)
 		NULL,
 		D3D_DRIVER_TYPE_HARDWARE,
 		NULL,
-	#ifdef _DEBUG
+#ifdef _DEBUG
 		D3D11_CREATE_DEVICE_DEBUG,
-	#else
+#else
 		0,
-	#endif
+#endif
 		&featurelevel,
 		1,
 		D3D11_SDK_VERSION,
@@ -515,7 +503,7 @@ HRESULT InitD3D(HWND hWnd)
 	pBackBufferTexture = NULL;
 	devcon->OMSetRenderTargets(1, &targettview, depthstencilview);  // set the render target as the back buffer
 
-	// Setup the raster description which will determine how and what polygons will be drawn.
+																	// Setup the raster description which will determine how and what polygons will be drawn.
 	rzd.AntialiasedLineEnable = false;
 	rzd.CullMode = D3D11_CULL_BACK;
 	rzd.DepthBias = 0;
@@ -655,9 +643,9 @@ HRESULT InitPhysics()
 	btDbvtBroadphase *bp = new btDbvtBroadphase();											// use the default broadphase
 	btSequentialImpulseConstraintSolver *sol = new btSequentialImpulseConstraintSolver;		// the default constraint solver. For parallel processing you can use a different solver (see Extras/BulletMultiThreaded)
 
-	///
+																							///
 
-	// debug (wireframe) drawer initialization
+																							// debug (wireframe) drawer initialization
 	DXDebugDrawer *btDebugDrawer = new DXDebugDrawer;
 	btDebugDrawer->DBG_DrawWireframe;
 	btDebugDrawer->setDebugMode(btIDebugDraw::DBG_DrawWireframe);

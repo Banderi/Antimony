@@ -10,7 +10,7 @@
 #include "Timer.h"
 #include "Bullet.h"
 #include "Font.h"
-#include "FBX.h"
+//#include "FBX.h"
 
 #pragma comment (lib, "Shlwapi.lib")
 

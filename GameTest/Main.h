@@ -1,6 +1,7 @@
 #pragma once
 
-#include <Windows.h>
+#include "..\Antimony\Antimony.h"
+#pragma comment(lib, "antimony.lib")
 
 ///
 
