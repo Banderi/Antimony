@@ -1,12 +1,5 @@
 #include "Warnings.h"
-#include "CpuRamUsage.h"
-
-///
-
-DWORDLONG totalPhysMem, physMemAvail;
-ULONG_PTR physMemUsedByMe;
-MEMORYSTATUSEX memInfo;
-PROCESS_MEMORY_COUNTERS_EX pmc;
+#include "CpuUsage.h"
 
 ///
 
@@ -156,5 +149,3 @@ CpuUsage::CpuUsage(void)
 		usageStream.push_back(0);
 	}
 }
-
-CpuUsage cpu_usage;

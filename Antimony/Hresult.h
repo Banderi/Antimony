@@ -44,7 +44,3 @@
 ///
 
 extern HRESULT hr;
-
-///
-
-bool Handle(HRESULT *hOut, DWORD facing, HRESULT hr);

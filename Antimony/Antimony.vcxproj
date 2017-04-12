@@ -175,6 +175,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -185,21 +186,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Core.cpp" />
     <ClCompile Include="Bullet.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Character.cpp" />
-    <ClCompile Include="CpuRamUsage.cpp" />
-    <ClCompile Include="DebugWin.cpp" />
+    <ClCompile Include="CpuUsage.cpp" />
+    <ClCompile Include="Debug.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="FBX.cpp" />
-    <ClCompile Include="Font.cpp" />
-    <ClCompile Include="Frame.cpp" />
+    <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Gameflow.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="Hresult.cpp" />
     <ClCompile Include="Input.cpp" />
-    <ClCompile Include="Param.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="Step.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="Window.cpp" />
@@ -208,13 +209,10 @@
     <ClInclude Include="Bullet.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Character.h" />
-    <ClInclude Include="CpuRamUsage.h" />
-    <ClInclude Include="DebugWin.h" />
+    <ClInclude Include="CpuUsage.h" />
     <ClInclude Include="DirectX.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="FBX.h" />
-    <ClInclude Include="Font.h" />
-    <ClInclude Include="Frame.h" />
     <ClInclude Include="Gameflow.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="Hresult.h" />
@@ -227,7 +225,6 @@
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Warnings.h" />
-    <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Debug\config.ini" />

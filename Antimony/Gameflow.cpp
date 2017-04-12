@@ -1,39 +1,34 @@
-#include "Gameflow.h"
+#include "Antimony.h"
 
 ///
 
-unsigned int GameState;
-unsigned char SubSystem;
-
-///
-
-void SetGameState(unsigned int state)
+void Antimony::setGameState(unsigned int state)
 {
-	GameState = state;
+	m_gameState = state;
 }
-unsigned int GetGameState()
+unsigned int Antimony::getGameState()
 {
-	return GameState;
+	return m_gameState;
 }
-bool IfGameState(unsigned int state)
+bool Antimony::ifGameState(unsigned int state)
 {
-	if (GameState == state)
+	if (m_gameState == state)
 		return true;
 	else
 		return false;
 }
 
-void SetSubSystem(unsigned char subs)
+void Antimony::setSubSystem(unsigned char subs)
 {
-	SubSystem = subs;
+	m_subSystem = subs;
 }
-unsigned char GetSubSystem()
+unsigned char Antimony::getSubSystem()
 {
-	return SubSystem;
+	return m_subSystem;
 }
-bool IfSubSystem(unsigned char subs)
+bool Antimony::ifSubSystem(unsigned char subs)
 {
-	if (SubSystem == subs)
+	if (m_subSystem == subs)
 		return true;
 	else
 		return false;

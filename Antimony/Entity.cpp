@@ -181,8 +181,6 @@ PhysEntity::~PhysEntity()
 	//delete m_coll->in;
 }
 
-//std::vector<PhysEntity*> physEntities;
-
 mat CharEntity::getTransform()
 {
 	btTransform t;

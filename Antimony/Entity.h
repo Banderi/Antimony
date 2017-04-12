@@ -65,8 +65,8 @@ public:
 
 	void reset();
 
-	PhysEntity(LPCWSTR name, float mass, btCollisionShape *cs, btDefaultMotionState *ms, btDiscreteDynamicsWorld *w = btWorld);
-	PhysEntity(LPCWSTR name, float mass, btCollisionShape *cs, btDefaultMotionState *ms, btVector3 *in, btDiscreteDynamicsWorld *w = btWorld);
+	PhysEntity(LPCWSTR name, float mass, btCollisionShape *cs, btDefaultMotionState *ms, btDiscreteDynamicsWorld *w);
+	PhysEntity(LPCWSTR name, float mass, btCollisionShape *cs, btDefaultMotionState *ms, btVector3 *in, btDiscreteDynamicsWorld *w);
 	~PhysEntity();
 };
 
@@ -85,6 +85,6 @@ public:
 	void setTransform(mat *m);
 	void step(double delta);
 
-	CharEntity(LPCWSTR name, btPairCachingGhostObject *g, btConvexShape *s, btDiscreteDynamicsWorld *w = btWorld);
+	CharEntity(LPCWSTR name, btPairCachingGhostObject *g, btConvexShape *s, btDiscreteDynamicsWorld *w);
 	~CharEntity();
 };

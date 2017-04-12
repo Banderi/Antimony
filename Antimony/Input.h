@@ -13,10 +13,11 @@
 #define MOUSE_MIDDLE	1
 #define MOUSE_RIGHT		2
 
-#define BTN_UNPRESSED	0
-#define BTN_PRESSED		1
-#define BTN_HELD		2
-#define BTN_RELEASED	3
+#define BTN_DISABLED	0
+#define BTN_UNPRESSED	1
+#define BTN_PRESSED		2
+#define BTN_HELD		3
+#define BTN_RELEASED	4
 
 #define COORD_X			0
 #define COORD_Y			1
@@ -92,7 +93,7 @@ public:
 	{
 		m_flagUp = 0x00;
 		m_flagDown = 0x00;
-		m_pressState = BTN_RELEASED;
+		m_pressState = BTN_UNPRESSED;
 		m_pressTime = -1;
 		name = "";
 		m_handleType = KEY_TYPE_MOUSE;
@@ -110,7 +111,7 @@ public:
 	Input_Key()
 	{
 		m_vKey = 0x00;
-		m_pressState = BTN_RELEASED;
+		m_pressState = BTN_UNPRESSED;
 		m_handleType = -1;
 		name = "";
 		m_handleType = KEY_TYPE_KEYBOARD;
@@ -124,11 +125,13 @@ protected:
 public:
 	void set(unsigned short mp, std::string nm);
 	unsigned short getMap();
+	void enable();
+	void disable();
 
 	Input_Button()
 	{
 		m_map = 0x00;
-		m_pressState = BTN_RELEASED;
+		m_pressState = BTN_UNPRESSED;
 		m_pressTime = -1;
 		name = "";
 		m_handleType = KEY_TYPE_CONTROLLER;
@@ -139,8 +142,13 @@ class MouseController
 {
 private:
 	bool m_reset;
+	std::vector<Input_Mouse*> m_mouseArray;
 
 public:
+	Input_Mouse LMB;
+	Input_Mouse MMB;
+	Input_Mouse RMB;
+
 	Axis X;
 	Axis Y;
 	Axis Z;
@@ -152,6 +160,14 @@ public:
 
 	MouseController()
 	{
+		LMB.set(RI_MOUSE_LEFT_BUTTON_UP, RI_MOUSE_LEFT_BUTTON_DOWN, "Left Mouse Button");
+		MMB.set(RI_MOUSE_MIDDLE_BUTTON_UP, RI_MOUSE_MIDDLE_BUTTON_DOWN, "Middle Mouse Button");
+		RMB.set(RI_MOUSE_RIGHT_BUTTON_UP, RI_MOUSE_RIGHT_BUTTON_DOWN, "Right Mouse Button");
+
+		m_mouseArray.push_back(&LMB);
+		m_mouseArray.push_back(&MMB);
+		m_mouseArray.push_back(&RMB);
+
 		exclusive = 1;
 		m_reset = 0;
 	}
@@ -159,14 +175,9 @@ public:
 class KeysController
 {
 private:
-	std::vector<Input_Mouse*> m_mouseArray;
 	std::vector<Input_Key*> m_keyArray;
 
 public:
-	Input_Mouse LMB;
-	Input_Mouse MMB;
-	Input_Mouse RMB;
-
 	Input_Key forward;
 	Input_Key backward;
 	Input_Key left;
@@ -191,7 +202,6 @@ public:
 
 	//
 
-	void updateMouse(RAWMOUSE rmouse);
 	void updateKeyboard(RAWKEYBOARD rkeys);
 	void reset();
 	void setKey(Input_Key *key, unsigned short vk, std::string nm);
@@ -200,14 +210,6 @@ public:
 	KeysController()
 	{
 		exclusive = 0;
-
-		LMB.set(RI_MOUSE_LEFT_BUTTON_UP, RI_MOUSE_LEFT_BUTTON_DOWN, "Left Mouse Button");
-		MMB.set(RI_MOUSE_MIDDLE_BUTTON_UP, RI_MOUSE_MIDDLE_BUTTON_DOWN, "Middle Mouse Button");
-		RMB.set(RI_MOUSE_RIGHT_BUTTON_UP, RI_MOUSE_RIGHT_BUTTON_DOWN, "Right Mouse Button");
-
-		m_mouseArray.push_back(&LMB);
-		m_mouseArray.push_back(&MMB);
-		m_mouseArray.push_back(&RMB);
 
 		m_keyArray.push_back(&sk_enter);
 		m_keyArray.push_back(&sk_escape);
@@ -243,6 +245,9 @@ private:
 	XINPUT_STATE m_state;
 	std::vector<Input_Button*> m_btnArray;
 
+	unsigned char m_number;
+	bool m_enabled;
+
 public:
 	Axis RX, LX;
 	Axis RY, LY;
@@ -268,19 +273,22 @@ public:
 	Input_Button Start;
 	Input_Button Back;
 
-	unsigned char number;
-	bool enabled;
-
 	//
 
 	void update();
 	void reset();
 	void vibrate(float leftmotor = 0.0f, float rightmotor = 0.0f);
 
+	void set(unsigned char n);
+	void enable();
+	void disable();
+	bool isEnabled();
+
 	XInputController()
 	{
+		m_enabled = true;
+
 		ZeroMemory(&m_state, sizeof(XINPUT_STATE));
-		enabled = false;
 
 		LT.set(0, "Left Trigger/L2");
 		RT.set(0, "Right Trigger/R2");
@@ -315,14 +323,11 @@ public:
 		m_btnArray.push_back(&Right);
 		m_btnArray.push_back(&Start);
 		m_btnArray.push_back(&Back);
+
+		disable();
 	}
 };
 
 extern MouseController mouse;
 extern KeysController keys;
 extern XInputController controller[4];
-
-///
-
-HRESULT RegisterRID();
-HRESULT HandleRaw(MSG msg);

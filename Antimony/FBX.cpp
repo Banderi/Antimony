@@ -1,6 +1,6 @@
-#include "FBX.h"
-
 #include <assert.h>
+
+#include "FBX.h"
 
 ///
 

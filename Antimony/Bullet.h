@@ -38,10 +38,6 @@
 
 extern btVector3 bt_origin;
 
-extern btDiscreteDynamicsWorld *btWorld;
-extern std::map<const btCollisionObject*, std::vector<btManifoldPoint*>> objectsCollisionPoints;
-extern std::map<const btCollisionObject*, std::vector<btPersistentManifold*>> objectsCollisions;
-
 ///
 
 __declspec(align(16)) class btObject
@@ -75,8 +71,8 @@ public:
 	void reset();
 	void initObject();
 
-	btObject(int k, float m, btCollisionShape *c, btDefaultMotionState *s, btDiscreteDynamicsWorld *w = btWorld);
-	btObject(int k, float m, btCollisionShape *c, btDefaultMotionState *s, btVector3 *i, btDiscreteDynamicsWorld *w = btWorld);
+	btObject(int k, float m, btCollisionShape *c, btDefaultMotionState *s, btDiscreteDynamicsWorld *w);
+	btObject(int k, float m, btCollisionShape *c, btDefaultMotionState *s, btVector3 *i, btDiscreteDynamicsWorld *w);
 	~btObject();
 
 	void* operator new(size_t i)
@@ -89,8 +85,6 @@ public:
 		_mm_free(p);
 	}
 };
-
-extern std::vector<btObject*> physEntities;
 
 class DXDebugDrawer : public btIDebugDraw
 {
@@ -131,5 +125,3 @@ mat btToMat(const btTransform *t);
 btVector3 Float3Tobt(float3 *f);
 btVector3 Float3Tobt(const float3 *f);
 btTransform MatTobt(mat *m);
-
-void TickCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep);

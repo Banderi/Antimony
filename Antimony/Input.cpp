@@ -2,8 +2,7 @@
 
 #include "Warnings.h"
 #include "Input.h"
-#include "Window.h"
-#include "DebugWin.h"
+#include "Antimony.h"
 
 #pragma comment(lib, "Xinput9_1_0.lib")
 
@@ -37,6 +36,8 @@ float Axis::getVel()
 
 void Input::update(char down)
 {
+	if (m_pressState == BTN_DISABLED)
+		return;
 	if (down == 1)			// input is activated
 	{
 		if (m_pressState != BTN_HELD)
@@ -111,6 +112,14 @@ unsigned short Input_Button::getMap()
 {
 	return m_map;
 }
+void Input_Button::enable()
+{
+	m_pressState = BTN_UNPRESSED;
+}
+void Input_Button::disable()
+{
+	m_pressState = BTN_DISABLED;
+}
 
 void MouseController::update(RAWMOUSE rmouse)
 {
@@ -121,16 +130,7 @@ void MouseController::update(RAWMOUSE rmouse)
 
 	if (rmouse.usButtonFlags & RI_MOUSE_WHEEL)
 		Z.catchState((short)rmouse.usButtonData);
-}
-void MouseController::reset()
-{
-	X.update();
-	Y.update();
-	Z.update();
-}
 
-void KeysController::updateMouse(RAWMOUSE rmouse)
-{
 	USHORT flags = rmouse.usButtonFlags;
 
 	for (unsigned char i = 0; i < m_mouseArray.size(); i++)
@@ -141,6 +141,18 @@ void KeysController::updateMouse(RAWMOUSE rmouse)
 			m_mouseArray.at(i)->update(false);
 	}
 }
+void MouseController::reset()
+{
+	for (unsigned char i = 0; i < m_mouseArray.size(); i++)
+	{
+		m_mouseArray.at(i)->update(-1);
+	}
+
+	X.update();
+	Y.update();
+	Z.update();
+}
+
 void KeysController::updateKeyboard(RAWKEYBOARD rkeys)
 {
 	USHORT vk = rkeys.VKey;
@@ -158,10 +170,6 @@ void KeysController::updateKeyboard(RAWKEYBOARD rkeys)
 }
 void KeysController::reset()
 {
-	for (unsigned char i = 0; i < m_mouseArray.size(); i++)
-	{
-		m_mouseArray.at(i)->update(-1);
-	}
 	for (unsigned char i = 0; i < m_keyArray.size(); i++)
 	{
 		m_keyArray.at(i)->update(-1);
@@ -179,14 +187,15 @@ unsigned short KeysController::getKey(Input_Key *key)
 void XInputController::update()
 {
 	ZeroMemory(&m_state, sizeof(XINPUT_STATE));
-	enabled = false;
 
-	if (XInputGetState(number, &m_state) == ERROR_SUCCESS) // controller is connected
-		enabled = true;
+	if (XInputGetState(m_number, &m_state) == ERROR_SUCCESS) // controller is connected
+		enable();
 	else
-		return;
+		disable();
 
-	if (enabled)
+	if (!isEnabled())
+		return;
+	else
 	{
 		float rx = (float)m_state.Gamepad.sThumbRX / 32768;
 		float ry = (float)m_state.Gamepad.sThumbRY / 32768;
@@ -278,14 +287,48 @@ void XInputController::vibrate(float leftmotor, float rightmotor)
 	Vibration.wLeftMotorSpeed = leftVib;
 	Vibration.wRightMotorSpeed = rightVib;
 	// Vibrate the controller
-	XInputSetState(number, &Vibration);
+	XInputSetState(m_number, &Vibration);
+}
+void XInputController::set(unsigned char n)
+{
+	m_number = n;
+}
+void XInputController::enable()
+{
+	if (isEnabled())
+		return;
+	else
+	{
+		m_enabled = true;
+
+		for (unsigned char i = 0; i < m_btnArray.size(); i++)
+		{
+			m_btnArray.at(i)->enable();
+		}
+	}
+}
+void XInputController::disable()
+{
+	if (!isEnabled())
+		return;
+	else
+	{
+		m_enabled = false;
+
+		for (unsigned char i = 0; i < m_btnArray.size(); i++)
+		{
+			m_btnArray.at(i)->disable();
+		}
+	}
+}
+bool XInputController::isEnabled()
+{
+	return m_enabled;
 }
 
-///
-
-HRESULT RegisterRID()
+HRESULT Antimony::registerRID()
 {
-	WriteToConsole(L"Initializing RID objects... ");
+	writeToConsole(L"Initializing RID objects... ");
 
 	rid[0].usUsagePage = 0x01;
 	rid[0].usUsage = 0x02;				// mouse
@@ -309,27 +352,27 @@ HRESULT RegisterRID()
 
 	if (RegisterRawInputDevices(rid, 4, sizeof(rid[0])) == false)
 	{
-		LogError(HRESULT_FROM_WIN32(GetLastError()));
+		logError(HRESULT_FROM_WIN32(GetLastError()));
 		return HRESULT_FROM_WIN32(GetLastError());
 	}
 	else
 	{
 		XINPUT_STATE state;
-		for (unsigned char i = 0; i< XUSER_MAX_COUNT; i++)
+		for (unsigned char i = 0; i < XUSER_MAX_COUNT; i++)
 		{
-			controller[i].enabled = false;
-			controller[i].number = i;
+			controller[i].disable();
+			controller[i].set(i);
 			ZeroMemory(&state, sizeof(XINPUT_STATE));
 
 			if (XInputGetState(i, &state) == ERROR_SUCCESS) // controller is connected
-				controller[i].enabled = true;
+				controller[i].enable();
 		}
 
-		WriteToConsole(L"done!\n", false);
+		writeToConsole(L"done!\n", false);
 		return S_OK;
 	}
 }
-HRESULT HandleRaw(MSG msg)
+HRESULT Antimony::handleInput(MSG msg)
 {
 	//HRESULT hr;
 	UINT dwSize;
@@ -351,7 +394,6 @@ HRESULT HandleRaw(MSG msg)
 	}
 	else if (raw->header.dwType == RIM_TYPEMOUSE)
 	{
-		keys.updateMouse(raw->data.mouse);
 		mouse.update(raw->data.mouse);
 	}
 	else if (raw->header.dwType == RIM_TYPEHID)

@@ -1,10 +1,12 @@
-#include "DebugWin.h"
+#include "Antimony.h"
 
 ///
 
-void CreateMainWindow(HINSTANCE hInstance)
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+void Antimony::createMainWindow(HINSTANCE hInstance)
 {
-	WriteToConsole(L"Creating main window handle...");
+	writeToConsole(L"Creating main window handle...");
 
 	WNDCLASSEX wc;
 	ZeroMemory(&wc, sizeof(WNDCLASSEX));
@@ -29,5 +31,5 @@ void CreateMainWindow(HINSTANCE hInstance)
 		hInstance,
 		NULL);
 
-	WriteToConsole(L" done\n", false);
+	writeToConsole(L" done\n", false);
 }

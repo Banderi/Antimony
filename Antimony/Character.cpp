@@ -31,7 +31,7 @@ SimpleCharacter::SimpleCharacter()
 	jump_speed = 10.0f;
 }
 
-void Character::update(double delta)
+void Character::update(double delta, std::map<const btCollisionObject*, std::vector<btPersistentManifold*>> objectsCollisions)
 {
 	m_linWorldVel = bt_origin;
 	m_angWorldVel = bt_origin;

@@ -27,18 +27,3 @@
 
 #define SUBSYS_VISUAL			0x30
 #define SUBSYS_FISHEYE			0x31
-
-///
-
-extern unsigned int GameState;
-extern unsigned char SubSystem;
-
-///
-
-void SetGameState(unsigned int state);
-unsigned int GetGameState();
-bool IfGameState(unsigned int state);
-
-void SetSubSystem(unsigned char subs);
-unsigned char GetSubSystem();
-bool IfSubSystem(unsigned char subs);

@@ -9,6 +9,9 @@
 #define SHADERS_DEBUG &sh_debug
 #define SHADERS_PLAIN &sh_plain
 
+#define ON true
+#define OFF false
+
 ///
 
 extern IDXGISwapChain *swapchain;
@@ -121,10 +124,9 @@ template <typename T> HRESULT FillBuffer(ID3D11Device *dev, ID3D11DeviceContext 
 mat TransposeMatrix(const mat &mIn);
 float3 MatToFloat3(mat *m);
 
-bool CompileShader(HRESULT *hr, std::wstring shader, SHADER *sh);
-bool SetShader(SHADER *sh, ID3D11DeviceContext *devc = devcon);
-
-HRESULT SetView(mat *world, mat *view, mat *proj, color diffuse = COLOR_WHITE, ID3D11Device *dv = dev, ID3D11DeviceContext *devc = devcon, ID3D11Buffer *cb = constantbuffer);
+bool setShader(SHADER *sh, ID3D11DeviceContext *devc = devcon);
+void setDepthBufferState(bool state);
+HRESULT setView(mat *world, mat *view, mat *proj, color diffuse = COLOR_WHITE, ID3D11Device *dv = dev, ID3D11DeviceContext *devc = devcon, ID3D11Buffer *cb = constantbuffer);
 
 void Draw2DLineThin(float2 p1, float2 p2, color c1, color c2, color diffuse = COLOR_WHITE, ID3D11Device *dv = dev, ID3D11DeviceContext *devc = devcon, ID3D11Buffer *vb = vertexbuffer, ID3D11Buffer *ib = indexbuffer, ID3D11Buffer *cb = constantbuffer);
 void Draw2DLineThick(float2 p1, float2 p2, float t, color c1, color c2, color diffuse = COLOR_WHITE, ID3D11Device *dv = dev, ID3D11DeviceContext *devc = devcon, ID3D11Buffer *vb = vertexbuffer, ID3D11Buffer *ib = indexbuffer, ID3D11Buffer *cb = constantbuffer);

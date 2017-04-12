@@ -1,8 +1,25 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
-  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="UserMacros">
+    <FBXSDKDIR>..\ext\FBXSDK</FBXSDKDIR>
+    <FW1DIR>..\ext\FW1FontWrapper</FW1DIR>
+    <BLT3DIR>..\ext\Bullet3</BLT3DIR>
+  </PropertyGroup>
   <PropertyGroup />
   <ItemDefinitionGroup />
-  <ItemGroup />
+  <ItemGroup>
+    <BuildMacro Include="FBXSDKDIR">
+      <Value>$(FBXSDKDIR)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+    <BuildMacro Include="FW1DIR">
+      <Value>$(FW1DIR)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+    <BuildMacro Include="BLT3DIR">
+      <Value>$(BLT3DIR)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+  </ItemGroup>
 </Project>

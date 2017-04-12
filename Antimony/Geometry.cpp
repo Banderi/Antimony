@@ -1,6 +1,5 @@
 #include "Warnings.h"
 #include "Geometry.h"
-#include "DebugWin.h"
 #include "Hresult.h"
 
 ///
@@ -64,30 +63,7 @@ float3 MatToFloat3(mat *m)
 	return float3(f._41, f._42, f._43);
 }
 
-bool CompileShader(HRESULT *hr, std::wstring shader, SHADER *sh)
-{
-	ID3D10Blob *blob = nullptr;
-
-	std::wstring str = L".\\Shaders\\" + shader + L".hlsl";
-
-	LPCWSTR file = str.c_str();
-
-	if (!Handle(hr, HRH_SHADER_COMPILE, D3DCompileFromFile(file, 0, 0, "VShader", "vs_4_0", 0, 0, &blob, 0)))
-		return 0;
-	if (!Handle(hr, HRH_SHADER_CREATE, dev->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &sh->vs)))
-		return 0;
-	if (!Handle(hr, HRH_SHADER_INPUTLAYOUT, dev->CreateInputLayout(ied_debug, 2, blob->GetBufferPointer(), blob->GetBufferSize(), &sh->il)))
-		return 0;
-	if (!Handle(hr, HRH_SHADER_COMPILE, D3DCompileFromFile(file, 0, 0, "PShader", "ps_4_0", 0, 0, &blob, 0)))
-		return 0;
-	if (!Handle(hr, HRH_SHADER_CREATE, dev->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &sh->ps)))
-		return 0;
-
-	sh->ready = true;
-
-	return 1; // all ok
-}
-bool SetShader(SHADER *sh, ID3D11DeviceContext *devc)
+bool setShader(SHADER *sh, ID3D11DeviceContext *devc)
 {
 	if (sh->ready)
 	{
@@ -102,8 +78,14 @@ bool SetShader(SHADER *sh, ID3D11DeviceContext *devc)
 	}
 	return 0; // NOPE
 }
-
-HRESULT SetView(mat *world, mat *view, mat *proj, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, ID3D11Buffer *cb)
+void setDepthBufferState(bool state)
+{
+	if (state == true)
+		devcon->OMSetDepthStencilState(dss_enabled, 1);
+	else
+		devcon->OMSetDepthStencilState(dss_disabled, 1);
+}
+HRESULT setView(mat *world, mat *view, mat *proj, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, ID3D11Buffer *cb)
 {
 	ConstantBuffer buffer;
 
@@ -126,7 +108,7 @@ void Draw2DLineThin(float2 p1, float2 p2, color c1, color c2, color diffuse, ID3
 	};
 	FillBuffer<VERTEX_BASIC[]>(dv, devc, &vb, vertices, sizeof(vertices));
 
-	SetView(&mat_identity, &mat_orthoview, &mat_orthoproj, diffuse, dv, devc, cb);
+	setView(&mat_identity, &mat_orthoview, &mat_orthoproj, diffuse, dv, devc, cb);
 	devc->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 	devc->Draw(2, 0);
 }
@@ -151,7 +133,7 @@ void Draw2DLineThick(float2 p1, float2 p2, float t, color c1, color c2, color di
 	};
 	FillBuffer<UINT[]>(dv, devc, &ib, indices, sizeof(indices));
 
-	SetView(&(MRotZ(atan2(p2.y - p1.y, p2.x - p1.x)) * MTranslation(p1.x, p1.y, 0)), &mat_orthoview, &mat_orthoproj, diffuse, dv, devc, cb);
+	setView(&(MRotZ(atan2(p2.y - p1.y, p2.x - p1.x)) * MTranslation(p1.x, p1.y, 0)), &mat_orthoview, &mat_orthoproj, diffuse, dv, devc, cb);
 	devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	devc->DrawIndexed(6, 0, 0);
 }
@@ -173,7 +155,7 @@ void Draw2DRectangle(float w, float h, float x, float y, color c, color diffuse,
 	};
 	FillBuffer<UINT[]>(dv, devc, &ib, indices, sizeof(indices));
 
-	SetView(&MTranslation(x, y, 0), &mat_orthoview, &mat_orthoproj, diffuse, dv, devc, cb);
+	setView(&MTranslation(x, y, 0), &mat_orthoview, &mat_orthoproj, diffuse, dv, devc, cb);
 	devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	devc->DrawIndexed(6, 0, 0);
 }
@@ -284,7 +266,7 @@ void Draw2DEllipses(float w, float h, float x, float y, color c, color diffuse, 
 	};
 	FillBuffer<UINT[]>(dv, devc, &ib, indices, sizeof(indices));
 
-	SetView(&(MScaling(-w, h, 1) * MTranslation(x, y, 0)), &mat_orthoview, &mat_orthoproj, diffuse, dv, devc, cb);
+	setView(&(MScaling(-w, h, 1) * MTranslation(x, y, 0)), &mat_orthoview, &mat_orthoproj, diffuse, dv, devc, cb);
 	devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	devc->DrawIndexed(120, 0, 0);
 }
@@ -298,7 +280,7 @@ void Draw3DLineThin(float3 p1, float3 p2, color c1, color c2, mat *world, color 
 	};
 	FillBuffer<VERTEX_BASIC[]>(dv, devc, &vb, vertices, sizeof(vertices));
 
-	SetView(world, &mat_view, &mat_proj, diffuse, dv, devc, cb);
+	setView(world, &mat_view, &mat_proj, diffuse, dv, devc, cb);
 	devc->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 	devc->Draw(2, 0);
 }
@@ -322,7 +304,7 @@ void Draw3DTriangle(float3 p1, float3 p2, float3 p3, color c, bool dd, mat *worl
 	};
 	FillBuffer<UINT[]>(dv, devc, &ib, indices, sizeof(indices));
 
-	SetView(world, &mat_view, &mat_proj, diffuse, dv, devc, cb);
+	setView(world, &mat_view, &mat_proj, diffuse, dv, devc, cb);
 	devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	if (!dd)
 		devc->DrawIndexed(3, 0, 0);
@@ -348,7 +330,7 @@ void Draw3DRectangle(float w, float h, color c, bool dd, mat *world, color diffu
 	};
 	FillBuffer<UINT[]>(dv, devc, &ib, indices, sizeof(indices));
 
-	SetView(world, &mat_view, &mat_proj, diffuse, dv, devc, cb);
+	setView(world, &mat_view, &mat_proj, diffuse, dv, devc, cb);
 	devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	if (!dd)
 		devc->DrawIndexed(6, 0, 0);
@@ -450,16 +432,16 @@ void Draw3DEllipses(float w, float h, color c, bool dd, mat *world, color diffus
 
 	if (!dd)
 	{
-		SetView(&(MScaling(-w, h, 1) * (*world)), &mat_view, &mat_proj, diffuse, dv, devc, cb);
+		setView(&(MScaling(-w, h, 1) * (*world)), &mat_view, &mat_proj, diffuse, dv, devc, cb);
 		devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		devc->DrawIndexed(120, 0, 0);
 	}
 	else
 	{
-		SetView(&(MScaling(-w, h, 1) * (*world)), &mat_view, &mat_proj, diffuse, dv, devc, cb);
+		setView(&(MScaling(-w, h, 1) * (*world)), &mat_view, &mat_proj, diffuse, dv, devc, cb);
 		devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		devc->DrawIndexed(120, 0, 0);
-		SetView(&(MScaling(w, h, 1) * (*world)), &mat_view, &mat_proj, diffuse, dv, devc, cb);
+		setView(&(MScaling(w, h, 1) * (*world)), &mat_view, &mat_proj, diffuse, dv, devc, cb);
 		devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		devc->DrawIndexed(120, 0, 0);
 	}
@@ -495,7 +477,7 @@ void Draw3DBox(float w, float h, float b, color c, mat *world, color diffuse, ID
 	};
 	FillBuffer<UINT[]>(dv, devc, &ib, indices, sizeof(indices));
 
-	SetView(world, &mat_view, &mat_proj, diffuse, dv, devc, cb);
+	setView(world, &mat_view, &mat_proj, diffuse, dv, devc, cb);
 	devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	devc->DrawIndexed(36, 0, 0);
 }
@@ -534,7 +516,7 @@ void Draw3DBox(Vector3 l, color c, mat *world, color diffuse, ID3D11Device *dv, 
 	};
 	FillBuffer<UINT[]>(dv, devc, &ib, indices, sizeof(indices));
 
-	SetView(world, &mat_view, &mat_proj, diffuse, dv, devc, cb);
+	setView(world, &mat_view, &mat_proj, diffuse, dv, devc, cb);
 	devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	devc->DrawIndexed(36, 0, 0);
 }

@@ -49,7 +49,7 @@ public:
 
 	//btVector3 rvel;
 
-	void update(double delta);
+	void update(double delta, std::map<const btCollisionObject*, std::vector<btPersistentManifold*>> objectsCollisions);
 	void updateContact(char contact);
 	void warp(Vector3 d);
 	void move(btVector3 *v, float s);

@@ -1,5 +1,5 @@
-#include <ctime>
-#include <Shlwapi.h>
+#include <ctime>		// required for clock() and CLOCKS_PER_SEC					(Timer::UpdateDelta; Timer::GetFPSStamp)
+#include <Shlwapi.h>	// required for abs()										(Timer::UpdateDelta)
 
 #include "Timer.h"
 

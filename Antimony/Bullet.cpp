@@ -1,13 +1,8 @@
-#include "Bullet.h"
-#include "Geometry.h"
+#include "Antimony.h"
 
 ///
 
 btVector3 bt_origin = btVector3(0, 0, 0);
-
-btDiscreteDynamicsWorld *btWorld;
-std::map<const btCollisionObject*, std::vector<btManifoldPoint*>> objectsCollisionPoints;
-std::map<const btCollisionObject*, std::vector<btPersistentManifold*>> objectsCollisions;
 
 ///
 
@@ -123,7 +118,7 @@ void btObject::initObject()
 
 	m_initialtransform = this->getbtTransform();
 	m_world->addRigidBody(m_rigidBody);
-	physEntities.push_back(this);
+	antimony.addPhysEntity(this);
 }
 btObject::btObject(int k, float m, btCollisionShape *c, btDefaultMotionState *s, btDiscreteDynamicsWorld *w)
 {
@@ -158,8 +153,6 @@ btObject::~btObject()
 	delete m_inertia;
 	delete m_rigidBody;
 }
-
-std::vector<btObject*> physEntities;
 
 void DXDebugDrawer::setDebugMode(int debugMode)
 {
@@ -269,22 +262,26 @@ btTransform MatTobt(mat *m)
 	return t;
 }
 
-void TickCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep)
+btDiscreteDynamicsWorld* Antimony::getBtWorld()
 {
-	objectsCollisions.clear();
-	objectsCollisionPoints.clear();
+	return m_btWorld;
+}
+void Antimony::tickCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep)
+{
+	m_objectsCollisions.clear();
+	m_objectsCollisionPoints.clear();
 	int numManifolds = dynamicsWorld->getDispatcher()->getNumManifolds();
 	for (int i = 0; i < numManifolds; i++)
 	{
 		btPersistentManifold *contactManifold = dynamicsWorld->getDispatcher()->getManifoldByIndexInternal(i);
 		auto *objA = contactManifold->getBody0();
 		auto *objB = contactManifold->getBody1();
-		auto& manifoldsA = objectsCollisions[objA];
-		auto& manifoldsB = objectsCollisions[objA];
+		auto& manifoldsA = m_objectsCollisions[objA];
+		auto& manifoldsB = m_objectsCollisions[objA];
 		manifoldsA.push_back(contactManifold);
 		manifoldsB.push_back(contactManifold);
-		auto& collisionsA = objectsCollisionPoints[objA];
-		auto& collisionsB = objectsCollisionPoints[objB];
+		auto& collisionsA = m_objectsCollisionPoints[objA];
+		auto& collisionsB = m_objectsCollisionPoints[objB];
 		int numContacts = contactManifold->getNumContacts();
 		for (int j = 0; j < numContacts; j++)
 		{
@@ -293,4 +290,21 @@ void TickCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep)
 			collisionsB.push_back(&pt);
 		}
 	}
+}
+void Antimony::staticCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep)
+{
+	antimony.tickCallback(dynamicsWorld, timeStep);
+}
+void Antimony::addPhysEntity(btObject *obj)
+{
+	m_physEntities.push_back(obj);
+}
+UINT Antimony::getEntityCount()
+{
+	return m_physEntities.size();
+}
+void Antimony::resetPhysics()
+{
+	for (int i = 0; i < getEntityCount(); i++)
+		m_physEntities.at(i)->reset();
 }
