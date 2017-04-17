@@ -1,4 +1,4 @@
-#include "Player.h"
+#include "Antimony.h"
 
 ///
 
@@ -7,4 +7,7 @@ Player::Player()
 
 }
 
-Player player;
+Player* Antimony::getPlayer()
+{
+	return &m_player;
+}

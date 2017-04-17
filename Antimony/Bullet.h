@@ -27,10 +27,17 @@
 #define BTOBJECT_SOFT				0x005
 #define BTOBJECT_SHATTER			0x006
 #define BTOBJECT_RAGDOLL			0x007
+#define BTOBJECT_CAMERA				0x008
 
 #define BTOBJECT_NPC				0x010
 #define BTOBJECT_VEHICLE			0x011
 #define BTOBJECT_PLAYER				0x014
+
+#define BTSOLID_INFPLANE			0x00
+#define BTSOLID_BOX					0x01
+#define BTSOLID_SPHERE				0x02
+#define BTSOLID_CYLINDER			0x03
+#define BTSOLID_CAPSULE				0x04
 
 #define WORLD_SCALE 1.0f
 
@@ -53,13 +60,19 @@ protected:
 	btTransform m_initialtransform;
 	btTransform m_oldKinematicTransform;
 
-	int m_kind;
+	unsigned int m_kind;
+	unsigned int m_primitive;
 	float m_mass;
+	float3 m_size;
+
+	btCollisionShape* getShapeFromPrimitive(unsigned int p, float3 s);
 
 public:
 	btRigidBody* getRigidBody();
 	int getKind();
+	int getPrimitive();
 	float getMass();
+	float3 getPrimitiveSize();
 	btVector3 getbtPos();
 	float3 getFlat3Pos();
 	btTransform getbtTransform();
@@ -71,8 +84,8 @@ public:
 	void reset();
 	void initObject();
 
-	btObject(int k, float m, btCollisionShape *c, btDefaultMotionState *s, btDiscreteDynamicsWorld *w);
-	btObject(int k, float m, btCollisionShape *c, btDefaultMotionState *s, btVector3 *i, btDiscreteDynamicsWorld *w);
+	btObject(unsigned int k, unsigned int p, float m, float3 z, btDefaultMotionState *s, btDiscreteDynamicsWorld *w);
+	btObject(unsigned int k, unsigned int p, float m, float3 z, btDefaultMotionState *s, btVector3 *i, btDiscreteDynamicsWorld *w);
 	~btObject();
 
 	void* operator new(size_t i)

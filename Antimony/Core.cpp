@@ -4,9 +4,6 @@
 #include "Antimony.h"
 #include "Hresult.h"
 #include "Gameflow.h"
-#include "Camera.h"
-#include "Player.h"
-#include "CpuUsage.h"
 #include "Timer.h"
 #include "SmartRelease.h"
 
@@ -24,22 +21,28 @@ int Antimony::startUp(HINSTANCE hInstance, int nCmdShow)
 
 	m_cpuUsage.SetMaxRecords(100);
 
-	m_logfile.open("log.txt");
-	if (game.debug)
+	m_logFile.open("log.txt");
+	if (game.debug) // set by debugger
 	{
-		initializeDebugConsole();
+		if (!handleErr(&hr, HRH_MAIN_DEBUGMONIOR, initDebugMonitor()))
+			return 0;
 	}
-	writeToConsole(L"---> START OF DEBUG CONSOLE <---\n");
+	log(L"---> START OF DEBUG CONSOLE <---\n", CSL_SYSTEM);
 
 	readConfig();
 
+	if (game.debug) // set by config
+	{
+		devConsole.enable();
+
+		game.dbg_info = false;
+		game.dbg_infochart = 0;
+		game.dbg_wireframe = false;
+		game.dbg_entityfollow = 0;
+	}
+
 	setGameState(GAMESTATE_LOADING_1);
 	setSubSystem(SUBSYS_FPS_TPS);
-
-	if (game.debug)
-		game.dbg_wireframe = false;
-	else
-		game.dbg_wireframe = false;
 
 	createMainWindow(hInstance);
 	ShowWindow(window_main.hWnd, nCmdShow);
@@ -70,9 +73,9 @@ int Antimony::startUp(HINSTANCE hInstance, int nCmdShow)
 
 	///
 
-	writeToConsole(L"Entering main loop...\n");
+	log(L"Entering main loop...\n", CSL_SYSTEM);
 
-	camera.unlock();
+	m_camera.unlock();
 
 	setGameState(GAMESTATE_INGAME);
 
@@ -82,7 +85,7 @@ int Antimony::startUp(HINSTANCE hInstance, int nCmdShow)
 }
 void Antimony::readConfig()
 {
-	writeToConsole(L"Loading config files... ");
+	log(L"Loading config files...", CSL_SYSTEM);
 
 	WCHAR buf[32];
 
@@ -112,12 +115,12 @@ void Antimony::readConfig()
 	if (window_main.width == 0)
 	{
 		window_main.width = abs(desktop.right - desktop.left);
-		writeToConsole(L"window width cannot be 0! defaulting to desktop resolution... ", false);
+		log(L"window width cannot be 0! defaulting to desktop resolution... ", CSL_ERR_GENERIC, false);
 	}
 	if (window_main.height == 0)
 	{
 		window_main.height = abs(desktop.top - desktop.bottom);
-		writeToConsole(L"window height cannot be 0! defaulting to desktop resolution... ", false);
+		log(L"window height cannot be 0! defaulting to desktop resolution... ", CSL_ERR_GENERIC, false);
 	}
 
 	window_main.aspect = (float)window_main.width / (float)window_main.height;
@@ -138,12 +141,12 @@ void Antimony::readConfig()
 	if (display.width == 0)
 	{
 		display.width = window_main.width;
-		writeToConsole(L"device width cannot be 0! defaulting to window size... ", false);
+		log(L"device width cannot be 0! defaulting to window size... ", CSL_ERR_GENERIC, false);
 	}
 	if (display.height == 0)
 	{
 		display.height = window_main.height;
-		writeToConsole(L"device height cannot be 0! defaulting to window size... ", false);
+		log(L"device height cannot be 0! defaulting to window size... ", CSL_ERR_GENERIC, false);
 	}
 
 	display.top = -display.height * 0.5;	//	-1,-1--------- 1,-1
@@ -217,11 +220,18 @@ void Antimony::readConfig()
 	GetPrivateProfileStringW(L"controls", L"kAction", L"0x45", buf, 32, L".\\config.ini");
 	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&controls.k_action));
 
-	writeToConsole(L"done!\n", false);
+	GetPrivateProfileStringW(L"controls", L"kDevConsole", L"0xC0", buf, 32, L".\\config.ini");
+	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&controls.k_console));
+	GetPrivateProfileStringW(L"controls", L"kSnapshot", L"0x7B", buf, 32, L".\\config.ini");
+	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&controls.k_snapshot));
+	GetPrivateProfileStringW(L"controls", L"kPause", L"0x50", buf, 32, L".\\config.ini");
+	StrToIntExW(buf, STIF_SUPPORT_HEX, (int*)(&controls.k_pause));
+
+	log(L" done!\n", CSL_SUCCESS, false);
 }
 HRESULT Antimony::enumHardware()
 {
-	writeToConsole(L"Enumerating hardware...\n");
+	log(L"Enumerating hardware...\n", CSL_SYSTEM);
 
 	HRESULT hr;
 	IDXGIFactory* factory;
@@ -272,7 +282,10 @@ HRESULT Antimony::enumHardware()
 		return hr;
 
 	// convert the name of the video card to a character array and store it
-	wcscpy(display.gpu_desc, adapterDesc.Description);								writeToConsole(L"> " + std::wstring(display.gpu_desc) + L"\n");
+	wcscpy(display.gpu_desc, adapterDesc.Description);								log(L"> " + std::wstring(display.gpu_desc) + L"\n", CSL_INFO);
+
+	// store the dedicated video card memory in megabytes
+	display.gpu_vram = (int)(adapterDesc.DedicatedVideoMemory / 1024 / 1024);		log(L"> " + std::to_wstring(display.gpu_vram) + L"MB / ", CSL_INFO);
 
 	// go through all the display modes and find the one that matches the screen width and height;
 	// when a match is found store thedisplay.gpu_num and display.gpu_denom of the refresh rate for that monitor
@@ -282,14 +295,11 @@ HRESULT Antimony::enumHardware()
 		{
 			if (displayModeList[i].Height == (unsigned int)desktop.bottom)
 			{
-				display.gpu_num = displayModeList[i].RefreshRate.Numerator;			writeToConsole(L"> " + std::to_wstring(display.gpu_num) + L"/");
-				display.gpu_denom = displayModeList[i].RefreshRate.Denominator;		writeToConsole(L"" + std::to_wstring(display.gpu_denom) + L"/", false);
+				display.gpu_num = displayModeList[i].RefreshRate.Numerator;			//log(L"" + std::to_wstring(display.gpu_num) + L"/", CSL_INFO);
+				display.gpu_denom = displayModeList[i].RefreshRate.Denominator;		log(L"" + std::to_wstring(display.gpu_num/display.gpu_denom) + L"Hz\n", CSL_INFO, false);
 			}
 		}
 	}
-
-	// store the dedicated video card memory in megabytes
-	display.gpu_vram = (int)(adapterDesc.DedicatedVideoMemory / 1024 / 1024);		writeToConsole(L"" + std::to_wstring(display.gpu_vram) + L"MB\n", false);
 
 	// release the display mode list
 	delete[] displayModeList;
@@ -308,13 +318,13 @@ HRESULT Antimony::enumHardware()
 	m_totalPhysMem = m_memInfo.ullTotalPhys;
 	m_physMemAvail = m_memInfo.ullAvailPhys;
 
-	writeToConsole(L"done!\n");
+	log(L"done!\n", CSL_SUCCESS);
 
 	return S_OK;
 }
 HRESULT Antimony::initD3D(HWND hWnd)
 {
-	writeToConsole(L"Initializing D3D11... ");
+	log(L"Initializing D3D11...", CSL_SYSTEM);
 
 	DXGI_SWAP_CHAIN_DESC scd;
 	D3D11_TEXTURE2D_DESC txd;
@@ -464,30 +474,37 @@ HRESULT Antimony::initD3D(HWND hWnd)
 		return hr;
 	devcon->OMSetBlendState(blendstate, 0, 0xffffffff);
 
-	writeToConsole(L"done!\n", false);
+	log(L" done!\n", CSL_SUCCESS, false);
 
 	return S_OK;
 }
 HRESULT Antimony::initControls()
 {
+	// TODO: Register ALL m_keys and separate the gameplay with a second input collection
+	// TODO: Name keys automatically
+
 	hr = registerRID();
 	if (FAILED(hr))
 		return hr;
 
-	keys.forward.set(controls.k_forward, "W");
-	keys.backward.set(controls.k_backward, "S");
-	keys.left.set(controls.k_left, "A");
-	keys.right.set(controls.k_right, "D");
+	m_keys.forward.set(controls.k_forward, GetKeyName(controls.k_forward));
+	m_keys.backward.set(controls.k_backward, GetKeyName(controls.k_backward));
+	m_keys.left.set(controls.k_left, GetKeyName(controls.k_left));
+	m_keys.right.set(controls.k_right, GetKeyName(controls.k_right));
 
-	keys.sprint.set(controls.k_sprint, "Shift");
-	keys.jump.set(controls.k_jump, "Space");
-	keys.action.set(controls.k_action, "E");
+	m_keys.sprint.set(controls.k_sprint, GetKeyName(controls.k_sprint));
+	m_keys.jump.set(controls.k_jump, GetKeyName(controls.k_jump));
+	m_keys.action.set(controls.k_action, GetKeyName(controls.k_action));
+
+	m_keys.console.set(controls.k_console, GetKeyName(controls.k_console));
+	m_keys.snapshot.set(controls.k_snapshot, GetKeyName(controls.k_snapshot));
+	m_keys.pause.set(controls.k_pause, GetKeyName(controls.k_pause));
 
 	return S_OK;
 }
 HRESULT Antimony::initShaders()
 {
-	writeToConsole(L"Loading shaders... ");
+	log(L"Loading shaders...", CSL_SYSTEM);
 
 	if (!compileShader(&hr, L"main", &sh_main))
 		return hr;
@@ -496,27 +513,27 @@ HRESULT Antimony::initShaders()
 	if (!compileShader(&hr, L"plain", &sh_plain))
 		return hr;
 
-	writeToConsole(L"done!\n", false);
+	log(L" done!\n", CSL_SUCCESS, false);
 	return S_OK;
 }
 HRESULT Antimony::initFonts()
 {
-	writeToConsole(L"Loading fonts... ");
+	log(L"Loading fonts...", CSL_SYSTEM);
 
 	if (!handleErr(&hr, HRH_FONTS_CREATEDW1FACTORY, FW1CreateFactory(FW1_VERSION, &m_fw1Factory)))
 		return hr;
 
-	if (!handleErr(&hr, HRH_FONTS_CREATEWRAPPER, m_fw1Factory->CreateFontWrapper(dev, L"Arial", &m_fw1Arial), L"Arial"))
+	if (!handleErr(&hr, HRH_FONTS_CREATEWRAPPER, m_fw1Factory->CreateFontWrapper(dev, L"Arial", &fw1Arial), L"Arial"))
 		return hr;
-	if (!handleErr(&hr, HRH_FONTS_CREATEWRAPPER, m_fw1Factory->CreateFontWrapper(dev, L"Courier", &m_fw1Courier), L"Courier"))
+	if (!handleErr(&hr, HRH_FONTS_CREATEWRAPPER, m_fw1Factory->CreateFontWrapper(dev, L"Consolas", &fw1Courier), L"Consolas"))
 		return hr;
 
-	writeToConsole(L"done!\n", false);
+	log(L" done!\n", CSL_SUCCESS, false);
 	return S_OK;
 }
 HRESULT Antimony::initGraphics()
 {
-	writeToConsole(L"Loading starting graphics... ");
+	log(L"Loading starting graphics...", CSL_SYSTEM);
 
 	D3D11_BUFFER_DESC bd; // buffer description
 	ZeroMemory(&bd, sizeof(bd));
@@ -553,15 +570,15 @@ HRESULT Antimony::initGraphics()
 	mat_proj = MPerspFovLH(DX_PI / 4, window_main.aspect, 0.001f, 10000.0f);
 	mat_orthoproj = MOrthoLH(display.width, display.height, 0.001f, 10000.0f);
 
-	camera.moveToPoint(v3_origin + WORLD_SCALE * float3(0, 0, -1), -1);
-	camera.lookAtPoint(v3_origin, -1);
+	m_camera.moveToPoint(v3_origin + WORLD_SCALE * float3(0, 0, -1), -1);
+	m_camera.lookAtPoint(v3_origin, -1);
 
-	writeToConsole(L"done!\n", false);
+	log(L" done!\n", CSL_SUCCESS, false);
 	return S_OK;
 }
 HRESULT Antimony::initPhysics()
 {
-	writeToConsole(L"Loading physics... ");
+	log(L"Initializing physics...", CSL_SYSTEM);
 
 	btDefaultCollisionConfiguration *cfg = new btDefaultCollisionConfiguration();			// collision configuration contains default setup for memory, collision setup
 	btCollisionDispatcher *disp = new btCollisionDispatcher(cfg);							// use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
@@ -583,26 +600,25 @@ HRESULT Antimony::initPhysics()
 
 	///
 
-	btCollisionShape *cs;
 	btDefaultMotionState *ms;
 	btObject *phys_obj;
 
 	// infinite plane
-	cs = new btStaticPlaneShape(btVector3(0, 1, 0), 1);
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, -1, 0)));
-	phys_obj = new btObject(BTOBJECT_INFINITEGROUND, 0.0f, cs, ms, &btVector3(0, 0, 0), m_btWorld);
+	phys_obj = new btObject(BTOBJECT_INFINITEGROUND, BTSOLID_INFPLANE, 0.0f, float3(0, 1, 0), ms, &btVector3(0, 0, 0), m_btWorld);
 
 	// player's collision object
 	//cs = new btBoxShape(WORLD_SCALE * btVector3(0.15, 0.3, 0.15));
 	//cs = new btCapsuleShape(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3);
-	cs = new btCylinderShape(btVector3(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3, WORLD_SCALE * 0.15));
-	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(1, 2, -1)));
-	phys_obj = new btObject(BTOBJECT_PLAYER, 100.0f, cs, ms, m_btWorld);
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(1, 0.3, -1)));
+	phys_obj = new btObject(BTOBJECT_PLAYER, BTSOLID_CYLINDER, 100.0f, float3(0.15, 0.3, 0.15), ms, m_btWorld);
 
-	player.setCollisionObject(phys_obj);
-	//player.Warp(float3(0, 0, -3));
+	m_player.setCollisionObject(phys_obj);
 
 	game.dbg_entityfollow = m_physEntities.size() - 1;
+
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, -1, 0)));
+	//phys_obj = new btObject(BTOBJECT_CAMERA, BTSOLID_SPHERE, 0.0f, float3(0.5, 0.5, 0.5), ms, m_btWorld);
 
 	//// player CharEntity
 	//btPairCachingGhostObject *gh = new btPairCachingGhostObject();
@@ -624,7 +640,12 @@ HRESULT Antimony::initPhysics()
 
 	//player.cont = char_obj;
 
-	writeToConsole(L"done!\n", false);
+	///
+
+	addSpawnable(L"test", standardSpawn);
+	addSpawnable(L"cube", standardSpawn);
+
+	log(L" done!\n", CSL_SUCCESS, false);
 	return S_OK;
 }
 HRESULT Antimony::loadStartingFiles()
@@ -636,12 +657,14 @@ HRESULT Antimony::loadStartingFiles()
 
 void Antimony::cleanUp()
 {
-	writeToConsole(L"Main loop terminated!\n");
+	logVolatile(L"\n");
+	log(L"Main loop terminated!\n", CSL_SYSTEM);
 	cleanD3D();
+	//unacquireDebugMonitor();
 }
 void Antimony::cleanD3D()
 {
-	writeToConsole(L"Cleaning D3D11... ");
+	log(L"Cleaning D3D11...", CSL_SYSTEM);
 
 	swapchain->SetFullscreenState(FALSE, NULL);
 	swapchain->Release();
@@ -650,21 +673,21 @@ void Antimony::cleanD3D()
 	targettview->Release();
 	depthstencilview->Release();
 
-	writeToConsole(L"done!\n", false);
+	log(L" done!\n", CSL_SUCCESS, false);
 
 	releaseFiles();
 }
 void Antimony::releaseFiles()
 {
-	writeToConsole(L"Releasing files... ");
+	log(L"Releasing files...", CSL_SYSTEM);
 
 	smartRelease(m_fw1Factory);
-	smartRelease(m_fw1Arial);
-	smartRelease(m_fw1Courier);
+	smartRelease(fw1Arial);
+	smartRelease(fw1Courier);
 
-	writeToConsole(L"done!\n", false);
-	writeToConsole(L"----> END OF DEBUG CONSOLE <----\n");
-	m_logfile.close();
+	log(L" done!\n", CSL_SUCCESS, false);
+	log(L"----> END OF DEBUG CONSOLE <----\n", CSL_SYSTEM);
+	m_logFile.close();
 }
 
 bool Antimony::compileShader(HRESULT *hr, std::wstring shader, SHADER *sh)

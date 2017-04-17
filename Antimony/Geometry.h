@@ -107,6 +107,8 @@ struct cursor
 
 ///
 
+unsigned long RGBA2DWORD(int iR, int iG, int iB, int iA);
+
 template <typename T> HRESULT FillBuffer(ID3D11Device *dev, ID3D11DeviceContext *devcon, ID3D11Buffer **out, T in, UINT size)
 {
 	HRESULT hr;

@@ -186,6 +186,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Console.cpp" />
     <ClCompile Include="Core.cpp" />
     <ClCompile Include="Bullet.cpp" />
     <ClCompile Include="Camera.cpp" />
@@ -200,6 +201,7 @@
     <ClCompile Include="Hresult.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="Spawner.cpp" />
     <ClCompile Include="Step.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Timer.cpp" />
@@ -209,6 +211,7 @@
     <ClInclude Include="Bullet.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Character.h" />
+    <ClInclude Include="Console.h" />
     <ClInclude Include="CpuUsage.h" />
     <ClInclude Include="DirectX.h" />
     <ClInclude Include="Entity.h" />
@@ -222,6 +225,7 @@
     <ClInclude Include="pchfx.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="SmartRelease.h" />
+    <ClInclude Include="Spawner.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Warnings.h" />

@@ -50,6 +50,11 @@ D3D11_INPUT_ELEMENT_DESC ied_VS_OUTPUT[] = {
 
 ///
 
+unsigned long RGBA2DWORD(int iR, int iG, int iB, int iA)
+{
+	return ((iA * 256 + iR) * 256 + iG) * 256 + iB;
+}
+
 mat TransposeMatrix(const mat &mIn)
 {
 	mat mat_temp;

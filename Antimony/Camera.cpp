@@ -1,4 +1,4 @@
-#include "Camera.h"
+#include "Antimony.h"
 #include "Warnings.h"
 
 ///
@@ -64,4 +64,7 @@ Camera::Camera()
 	m_phVel = 0.0f;
 }
 
-Camera camera;
+Camera* Antimony::getCamera()
+{
+	return &m_camera;
+}

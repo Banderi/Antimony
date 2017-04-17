@@ -12,5 +12,3 @@ public:
 
 	Player();
 };
-
-extern Player player;

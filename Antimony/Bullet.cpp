@@ -6,6 +6,45 @@ btVector3 bt_origin = btVector3(0, 0, 0);
 
 ///
 
+btCollisionShape* btObject::getShapeFromPrimitive(unsigned int p, float3 s)
+{
+	btCollisionShape *cs;
+	switch (p)
+	{
+		case BTSOLID_INFPLANE:
+		{
+			cs = new btStaticPlaneShape(btVector3(s.x, s.y, s.z), 1);
+			break;
+		}
+		case BTSOLID_BOX:
+		{
+			cs = new btBoxShape(WORLD_SCALE * Float3Tobt(&s));
+			break;
+		}
+		case BTSOLID_SPHERE:
+		{
+			cs = new btSphereShape(WORLD_SCALE * s.x);
+			break;
+		}
+		case BTSOLID_CYLINDER:
+		{
+			cs = new btCylinderShape(WORLD_SCALE * Float3Tobt(&s));
+			break;
+		}
+		case BTSOLID_CAPSULE:
+		{
+			cs = new btCapsuleShape(WORLD_SCALE * s.x, WORLD_SCALE * s.y);
+			break;
+		}
+		default:
+		{
+			cs = nullptr;
+			break;
+		}
+
+	}
+	return cs;
+}
 btRigidBody* btObject::getRigidBody()
 {
 	return m_rigidBody;
@@ -14,9 +53,17 @@ int btObject::getKind()
 {
 	return m_kind;
 }
+int btObject::getPrimitive()
+{
+	return m_primitive;
+}
 float btObject::getMass()
 {
 	return m_mass;
+}
+float3 btObject::getPrimitiveSize()
+{
+	return m_size;
 }
 btVector3 btObject::getbtPos()
 {
@@ -76,12 +123,16 @@ void btObject::initObject()
 	btRigidBody::btRigidBodyConstructionInfo rbci = btRigidBody::btRigidBodyConstructionInfo(m_mass, m_motionState, m_collisionShape, *m_inertia);
 	m_rigidBody = new btRigidBody(rbci);
 
+	bool add = true;
+
 	switch (m_kind)
 	{
 		case BTOBJECT_INFINITEGROUND:
 		{
 			//m_rigidBody->setRestitution(0);
 			m_rigidBody->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
+
+			add = true;
 			break;
 		}
 		case BTOBJECT_STATICWORLD:
@@ -114,19 +165,34 @@ void btObject::initObject()
 			proxy->m_collisionFilterMask = 3;*/
 			break;
 		}
+		case BTOBJECT_CAMERA:
+		{
+			m_rigidBody->setFriction(0);
+			m_rigidBody->setGravity(btVector3(0, 0, 0));
+			m_rigidBody->setActivationState(DISABLE_DEACTIVATION);
+
+			add = false;
+			break;
+		}
+		default:
+			break;
 	}
 
 	m_initialtransform = this->getbtTransform();
 	m_world->addRigidBody(m_rigidBody);
-	antimony.addPhysEntity(this);
+	if (add)
+		antimony.addPhysEntity(this);
 }
-btObject::btObject(int k, float m, btCollisionShape *c, btDefaultMotionState *s, btDiscreteDynamicsWorld *w)
+btObject::btObject(unsigned int k, unsigned int p, float m, float3 z, btDefaultMotionState *s, btDiscreteDynamicsWorld *w)
 {
 	m_world = w;
 	m_motionState = s;
-	m_collisionShape = c;
 	m_kind = k;
+	m_primitive = p;
 	m_mass = m;
+	m_size = z;
+
+	m_collisionShape = getShapeFromPrimitive(m_primitive, m_size);
 
 	m_inertia = new btVector3;
 	m_collisionShape->calculateLocalInertia(m_mass, *m_inertia);
@@ -135,14 +201,17 @@ btObject::btObject(int k, float m, btCollisionShape *c, btDefaultMotionState *s,
 
 	initObject();
 }
-btObject::btObject(int k, float m, btCollisionShape *c, btDefaultMotionState *s, btVector3 *i, btDiscreteDynamicsWorld *w)
+btObject::btObject(unsigned int k, unsigned int p, float m, float3 z, btDefaultMotionState *s, btVector3 *i, btDiscreteDynamicsWorld *w)
 {
 	m_world = w;
 	m_motionState = s;
-	m_collisionShape = c;
 	m_inertia = i;
 	m_kind = k;
+	m_primitive = p;
 	m_mass = m;
+	m_size = z;
+
+	m_collisionShape = getShapeFromPrimitive(m_primitive, m_size);
 
 	initObject();
 }
@@ -299,12 +368,21 @@ void Antimony::addPhysEntity(btObject *obj)
 {
 	m_physEntities.push_back(obj);
 }
-UINT Antimony::getEntityCount()
+std::vector<btObject*>* Antimony::getEntities()
 {
-	return m_physEntities.size();
+	return &m_physEntities;
 }
 void Antimony::resetPhysics()
 {
-	for (int i = 0; i < getEntityCount(); i++)
+	for (int i = 0; i < m_physEntities.size(); i++)
 		m_physEntities.at(i)->reset();
+}
+
+double Antimony::getTick()
+{
+	return m_delta * m_worldSpeed;
+}
+double Antimony::getDelta()
+{
+	return m_delta;
 }

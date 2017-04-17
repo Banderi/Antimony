@@ -6,7 +6,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 
 void Antimony::createMainWindow(HINSTANCE hInstance)
 {
-	writeToConsole(L"Creating main window handle...");
+	log(L"Creating main window handle...", CSL_SYSTEM);
 
 	WNDCLASSEX wc;
 	ZeroMemory(&wc, sizeof(WNDCLASSEX));
@@ -31,5 +31,5 @@ void Antimony::createMainWindow(HINSTANCE hInstance)
 		hInstance,
 		NULL);
 
-	writeToConsole(L" done\n", false);
+	log(L" done!\n", CSL_SUCCESS, false);
 }

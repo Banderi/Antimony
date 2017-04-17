@@ -34,9 +34,7 @@
 
 ///
 
-extern RAWINPUTDEVICE rid[4];
-
-///
+std::string GetKeyName(unsigned int k);
 
 struct Axis
 {
@@ -178,14 +176,6 @@ private:
 	std::vector<Input_Key*> m_keyArray;
 
 public:
-	Input_Key forward;
-	Input_Key backward;
-	Input_Key left;
-	Input_Key right;
-	Input_Key sprint;
-	Input_Key jump;
-	Input_Key action;
-
 	Input_Key sk_enter;
 	Input_Key sk_escape;
 	Input_Key sk_shift;
@@ -197,6 +187,18 @@ public:
 	Input_Key sk_arrDown;
 	Input_Key sk_arrLeft;
 	Input_Key sk_arrRight;
+
+	Input_Key console;
+	Input_Key snapshot;
+	Input_Key pause;
+
+	Input_Key forward;
+	Input_Key backward;
+	Input_Key left;
+	Input_Key right;
+	Input_Key sprint;
+	Input_Key jump;
+	Input_Key action;
 
 	bool exclusive;
 
@@ -223,6 +225,10 @@ public:
 		m_keyArray.push_back(&sk_arrLeft);
 		m_keyArray.push_back(&sk_arrRight);
 
+		m_keyArray.push_back(&console);
+		m_keyArray.push_back(&snapshot);
+		m_keyArray.push_back(&pause);
+
 		m_keyArray.push_back(&forward);
 		m_keyArray.push_back(&backward);
 		m_keyArray.push_back(&left);
@@ -231,12 +237,12 @@ public:
 		m_keyArray.push_back(&jump);
 		m_keyArray.push_back(&action);
 
-		sk_enter.set(0x0d, "Enter");
-		sk_escape.set(0x1b, "Escape");
-		sk_shift.set(0xa0, "Shift");
-		sk_ctrl.set(0xa2, "Ctrl");
-		sk_alt.set(0xa4, "Alt");
-		sk_space.set(0x20, "Space");
+		sk_enter.set(0x0d, GetKeyName(0x0d));
+		sk_escape.set(0x1b, GetKeyName(0x1b));
+		sk_shift.set(0xa0, GetKeyName(0xa0));
+		sk_ctrl.set(0xa2, GetKeyName(0xa2));
+		sk_alt.set(0xa4, GetKeyName(0xa4));
+		sk_space.set(0x20, GetKeyName(0x20));
 	}
 };
 class XInputController
@@ -327,7 +333,3 @@ public:
 		disable();
 	}
 };
-
-extern MouseController mouse;
-extern KeysController keys;
-extern XInputController controller[4];

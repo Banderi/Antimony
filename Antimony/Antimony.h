@@ -6,11 +6,15 @@
 
 #include <FW1FontWrapper.h>
 
+#include "Console.h"
 #include "Param.h"
 #include "Input.h"
 #include "Bullet.h"
 #include "Geometry.h"
 #include "CpuUsage.h"
+#include "Player.h"
+#include "Camera.h"
+#include "Spawner.h"
 
 #pragma comment (lib, "..\\ext\\FW1FontWrapper\\lib\\x86\\FW1FontWrapper.lib")
 
@@ -21,7 +25,7 @@ class Antimony
 private:
 	double m_delta;
 	float m_worldSpeed;
-	std::wofstream m_logfile;
+	std::wofstream m_logFile;
 
 	btDiscreteDynamicsWorld *m_btWorld;
 	std::map<const btCollisionObject*, std::vector<btManifoldPoint*>> m_objectsCollisionPoints;
@@ -34,7 +38,6 @@ private:
 	wchar_t m_globalStr64[64];
 
 	IFW1Factory *m_fw1Factory;
-	IFW1FontWrapper *m_fw1Arial, *m_fw1Courier;
 
 	CpuUsage m_cpuUsage;
 
@@ -43,12 +46,27 @@ private:
 	MEMORYSTATUSEX m_memInfo;
 	PROCESS_MEMORY_COUNTERS_EX m_pmc;
 
+	Player m_player;
+	Camera m_camera;
+
+	RAWINPUTDEVICE m_rid[4];
+
+	MouseController m_mouse;
+	KeysController m_keys;
+	XInputController m_controller[4];
+
+	std::vector<SpawnItem> m_spawnables;
+
 public:
+	IFW1FontWrapper *fw1Arial, *fw1Courier;
+
 	WindowParams window_main;
 	DisplayParams display;
 	AudioParams audio;
 	GameParams game;
 	ControlParams controls;
+
+	Console devConsole;
 
 	int startUp(HINSTANCE hInstance, int nCmdShow);
 	void readConfig();
@@ -87,10 +105,11 @@ public:
 	HRESULT registerRID();
 	HRESULT handleInput(MSG msg);
 
-	void initializeDebugConsole();
-	void shutdownDebugConsole();
-	HRESULT writeToConsole(std::wstring string, bool t = true, bool logf = true);
-	void consoleLog();
+	HRESULT initDebugMonitor();
+	void unacquireDebugMonitor();
+	void monitorLog();
+	HRESULT log(std::wstring string, unsigned int col, bool timestamp = true);
+	HRESULT logVolatile(std::wstring string);
 	void logError(HRESULT hr);
 	bool handleErr(HRESULT *hOut, DWORD facing, HRESULT hr, const wchar_t* opt = L"");
 
@@ -100,8 +119,11 @@ public:
 	void tickCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep);
 	static void staticCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep);
 	void addPhysEntity(btObject *obj);
-	UINT getEntityCount();
+	std::vector<btObject*>* getEntities();
 	void resetPhysics();
+
+	double getTick();
+	double getDelta();
 
 	void setGameState(unsigned int state);
 	unsigned int getGameState();
@@ -110,6 +132,13 @@ public:
 	void setSubSystem(unsigned char subs);
 	unsigned char getSubSystem();
 	bool ifSubSystem(unsigned char subs);
+
+	Player* getPlayer();
+	Camera* getCamera();
+
+	bool addSpawnable(std::wstring id, antSpawnCallback call);
+	bool spawn(std::wstring id, unsigned int qu, float3 coord);
+	static bool standardSpawn(std::wstring id, float3 pos);
 
 	Antimony()
 	{

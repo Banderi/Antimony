@@ -1,7 +1,5 @@
 #include "Antimony.h"
-#include "Player.h"
 #include "Timer.h"
-#include "CpuUsage.h"
 
 ///
 
@@ -27,69 +25,6 @@ color BtnStateColor(Input bt)
 void Antimony::render_Debug()
 {
 	devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &vertex_stride, &vertex_offset);
-	setDepthBufferState(ON);
-	setShader(SHADERS_DEBUG);
-
-	for (unsigned char i = 0; i < m_physEntities.size(); i++)
-	{
-		mat_world = m_physEntities.at(i)->getMatTransform();
-		color c;
-		int state = m_physEntities.at(i)->getRigidBody()->getActivationState();
-
-		if (i >= 2 && i < 3)										// walls
-		{
-			Draw3DBox(WORLD_SCALE * 0.3, WORLD_SCALE * 2, WORLD_SCALE * 5, COLOR_WHITE);
-		}
-		else if (i >= 3 && i < 6)									// moving platforms
-		{
-			Draw3DBox(WORLD_SCALE * Vector3(0.45, 0.15, 0.45), color(2, 1, 1, 1));
-		}
-		else if (i >= 6 && i < m_physEntities.size() - 0)			// test cubes
-		{
-			switch (state)
-			{
-				case ACTIVE_TAG:
-				{
-					c = color(0.9, 1.1, 2, 1);
-					break;
-				}
-				case ISLAND_SLEEPING:
-				{
-					c = COLOR_WHITE;
-					break;
-				}
-				case WANTS_DEACTIVATION:
-				{
-					c = COLOR_RED;
-					break;
-				}
-			}
-			Draw3DCube(WORLD_SCALE * 0.3, c);
-		}
-
-		mat_world = mat_identity;
-	}
-
-	// player
-	mat_world = player.getColl()->getMatTransform();
-	if (player.getJumpState() != JUMPSTATE_ONGROUND)
-		Draw3DBox(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3, WORLD_SCALE * 0.15, color(1, 1.1, 1.5, 1));
-	else
-		Draw3DBox(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3, WORLD_SCALE * 0.15, COLOR_GREEN);
-
-	///
-
-	// ground wireframe
-	Draw3DLineThin(WORLD_SCALE * float3(-2, 0, -2), WORLD_SCALE * float3(-2, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-	Draw3DLineThin(WORLD_SCALE * float3(0, 0, -2), WORLD_SCALE * float3(0, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-	Draw3DLineThin(WORLD_SCALE * float3(2, 0, -2), WORLD_SCALE * float3(2, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-	Draw3DLineThin(WORLD_SCALE * float3(-2, 0, -2), WORLD_SCALE * float3(2, 0, -2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-	Draw3DLineThin(WORLD_SCALE * float3(-2, 0, 0), WORLD_SCALE * float3(2, 0, 0), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-	Draw3DLineThin(WORLD_SCALE * float3(-2, 0, 2), WORLD_SCALE * float3(2, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-	Draw3DLineThin(WORLD_SCALE * float3(0, 0, 0), WORLD_SCALE * float3(0, 0.5, 0), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-
-	///
-
 	setDepthBufferState(OFF);
 	setShader(SHADERS_PLAIN);
 
@@ -112,7 +47,7 @@ void Antimony::render_Debug()
 			Draw3DLineThin(p, p + WORLD_SCALE * 0.1 * n, COLOR_RED, COLOR_RED, &mat_identity);
 		}
 
-		auto& mfp = m_objectsCollisionPoints[player.getColl()->getRigidBody()];
+		auto& mfp = m_objectsCollisionPoints[m_player.getColl()->getRigidBody()];
 		if (!mfp.empty())
 		{
 			for (int i = 0; i < mfp.size(); i++)
@@ -139,19 +74,43 @@ void Antimony::render_Debug()
 		}*/
 	}
 
-	render_DebugKeyboard(float2(0, -300));
-	render_DebugMouse(float2(0, -300) + float2(90, -30));
-	render_DebugController(float2(0, -300), CONTROLLER_1);
+	if (antimony.game.dbg_info)
+	{
+		switch (antimony.game.dbg_infochart)
+		{
+			case DBGCHART_FPS:
+			{
+				devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &vertex_stride, &vertex_offset);
+				setShader(SHADERS_PLAIN);
 
-	swprintf(m_globalStr64, L"%.3f", mouse.X.getPos());
-	m_fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.right + 260, antimony.display.bottom - 180, 0xffffffff, 0);
-	swprintf(m_globalStr64, L"%.3f", mouse.Y.getPos());
-	m_fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.right + 320, antimony.display.bottom - 150, 0xffffffff, 0);
+				render_DebugFPS(float2(antimony.display.right, antimony.display.bottom));
 
-	devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &vertex_stride, &vertex_offset);
-	setShader(SHADERS_PLAIN);
+				break;
+			}
+			case DBGCHART_PIE:
+			{
+				break;
+			}
+			case DBGCHART_INPUT:
+			{
+				devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &vertex_stride, &vertex_offset);
+				setShader(SHADERS_PLAIN);
 
-	render_DebugFPS(float2(antimony.display.right, antimony.display.bottom));
+				render_DebugKeyboard(float2(0, -300));
+				render_DebugMouse(float2(0, -300) + float2(90, -30));
+				render_DebugController(float2(0, -300), CONTROLLER_1);
+
+				swprintf(m_globalStr64, L"%.3f", m_mouse.X.getPos());
+				fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.right + 260, antimony.display.bottom - 180, 0xffffffff, 0);
+				swprintf(m_globalStr64, L"%.3f", m_mouse.Y.getPos());
+				fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.right + 320, antimony.display.bottom - 150, 0xffffffff, 0);
+
+				break;
+			}
+			default:
+				break;
+		}
+	}
 }
 void Antimony::render_DebugKeyboard(float2 pos)
 {
@@ -337,11 +296,11 @@ void Antimony::render_DebugKeyboard(float2 pos)
 	devcon->DrawIndexed(6, 0, 0);
 	// W
 	mat_temp = MScaling(0.01, 0.01, 1) * MTranslation(0.1475, -0.12, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(keys.forward));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_keys.forward));
 	devcon->DrawIndexed(6, 0, 0);
 	// E
 	mat_temp = MScaling(0.01, 0.01, 1) * MTranslation(0.1625, -0.12, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(keys.action));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_keys.action));
 	devcon->DrawIndexed(6, 0, 0);
 	// R
 	mat_temp = MScaling(0.01, 0.01, 1) * MTranslation(0.1775, -0.12, 0);
@@ -390,15 +349,15 @@ void Antimony::render_DebugKeyboard(float2 pos)
 	devcon->DrawIndexed(6, 0, 0);
 	// A
 	mat_temp = MScaling(0.01, 0.01, 1) * MTranslation(0.135, -0.135, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(keys.left));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_keys.left));
 	devcon->DrawIndexed(6, 0, 0);
 	// S
 	mat_temp = MScaling(0.01, 0.01, 1) * MTranslation(0.15, -0.135, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(keys.backward));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_keys.backward));
 	devcon->DrawIndexed(6, 0, 0);
 	// D
 	mat_temp = MScaling(0.01, 0.01, 1) * MTranslation(0.165, -0.135, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(keys.right));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_keys.right));
 	devcon->DrawIndexed(6, 0, 0);
 	// F
 	mat_temp = MScaling(0.01, 0.01, 1) * MTranslation(0.18, -0.135, 0);
@@ -443,7 +402,7 @@ void Antimony::render_DebugKeyboard(float2 pos)
 
 	// Left Shift
 	mat_temp = MScaling(0.014, 0.01, 1) * MTranslation(0.11, -0.15, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(keys.sprint));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_keys.sprint));
 	devcon->DrawIndexed(6, 0, 0);
 	// < >
 	mat_temp = MScaling(0.01, 0.01, 1) * MTranslation(0.1275, -0.15, 0);
@@ -512,7 +471,7 @@ void Antimony::render_DebugKeyboard(float2 pos)
 	devcon->DrawIndexed(6, 0, 0);
 	// Spacebar
 	mat_temp = MScaling(0.07, 0.01, 1) * MTranslation(0.19775, -0.165, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(keys.jump));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_keys.jump));
 	devcon->DrawIndexed(6, 0, 0);
 	// Alt Gr
 	mat_temp = MScaling(0.01, 0.01, 1) * MTranslation(0.24275, -0.165, 0);
@@ -585,17 +544,17 @@ void Antimony::render_DebugMouse(float2 pos)
 
 	// Left
 	mat_temp = MScaling(0.0075, 0.01, 1) * MTranslation(0.1, -0.050, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(mouse.LMB));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_mouse.LMB));
 	devcon->DrawIndexed(6, 0, 0);
 
 	// Middle
 	mat_temp = MScaling(0.0035, 0.01, 1) * MTranslation(0.11, -0.050, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(mouse.MMB));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_mouse.MMB));
 	devcon->DrawIndexed(6, 0, 0);
 
 	// Right
 	mat_temp = MScaling(0.0075, 0.01, 1) * MTranslation(0.12, -0.050, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(mouse.RMB));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_mouse.RMB));
 	devcon->DrawIndexed(6, 0, 0);
 
 	// Mouse
@@ -649,72 +608,72 @@ void Antimony::render_DebugController(float2 pos, unsigned char c)
 
 	// Back
 	mat_temp = MScaling(0.0045, 0.004, 1) * MTranslation(0.225, -0.045, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(controller[c].Back));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_controller[c].Back));
 	devcon->DrawIndexed(6, 0, 0);
 
 	// Start
 	mat_temp = MScaling(0.0045, 0.004, 1) * MTranslation(0.235, -0.045, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(controller[c].Start));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_controller[c].Start));
 	devcon->DrawIndexed(6, 0, 0);
 
 	// Left
 	mat_temp = MScaling(0.005, 0.005, 1) * MTranslation(0.2075, -0.045, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(controller[c].Left));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_controller[c].Left));
 	devcon->DrawIndexed(6, 0, 0);
 
 	// Right
 	mat_temp = MScaling(0.005, 0.005, 1) * MTranslation(0.2175, -0.045, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(controller[c].Right));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_controller[c].Right));
 	devcon->DrawIndexed(6, 0, 0);
 
 	// Down
 	mat_temp = MScaling(0.005, 0.005, 1) * MTranslation(0.2125, -0.05, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(controller[c].Down));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_controller[c].Down));
 	devcon->DrawIndexed(6, 0, 0);
 
 	// Up
 	mat_temp = MScaling(0.005, 0.005, 1) * MTranslation(0.2125, -0.04, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(controller[c].Up));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_controller[c].Up));
 	devcon->DrawIndexed(6, 0, 0);
 
 	// X
 	mat_temp = MScaling(0.005, 0.005, 1) * MTranslation(0.2425, -0.045, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(controller[c].X));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_controller[c].X));
 	devcon->DrawIndexed(6, 0, 0);
 
 	// B
 	mat_temp = MScaling(0.005, 0.005, 1) * MTranslation(0.2525, -0.045, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(controller[c].B));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_controller[c].B));
 	devcon->DrawIndexed(6, 0, 0);
 
 	// A
 	mat_temp = MScaling(0.005, 0.005, 1) * MTranslation(0.2475, -0.05, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(controller[c].A));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_controller[c].A));
 	devcon->DrawIndexed(6, 0, 0);
 
 	// Y
 	mat_temp = MScaling(0.005, 0.005, 1) * MTranslation(0.2475, -0.04, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(controller[c].Y));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_controller[c].Y));
 	devcon->DrawIndexed(6, 0, 0);
 
 	// LT
 	mat_temp = MScaling(0.0075, 0.0075, 1) * MTranslation(0.2125, -0.0325, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(controller[c].LT));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_controller[c].LT));
 	devcon->DrawIndexed(6, 0, 0);
 
 	// RT
 	mat_temp = MScaling(0.0075, 0.0075, 1) * MTranslation(0.2475, -0.0325, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(controller[c].RT));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_controller[c].RT));
 	devcon->DrawIndexed(6, 0, 0);
 
 	// LB
 	mat_temp = MScaling(0.01, 0.0025, 1) * MTranslation(0.2125, -0.0325, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(controller[c].LB));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_controller[c].LB));
 	devcon->DrawIndexed(6, 0, 0);
 
 	// RB
 	mat_temp = MScaling(0.01, 0.0025, 1) * MTranslation(0.2475, -0.0325, 0);
-	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(controller[c].RB));
+	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, BtnStateColor(m_controller[c].RB));
 	devcon->DrawIndexed(6, 0, 0);
 
 	// Left Circle
@@ -724,10 +683,10 @@ void Antimony::render_DebugController(float2 pos, unsigned char c)
 	Draw2DEllipses(15.4, 15.4, pos.x + 524.7, pos.y + 116.6, color(.4, .4, .4, 1));
 
 	// Left Stick
-	Draw2DEllipses(9.9, 9.9, pos.x + 487.3 + controller[c].LX.getVel() * 4.4, pos.y + 116.6 + controller[c].LY.getVel() * 4.4, BtnStateColor(controller[c].LS));
+	Draw2DEllipses(9.9, 9.9, pos.x + 487.3 + m_controller[c].LX.getVel() * 4.4, pos.y + 116.6 + m_controller[c].LY.getVel() * 4.4, BtnStateColor(m_controller[c].LS));
 
 	// Right Stick
-	Draw2DEllipses(9.9, 9.9, pos.x + 524.7 + controller[c].RX.getVel() * 4.4, pos.y + 116.6 + controller[c].RY.getVel() * 4.4, BtnStateColor(controller[c].RS));
+	Draw2DEllipses(9.9, 9.9, pos.x + 524.7 + m_controller[c].RX.getVel() * 4.4, pos.y + 116.6 + m_controller[c].RY.getVel() * 4.4, BtnStateColor(m_controller[c].RS));
 
 }
 void Antimony::render_DebugFPS(float2 pos)
@@ -783,15 +742,18 @@ void Antimony::render_DebugFPS(float2 pos)
 	Draw2DLineThick(float2(pos.x - 260, pos.y - 88), float2(1.945 * cpu + pos.x - 258, pos.y - 88), 10, border2, border2);
 	Draw2DRectBorderThick(200, 10, pos.x - 260, pos.y - 83, 1, border);
 
+	swprintf(m_globalStr64, L"Total entities: %i", m_physEntities.size());
+	fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 214, 0xffffffff, 0);
+
 	swprintf(m_globalStr64, L"FPS: %.2f (%i)", timer.GetFPSStamp(), timer.GetFramesCount());
-	m_fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 200, 0xffffffff, 0);
+	fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 200, 0xffffffff, 0);
 	swprintf(m_globalStr64, L"Max: %.2f", timer.maxFps);
-	m_fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.width - 125, antimony.display.height - 200, 0xffffffff, 0);
+	fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.width - 125, antimony.display.height - 200, 0xffffffff, 0);
 
 	swprintf(m_globalStr64, L"CPU usage: %d%%", cpu);
-	m_fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 78, 0xffffffff, 0);
+	fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 78, 0xffffffff, 0);
 	swprintf(m_globalStr64, L"RAM usage: %.2f%%", physMemPercent);
-	m_fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 64, 0xffffffff, 0);
+	fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 64, 0xffffffff, 0);
 	swprintf(m_globalStr64, L"Alloc.: %.3f MB / %.3f GB", physMemMB, totalPhysMemGB);
-	m_fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 50, 0xffffffff, 0);
+	fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 50, 0xffffffff, 0);
 }

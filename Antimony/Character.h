@@ -31,7 +31,7 @@ public:
 	SimpleCharacter();
 };
 
-class Character : public LookAtEntity
+class Character : public LookAtEntity, public Entity
 {
 protected:
 	btObject *m_collisionObject;

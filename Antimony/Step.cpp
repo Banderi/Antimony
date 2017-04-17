@@ -1,9 +1,6 @@
 #include "Antimony.h"
 #include "Timer.h"
-#include "CpuUsage.h"
 #include "Gameflow.h"
-#include "Player.h"
-#include "Camera.h"
 
 ///
 
@@ -24,32 +21,52 @@ void Antimony::step()
 
 	updateGameState();
 
-	if (ifGameState(GAMESTATE_INGAME))									// INGAME (non-paused, non-menu etc.)
+	if (ifGameState(GAMESTATE_INGAME))									// In-game (non-paused, non-menu etc.)
 	{
-		updateWorld(fstep);												// update moving objects, triggers etc. (TBI)
-		updatePlayerControls(&keys, &controller[0], fstep);				// update player inputs
-		updatePhysics(fstep);											// btWorld step
+		if (devConsole.isOpen())
+		{
+			m_player.lock();
+			m_camera.lock();
+		}
+		else
+		{
+			m_player.unlock();
+			m_camera.unlock();
+		}
 
-		updateCameraControls(&mouse, &keys, &controller[0], fstep);		// update camera (--> mat_view)
-		updateAI(fstep);												// update AI/scripts etc. (TBI)
+		updateAI(fstep);														// update AI/scripts etc. (TBI)
+		updateWorld(fstep);														// update moving objects, triggers etc. (TBI)
+		updatePlayerControls(&m_keys, &m_controller[0], fstep);					// update player inputs
+		updatePhysics(fstep);													// btWorld step
+		updateCameraControls(&m_mouse, &m_keys, &m_controller[0], fstep);		// update camera (--> mat_view)
+	}
+	else if (ifGameState(GAMESTATE_PAUSED) && !devConsole.isOpen())	// Game is paused
+	{
+		m_camera.unlock();
+
+		updateCameraControls(&m_mouse, &m_keys, &m_controller[0], fstep);		// update camera (--> mat_view)
 	}
 
 	prepareFrame();														// prepare the frame for rendering
-
-	render_Debug();														// render debug info
 }
 void Antimony::endStep()
 {
+	devConsole.draw();												// Draw the dev console
+
+	if (game.debug)
+	{
+		render_Debug();													// render debug info
+	}
 	presentFrame();														// present frame to the GPU
 
 	if (game.debug)
-		consoleLog();													// log debugging info to the console
-	mouse.reset();
-	keys.reset();
+		monitorLog();													// log some debugging info to the debug monitor
+	m_mouse.reset();
+	m_keys.reset();
 	for (unsigned char i = 0; i< XUSER_MAX_COUNT; i++)
 	{
-		if (controller[i].isEnabled())
-			controller[i].reset();
+		if (m_controller[i].isEnabled())
+			m_controller[i].reset();
 	}
 }
 HRESULT Antimony::prepareFrame()
@@ -73,21 +90,24 @@ HRESULT Antimony::presentFrame()
 }
 void Antimony::updatePlayerControls(KeysController *khandle, XInputController *xhandle, double delta)
 {
-	float speed = 4 * player.m_movSpeed;
+	float speed = 4 * m_player.m_movSpeed;
 	if (khandle->sprint.getState() > BTN_UNPRESSED || xhandle->B.getState() > BTN_UNPRESSED)
-		speed = 8 * player.m_movSpeed;
+		speed = 8 * m_player.m_movSpeed;
 
 	float3 mmov, xmov;
-	float th = camera.getAngle(CAM_THETA);
+	float th = m_camera.getAngle(CAM_THETA);
 
-	if (khandle->forward.getState() > BTN_UNPRESSED)
-		mmov += float3(cosf(th), 0, sinf(th));
-	if (khandle->backward.getState() > BTN_UNPRESSED)
-		mmov += float3(-cosf(th), 0, -sinf(th));
-	if (khandle->left.getState() > BTN_UNPRESSED)
-		mmov += float3(-sinf(th), 0, cosf(th));
-	if (khandle->right.getState() > BTN_UNPRESSED)
-		mmov += float3(sinf(th), 0, -cosf(th));
+	if (m_player.isFree())
+	{
+		if (khandle->forward.getState() > BTN_UNPRESSED)
+			mmov += float3(cosf(th), 0, sinf(th));
+		if (khandle->backward.getState() > BTN_UNPRESSED)
+			mmov += float3(-cosf(th), 0, -sinf(th));
+		if (khandle->left.getState() > BTN_UNPRESSED)
+			mmov += float3(-sinf(th), 0, cosf(th));
+		if (khandle->right.getState() > BTN_UNPRESSED)
+			mmov += float3(sinf(th), 0, -cosf(th));
+	}
 
 	xmov = float3(sinf(th) * xhandle->LX.getVel() + cosf(th) * xhandle->LY.getVel(), 0, sinf(th) * xhandle->LY.getVel() + cosf(th) * (-xhandle->LX.getVel()));
 
@@ -97,11 +117,14 @@ void Antimony::updatePlayerControls(KeysController *khandle, XInputController *x
 
 	//player.MoveToPoint(player.GetPosDest() + mov * speed * delta, .999999971);
 
-	player.update(delta, m_objectsCollisions);
-	player.move(&Float3Tobt(&mov), speed);
+	m_player.update(delta, m_objectsCollisions);
+	m_player.move(&Float3Tobt(&mov), speed);
 
-	if (khandle->jump.getState() > BTN_UNPRESSED || xhandle->A.getState() > BTN_UNPRESSED)
-		player.attemptJump();
+	if (m_player.isFree())
+	{
+		if (khandle->jump.getState() > BTN_UNPRESSED || xhandle->A.getState() > BTN_UNPRESSED)
+			m_player.attemptJump();
+	}
 }
 void Antimony::updateCameraControls(MouseController *mhandle, KeysController *khandle, XInputController *xhandle, double delta)
 {
@@ -115,19 +138,22 @@ void Antimony::updateCameraControls(MouseController *mhandle, KeysController *kh
 	static float _phi = DX_PI / 2;
 
 	// camera rotation
-	if (mhandle->RMB.getState() == BTN_UNPRESSED && xhandle->LT.getState() < BTN_PRESSED)
+	if (m_camera.isFree())
 	{
-		_theta -= m_slide * mhandle->X.getVel() * BoolToSign(controls.m_invertxaxis)
-			+ x_slide * xhandle->RX.getVel() * BoolToSign(controls.x_invertxaxis);
-		_phi += m_slide * mhandle->Y.getVel() * BoolToSign(controls.m_invertyaxis)
-			+ x_slide * xhandle->RY.getVel() * -BoolToSign(controls.x_invertyaxis);
+		if (mhandle->RMB.getState() == BTN_UNPRESSED && xhandle->LT.getState() < BTN_PRESSED)
+		{
+			_theta -= m_slide * mhandle->X.getVel() * BoolToSign(controls.m_invertxaxis)
+				+ x_slide * xhandle->RX.getVel() * BoolToSign(controls.x_invertxaxis);
+			_phi += m_slide * mhandle->Y.getVel() * BoolToSign(controls.m_invertyaxis)
+				+ x_slide * xhandle->RY.getVel() * -BoolToSign(controls.x_invertyaxis);
+		}
+		else if (mhandle->RMB.getState() > BTN_UNPRESSED || xhandle->LT.getState() > BTN_UNPRESSED) // zoom
+		{
+			zoom += float(mhandle->Y.getVel()) * 0.0015;
+			zoom -= float(xhandle->RY.getVel()) * 0.0015;
+		}
+		zoom -= float(mhandle->Z.getVel()) * 0.0015;
 	}
-	else if (mhandle->RMB.getState() > BTN_UNPRESSED || xhandle->LT.getState() > BTN_UNPRESSED) // zoom
-	{
-		zoom += float(mhandle->Y.getVel()) * 0.005;
-		zoom -= float(xhandle->RY.getVel()) * 0.01;
-	}
-	zoom -= float(mhandle->Z.getVel()) * 0.005;
 
 	if (zoom < 0)
 		zoom = 0;
@@ -141,30 +167,24 @@ void Antimony::updateCameraControls(MouseController *mhandle, KeysController *kh
 	eye.z = (radius + zoom * zoom) * sinf(_theta) * sinf(_phi);
 
 	float3 height = v3_origin;//float3(0, 0.75, 0);
+	float3 entity = MatToFloat3(&m_physEntities.at(game.dbg_entityfollow%m_physEntities.size())->getMatTransform());//player.getPos();
 
-	float3 clook = MatToFloat3(&m_physEntities.at(game.dbg_entityfollow%m_physEntities.size())->getMatTransform());//player.getPos();
-
-	if (camera.isFree())
-		camera.lookAtPoint(clook + WORLD_SCALE * (height + eye), game.camera_friction * (.99999999) + !game.camera_friction);
-	//camera.LookAtPoint(clook + WORLD_SCALE * (height), -1);
-
-	camera.moveToPoint(clook + WORLD_SCALE * (height - eye * zoom), game.camera_friction * (.9999999) + !game.camera_friction);
-	//camera.MoveToPoint(camera.GetLookAt() + WORLD_SCALE * (height - eye * zoom), -1);
+	m_camera.lookAtPoint(entity + WORLD_SCALE * (height + eye), game.camera_friction * (.99999999) + !game.camera_friction);
+	m_camera.moveToPoint(entity + WORLD_SCALE * (height - eye * zoom), game.camera_friction * (.9999999) + !game.camera_friction);
 
 	// reset camera
 	if (mhandle->MMB.getState() == BTN_HELD || xhandle->RS.getState() == BTN_HELD)
 	{
-		camera.lock();
+		m_camera.lock();
 		//camera.LookAtPoint(v3_origin, .99999);
-		camera.lookAtPoint(player.getColl()->getFlat3Pos(), .99999);
+		m_camera.lookAtPoint(m_player.getColl()->getFlat3Pos(), .99999);
 		zoom = 1.2;
 	}
-	else if (!camera.isFree())
-		camera.unlock();
+	else if (!m_camera.isFree())
+		m_camera.unlock();
 
-	camera.update(delta);
-
-	mat_view = MLookAtLH(camera.getPos(), camera.getLookAt(), float3(0, 1, 0));
+	m_camera.update(delta);
+	mat_view = MLookAtLH(m_camera.getPos(), m_camera.getLookAt(), float3(0, 1, 0));
 }
 void Antimony::updateAI(double delta)
 {
@@ -205,18 +225,58 @@ void Antimony::updateWorld(double delta)
 }
 void Antimony::updateGameState()
 {
-	if (ifGameState(GAMESTATE_INGAME))									// INGAME (non-paused, non-menu etc.)
+	switch (getGameState())
 	{
-		if (keys.sk_escape.getState() == BTN_PRESSED)
-			//SetGameState(GAMESTATE_PAUSE);
-			PostQuitMessage(0);
-	}
-	else if (ifGameState(GAMESTATE_PAUSE))								// PAUSED (in-antimony.game inventory/pause menu)
-	{
-		if (keys.sk_escape.getState() == BTN_PRESSED)
+		case GAMESTATE_INGAME:				// In-game (non-paused, non-menu etc.)
 		{
-			setGameState(GAMESTATE_INGAME);
-			//PostQuitMessage(0);
+			if (m_keys.sk_escape.getState() == BTN_PRESSED && !devConsole.isOpen())		// Escape
+			{
+				if (game.debug)
+					PostQuitMessage(0);
+				else
+					setGameState(GAMESTATE_PAUSEMENU);
+			}
+			else if (m_keys.pause.getState() == BTN_PRESSED && !devConsole.isOpen())		// Pause key
+			{
+				setGameState(GAMESTATE_PAUSED);
+			}
+			break;
+		}
+		case GAMESTATE_PAUSEMENU:			// Pause menu (in-game inventory/pause menu)
+		{
+			if (m_keys.sk_escape.getState() == BTN_PRESSED && !devConsole.isOpen())
+			{
+				// TODO: Implement quit button & pause menu
+				//setGameState(GAMESTATE_INGAME);
+				PostQuitMessage(0);
+			}
+			break;
+		}
+		case GAMESTATE_PAUSED:
+		{
+			if (m_keys.sk_escape.getState() == BTN_PRESSED && !devConsole.isOpen())		// Escape
+			{
+				if (game.debug)
+					PostQuitMessage(0);
+				else
+					setGameState(GAMESTATE_PAUSEMENU);
+			}
+			else if (m_keys.pause.getState() == BTN_PRESSED && !devConsole.isOpen())		// Pause key
+			{
+				setGameState(GAMESTATE_INGAME);
+			}
+			break;
+		}
+	}
+
+	if (m_keys.console.getState() == BTN_PRESSED)		// Dev console
+	{
+		if (devConsole.isEnabled())
+		{
+			if (devConsole.isOpen())
+				devConsole.close();
+			else
+				devConsole.open();
 		}
 	}
 }

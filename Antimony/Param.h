@@ -27,6 +27,11 @@
 #define AA_32X		32
 #define AA_64X		64
 
+#define DBGCHART_PAGES_COUNT 3
+#define DBGCHART_FPS	0x0
+#define DBGCHART_PIE	0x1
+#define DBGCHART_INPUT	0x2
+
 ///
 
 struct WindowParams
@@ -97,6 +102,8 @@ struct GameParams
 	char difficulty;						// Game difficulty
 	bool camera_friction;					// Responsiveness of camera movement
 
+	bool dbg_info;							// Display debugging info (FPS, etc.)
+	int dbg_infochart;						// Debug info chart page
 	bool dbg_wireframe;						// Bullet debugging wireframe rendering
 	int dbg_entityfollow;					// Entity followed by camera (for debugging)
 
@@ -114,6 +121,10 @@ struct ControlParams
 	bool m_invertyaxis;						// Mouse Y axis inverted yes/no
 	bool x_invertxaxis;						// Controller X axis inverted yes/no
 	bool x_invertyaxis;						// Controller Y axis inverted yes/no
+
+	unsigned int k_console;					// Developer console
+	unsigned int k_snapshot;				// Developer console
+	unsigned int k_pause;					// Developer console
 
 	unsigned int k_forward;					//
 	unsigned int k_backward;				//

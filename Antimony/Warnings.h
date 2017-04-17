@@ -1,5 +1,6 @@
 #pragma warning (disable : 4005)		// macro redefinition
 #pragma warning (disable : 4018)		// signed/unsigned mismatch
+#pragma warning (disable : 4129)		// unrecognized character escape sequence
 #pragma warning (disable : 4244)		// conversion from 'double' to 'FLOAT', possible loss of data
 #pragma warning (disable : 4267)		// conversion from 'size_t' to 'unsigned char', possible loss of data
 #pragma warning (disable : 4305)		// truncation from 'double' to 'const btScalar'

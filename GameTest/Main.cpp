@@ -36,6 +36,15 @@ int WINAPI WinMain(HINSTANCE hInstance,
 				case WM_INPUT:
 				{
 					antimony.handleInput(msg);
+					TranslateMessage(&msg);
+					DispatchMessageW(&msg);
+					break;
+				}
+				case WM_KEYDOWN:
+				{
+					antimony.handleInput(msg);
+					TranslateMessage(&msg);
+					DispatchMessageW(&msg);
 					break;
 				}
 				default:
@@ -61,87 +70,93 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 {
 	switch (message)
 	{
-	case WM_DESTROY:
-	{
-		PostQuitMessage(0);
-		return 0;
-		break;
-	}
-	case WM_KEYDOWN:
-	{
-		switch (wParam)
+		case WM_DESTROY:
 		{
-		case VK_ESCAPE:
-		{
-			//PostQuitMessage(0);
+			PostQuitMessage(0);
+			return 0;
 			break;
 		}
-		case VK_F7:
+		case WM_KEYDOWN:
 		{
-			antimony.game.dbg_wireframe = !antimony.game.dbg_wireframe;
-			break;
+			if (!antimony.devConsole.isOpen())
+			{
+				switch (wParam)
+				{
+					case VK_F6:
+					{
+						antimony.game.dbg_info = !antimony.game.dbg_info;
+						break;
+					}
+					case VK_F7:
+					{
+						antimony.game.dbg_infochart++;
+						if (antimony.game.dbg_infochart > DBGCHART_PAGES_COUNT - 1)
+						{
+							antimony.game.dbg_infochart = 0;
+						}
+						break;
+					}
+					case VK_F8:
+					{
+						antimony.game.dbg_wireframe = !antimony.game.dbg_wireframe;
+						break;
+					}
+					case VK_OEM_COMMA:
+					{
+						antimony.game.dbg_entityfollow--;
+						if (antimony.game.dbg_entityfollow < 0)
+							antimony.game.dbg_entityfollow = antimony.getEntities()->size() - 1;
+						break;
+					}
+					case VK_OEM_PERIOD:
+					{
+						antimony.game.dbg_entityfollow++;
+						if (antimony.game.dbg_entityfollow > antimony.getEntities()->size() - 1)
+							antimony.game.dbg_entityfollow = 0;
+						break;
+					}
+					case 0x52:
+					{
+						// TODO: fix platform momentum
+						antimony.resetPhysics();
+						break;
+					}
+				}
+			}
 		}
-		case VK_OEM_COMMA:
-		{
-			antimony.game.dbg_entityfollow--;
-			if (antimony.game.dbg_entityfollow < 0)
-				antimony.game.dbg_entityfollow = antimony.getEntityCount() - 1;
-			break;
-		}
-		case VK_OEM_PERIOD:
-		{
-			antimony.game.dbg_entityfollow++;
-			if (antimony.game.dbg_entityfollow > antimony.getEntityCount() - 1)
-				antimony.game.dbg_entityfollow = 0;
-			break;
-		}
-		case 0x52:
-		{
-			// TODO: fix platform momentum
-			antimony.resetPhysics();
-			break;
-		}
-		}
-	}
 	}
 	return DefWindowProcW(hWnd, message, wParam, lParam);
 }
 
 void Temp_StartingFiles()
 {
-	btCollisionShape *cs;
 	btDefaultMotionState *ms;
 	btObject *phys_obj;
 
 	// test walls
-	cs = new btBoxShape(WORLD_SCALE * btVector3(0.3, 2, 5));
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(-3, 1, -1)));
-	phys_obj = new btObject(BTOBJECT_STATICWORLD, 0.0f, cs, ms, &btVector3(0, 0, 0), antimony.getBtWorld());
+	phys_obj = new btObject(BTOBJECT_STATICWORLD, BTSOLID_BOX, 0.0f, float3(0.3, 2, 5), ms, &btVector3(0, 0, 0), antimony.getBtWorld());
 
 	// moving platforms
-	cs = new btBoxShape(WORLD_SCALE * btVector3(0.45, 0.15, 0.45));
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 0.5, 0)));
-	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, 0.0f, cs, ms, &btVector3(0, 0, 0), antimony.getBtWorld());
+	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), ms, &btVector3(0, 0, 0), antimony.getBtWorld());
 
-	cs = new btBoxShape(WORLD_SCALE * btVector3(0.45, 0.15, 0.45));
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 1, 0)));
-	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, 0.0f, cs, ms, &btVector3(0, 0, 0), antimony.getBtWorld());
+	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), ms, &btVector3(0, 0, 0), antimony.getBtWorld());
 
-	cs = new btBoxShape(WORLD_SCALE * btVector3(0.45, 0.15, 0.45));
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 2, 2)));
-	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, 0.0f, cs, ms, &btVector3(0, 0, 0), antimony.getBtWorld());
+	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), ms, &btVector3(0, 0, 0), antimony.getBtWorld());
 
 	// test cubes
-	cs = new btBoxShape(WORLD_SCALE * btVector3(0.3, 0.3, 0.3));
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 6, 0)));
-	phys_obj = new btObject(BTOBJECT_DYNAMIC, 10.0f, cs, ms, antimony.getBtWorld());
+	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, antimony.getBtWorld());
 
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 40, 0)));
-	phys_obj = new btObject(BTOBJECT_DYNAMIC, 10.0f, cs, ms, antimony.getBtWorld());
+	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, antimony.getBtWorld());
 
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 80, 0)));
-	phys_obj = new btObject(BTOBJECT_DYNAMIC, 10.0f, cs, ms, antimony.getBtWorld());
+	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, antimony.getBtWorld());
 
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 4, 2)));
-	phys_obj = new btObject(BTOBJECT_DYNAMIC, 10.0f, cs, ms, antimony.getBtWorld());
+	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, antimony.getBtWorld());
 }
