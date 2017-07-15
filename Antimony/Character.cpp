@@ -49,7 +49,7 @@ void Character::update(double delta, std::map<const btCollisionObject*, std::vec
 				btManifoldPoint& pt = mf.at(i)->getContactPoint(j);		// get contact point
 				btVector3 n = pt.m_normalWorldOnB;						// get contact normal
 				float a = n.angle(btVector3(0, 1, 0));					// get angle between the normal and the 'up' vector
-				if (a <= DX_PI * 0.2)
+				if (a <= MATH_PI * 0.2)
 				{
 					m_jumping = 0;
 
@@ -69,7 +69,7 @@ void Character::update(double delta, std::map<const btCollisionObject*, std::vec
 
 					goto contact;										// skip all other contact points/manifolds
 				}
-				//else if (a2 <= DX_PI * 0.2 && b1 == physEntities.at(0)->rb) // infinite plane has inverted normals (why???)
+				//else if (a2 <= MATH_PI * 0.2 && b1 == physEntities.at(0)->rb) // infinite plane has inverted normals (why???)
 				//{
 				//	player.jumping = 0;
 				//	//p = b1->getLinearVelocity();
@@ -138,14 +138,29 @@ void Character::warp(Vector3 d)
 }
 void Character::move(btVector3 *v, float s)
 {
+	btVector3 d = bt_origin;
+
+	if (((*v) * s) != bt_origin)
+	{
+		btVector3 orient = bt_origin;
+
+		orient = quatRotate(m_collisionObject->getRigidBody()->getOrientation(), btVector3(0, 0, 1));
+		btScalar angle = orient.angle(*v);
+
+		if (btVector3(0, 1, 0).dot(orient.cross(*v)) < 0)
+			angle = -angle;
+		d = btVector3(0, angle, 0);
+	}
+
 	if (!m_jumping)
 	{
 		m_collisionObject->getRigidBody()->setLinearVelocity(m_linWorldVel + (*v) * s);		// move with linear velocity when standing on an object
-		m_collisionObject->getRigidBody()->setAngularVelocity(m_angWorldVel);
+		m_collisionObject->getRigidBody()->setAngularVelocity(m_angWorldVel + (d) * 10);	// rotate to face movement direction
 	}
 	else
 	{
 		m_collisionObject->getRigidBody()->applyCentralForce(500 * (*v));					// move using force when not standing on anything
+		m_collisionObject->getRigidBody()->setAngularVelocity(m_angWorldVel + (d) * 3);		// rotate to face movement direction (slowly)
 	}
 }
 void Character::attemptJump()
@@ -166,7 +181,12 @@ btObject* Character::getColl()
 }
 Vector3 Character::getPos()
 {
-	return m_collisionObject->getFlat3Pos();
+	return m_collisionObject->getFloat3Pos();// -float3(0, m_collisionObject->getPrimitiveSize().y / 2, 0);
+}
+mat Character::getTransform()
+{
+	float y_correction = - m_collisionObject->getPrimitiveSize().y;
+	return m_collisionObject->getMatTransform() * XMMatrixTranslation(0, y_correction, 0);
 }
 bool Character::getMovingState()
 {

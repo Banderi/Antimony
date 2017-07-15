@@ -1,9 +1,8 @@
 //#include <conio.h>
-#include <Shlwapi.h>	// required for StrToIntExW				(Console::send)
-#include <regex>		// required for std::find_if			(Console::send)
+#include <string>		// required for std::stoi			(Console::parse)
 
+#include "Warnings.h"
 #include "Console.h"
-#include "Antimony.h"
 #include "Geometry.h"
 
 ///
@@ -34,7 +33,7 @@ bool Console::isOpen()
 	return m_open;
 }
 
-void Console::parse(MSG msg)
+void Console::parse(MSG msg, ControlParams *ctrls)
 {
 	switch (msg.wParam)
 	{
@@ -113,7 +112,7 @@ void Console::parse(MSG msg)
 		}
 		default:
 		{
-			if (msg.wParam == antimony.controls.k_console)
+			if (msg.wParam == ctrls->k_console)
 				break;
 			else
 			{
@@ -153,177 +152,6 @@ void Console::parse(MSG msg)
 			}
 		}
 	}
-}
-bool Console::send(std::wstring cmd)
-{
-	std::vector<std::wstring> keyw;
-
-	// remove trailing spaces
-	cmd.erase(cmd.begin(), std::find_if(cmd.begin(), cmd.end(), std::bind1st(std::not_equal_to<char>(), ' ')));
-
-	// split the string into keywords
-	size_t cp = 0;
-	std::wstring space = L" ";
-	while ((cp = cmd.find(space)) != std::wstring::npos)
-	{
-		if (!cmd.substr(0, cp).empty())
-			keyw.push_back(cmd.substr(0, cp));
-		cmd.erase(0, cp + space.length());
-	}
-	if (cmd != L"")
-		keyw.push_back(cmd);
-
-	// check commands
-	if (keyw.size() > 0)
-	{
-		auto lit = keyw.at(0);
-		if (lit == L"spawn")
-		{
-			if (keyw.size() > 1)
-			{
-				auto obj = keyw.at(1);
-				if (obj == L"none")
-				{
-					log(L"What are you trying to accomplish there?\n", CSL_ERR_GENERIC);
-					return false;
-				}
-				else
-				{
-					bool spawn_success = false;
-					int qu = 1;
-					float3 pos = antimony.getPlayer()->getPos();
-
-					if (keyw.size() > 2)
-					{
-						try
-						{
-							qu = std::stoi(keyw.at(2));
-						}
-						catch (std::invalid_argument& e)
-						{
-							log(L"'" + keyw.at(2) + L"' is not a valid quantity\n", CSL_ERR_GENERIC);
-							return false;
-						}
-						catch (std::out_of_range& e)
-						{
-							log(L"'" + keyw.at(2) + L"' is out of range\n", CSL_ERR_GENERIC);
-							return false;
-						}
-						if (qu < 1)
-						{
-							log(L"Spawn quantity cannot be less then 1\n", CSL_ERR_GENERIC);
-							return false;
-						}
-
-						if (keyw.size() > 5)
-						{
-							wchar_t *p1, *p2, *p3;
-							pos.x = wcstod(keyw.at(3).c_str(), &p1);
-							pos.y = wcstod(keyw.at(4).c_str(), &p2);
-							pos.z = wcstod(keyw.at(5).c_str(), &p3);
-							if (*p1 || *p2 || *p3)
-							{
-								log(L"Unrecognized syntax: '" + keyw.at(3) + L" " + keyw.at(4) + L" " + keyw.at(5) + L"' - format is 'X Y Z'\n", CSL_ERR_GENERIC);
-								return false;
-							}
-						}
-						else if (keyw.size() > 4)
-						{
-							log(L"Unrecognized syntax: '" + keyw.at(3) + L" " + keyw.at(4) + L"' - format is 'X Y Z'\n", CSL_ERR_GENERIC);
-							return false;
-						}
-						else if (keyw.size() > 3)
-						{
-							log(L"Unrecognized syntax: '" + keyw.at(3) + L"' - format is 'X Y Z'\n", CSL_ERR_GENERIC);
-							return false;
-						}
-					}
-
-					spawn_success = antimony.spawn(keyw.at(1), qu, pos);
-
-					wchar_t coords[64];
-					swprintf(coords, L"%f %f %f", pos.x, pos.y, pos.z);
-
-					if (!spawn_success)
-					{
-						//auto s = std::to_wstring(qu);
-						//log(L"goddamit\n", CSL_ERR_GENERIC);
-						//log(L"Could not spawn " + std::to_wstring(qu) + L" " + obj + L" at coordinates " + coords + L"\n", CSL_ERR_GENERIC);
-						return false;
-					}
-					else
-					{
-						log(L"Spawned " + std::to_wstring(qu) + L" '" + obj + L"' at coordinates " + coords + L"\n", CSL_SUCCESS);
-						return true;
-					}
-				}
-			}
-			else
-			{
-				log(L"Missing object ID after command 'spawn'\n", CSL_ERR_GENERIC);
-				return false;
-			}
-		}
-		else if (lit == L"help")
-		{
-			log(L"I haven't implemented this command yet...\n", CSL_SYSTEM);
-		}
-		else if (lit == L"give")
-		{
-			if (keyw.size() > 1)
-			{
-				auto obj = keyw.at(1);
-				if (obj == L"")
-				{
-					//
-				}
-				else
-				{
-					log(L"Unrecognized object ID: '" + keyw.at(1) + L"'\n", CSL_ERR_GENERIC);
-					return false;
-				}
-			}
-			else
-			{
-				log(L"Missing object ID after command 'give'\n", CSL_ERR_GENERIC);
-				return false;
-			}
-		}
-		else if (lit == L"remove")
-		{
-			log(L"I haven't implemented this command yet...\n", CSL_SYSTEM);
-		}
-		else if (lit == L"loadmap")
-		{
-			log(L"I haven't implemented this command yet...\n", CSL_SYSTEM);
-		}
-		else if (lit == L"load")
-		{
-			log(L"I haven't implemented this command yet...\n", CSL_SYSTEM);
-		}
-		else if (lit == L"save")
-		{
-			log(L"I haven't implemented this command yet...\n", CSL_SYSTEM);
-		}
-		else if (lit == L"connect")
-		{
-			log(L"I haven't implemented this command yet...\n", CSL_SYSTEM);
-		}
-		else if (lit == L"quit" || lit == L"exit")
-		{
-			PostQuitMessage(0);
-		}
-		else if (lit == L"clearconsole" || lit == L"cls")
-		{
-			purgeHistory();
-		}
-		else
-		{
-			log(L"Unrecognized command: '" + keyw.at(0) + L"'\n", CSL_ERR_GENERIC);
-		}
-	}
-
-	return false;
 }
 void Console::clear()
 {
@@ -399,36 +227,36 @@ void Console::log(std::wstring string, unsigned char col)
 		m_scroll++;
 }
 
-void Console::draw()
+void Console::draw(DisplayParams *display, double delta, FontWrapper *font)
 {
 	float lheight = 20;
 	float cpadding = 20;
 
 	if (m_drawerTimout > 0)
 	{
-		devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &vertex_stride, &vertex_offset);
+		//devcon->IASetVertexBuffers(0, 1, &vertexbuffer, (UINT*)sizeof(VERTEX_BASIC), (UINT*)(0));
 		setDepthBufferState(OFF);
 		setShader(SHADERS_PLAIN);
 		Draw2DFullRect(
-			antimony.display.width - cpadding, lheight * m_historyMaxLineCount,
-			antimony.display.left + cpadding * 0.5, antimony.display.top + (lheight * m_historyMaxLineCount) * m_drawerTimout,
+			display->width - cpadding, lheight * m_historyMaxLineCount,
+			display->left + cpadding * 0.5, display->top + (lheight * m_historyMaxLineCount) * m_drawerTimout,
 			2, color(0, 0, 0, 0.75), color(0.3, 0.1, 0.1, 1));
 		Draw2DFullRect(
-			antimony.display.width - cpadding, 25,
-			antimony.display.left + cpadding * 0.5, antimony.display.top + (lheight * m_historyMaxLineCount + 21) * m_drawerTimout,
+			display->width - cpadding, 25,
+			display->left + cpadding * 0.5, display->top + (lheight * m_historyMaxLineCount + 21) * m_drawerTimout,
 			2, color(0, 0, 0, 0.75), color(0.3, 0.1, 0.1, 1));
 	}
 
 	if (isOpen())
 	{
 		if (m_drawerTimout < 1)
-			m_drawerTimout += 10 * antimony.getDelta();
+			m_drawerTimout += 10 * delta;
 		if (m_drawerTimout > 1)
 			m_drawerTimout = 1;
 
 		///
 
-		m_caretTick += 1.5 * antimony.getDelta();
+		m_caretTick += 1.5 * delta;
 		if (m_caretTick > 1)
 		{
 			m_caretTick = 0;
@@ -441,18 +269,18 @@ void Console::draw()
 		float fsize = 10;
 		float fclear = 7;
 
-		antimony.fw1Courier->DrawString(devcon, L">", 12, cmdx, cmdy, 0xbbffffff, NULL);
+		font->render(L">", 12, cmdx, cmdy, 0xbbffffff, NULL);
 		for (UINT i = 0; i < m_cmdStr.length(); i++)
 		{
 			auto c = m_cmdStr.c_str();
 			wchar_t f[2] = L"";
 			f[0] = c[i];
-			antimony.fw1Courier->DrawString(devcon, f, 12, cmdx + 8 + i * fclear, cmdy, 0xffffffff, NULL);
+			font->render(f, 12, cmdx + 8 + i * fclear, cmdy, 0xffffffff, NULL);
 		}
 		//antimony.fw1Courier->DrawString(devcon, m_cmdStr.c_str(), fsize, cmdx + 8, cmdy, 0xffffffff, NULL);
 
 		if (m_showCaret)
-			antimony.fw1Courier->DrawString(devcon, L"|", fsize, cmdx + 7 + m_caretPos * fclear, cmdy + 1, 0xbbffffff, FW1_ALIASED);
+			font->render(L"|", fsize, cmdx + 7 + m_caretPos * fclear, cmdy + 1, 0xbbffffff, FW1_ALIASED);
 
 		/// History
 
@@ -475,26 +303,26 @@ void Console::draw()
 			{
 				text = line.substr(0, pos);
 
-				antimony.fw1Courier->DrawString(devcon, text.c_str(), 12, cmdx + ind, cmdy - (m_logHistory.size() - l + 1) * lheight + 15, ColorCode(col), NULL);
+				font->render(text.c_str(), 12, cmdx + ind, cmdy - (m_logHistory.size() - l + 1) * lheight + 15, ColorCode(col), NULL);
 
-				FW1_RECTF r;
-				r.Top = 0;
-				r.Left = 0;
-				r.Bottom = antimony.display.height;
-				r.Right = antimony.display.width;
-				ind += antimony.display.width - abs(antimony.fw1Courier->MeasureString(text.c_str(), L"Consolas", 12, &r, NULL).Right);
+				RECT r;
+				r.top = 0;
+				r.left = 0;
+				r.bottom = display->height;
+				r.right = display->width;
+				ind += display->width - abs(font->getWidth(text.c_str(), 12, r, NULL));
 
 				colbuf = line.substr(pos + 2, 2);
 				col = std::stoi(colbuf);
 				line.erase(0, pos + 4);
 			}
-			antimony.fw1Courier->DrawString(devcon, line.c_str(), 12, cmdx + ind, cmdy - (m_logHistory.size() - l + 1) * lheight + 15, ColorCode(col), NULL);
+			font->render(line.c_str(), 12, cmdx + ind, cmdy - (m_logHistory.size() - l + 1) * lheight + 15, ColorCode(col), NULL);
 		}
 	}
 	else
 	{
 		if (m_drawerTimout > 0)
-			m_drawerTimout -= 10 * antimony.getDelta();
+			m_drawerTimout -= 10 * delta;
 		if (m_drawerTimout < 0)
 			m_drawerTimout = 0;
 

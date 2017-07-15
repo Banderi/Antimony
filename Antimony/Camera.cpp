@@ -1,4 +1,4 @@
-#include "Antimony.h"
+#include "Camera.h"
 #include "Warnings.h"
 
 ///
@@ -55,6 +55,23 @@ float Camera::getFriction()
 	return m_friction;
 }
 
+void Camera::setCollisionObject(btObject *pc)
+{
+	m_collisionObject = pc;
+}
+btObject* Camera::getColl()
+{
+	return m_collisionObject;
+}
+void Camera::setCollisionConstraint(btGeneric6DofConstraint *pc)
+{
+	m_collisionConstraint = pc;
+}
+btGeneric6DofConstraint* Camera::getConstr()
+{
+	return m_collisionConstraint;
+}
+
 Camera::Camera()
 {
 	m_friction = 0.99f;
@@ -62,9 +79,7 @@ Camera::Camera()
 	m_thVel = 0.0f;
 	m_ph = 0.0f;
 	m_phVel = 0.0f;
-}
 
-Camera* Antimony::getCamera()
-{
-	return &m_camera;
+	zoom = 1;
+	displacement = 1;
 }

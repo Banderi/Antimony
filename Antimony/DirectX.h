@@ -12,8 +12,8 @@
 #pragma comment (lib, "d3dx11.lib")
 #pragma comment (lib, "d3dx10.lib")
 
-typedef D3DXVECTOR2 float2
-typedef D3DXVECTOR3 float3
+typedef float2 float2
+typedef float3 float3
 typedef D3DXVECTOR4 float4
 typedef D3DXMATRIX mat
 typedef D3DXCOLOR color
@@ -94,7 +94,7 @@ typedef Vector4 float4;
 #define COLOR_GREEN		color(0,1,0,1)
 #define COLOR_BLUE		color(0,0,1,1)
 
-#define DX_PI (3.14159265358979323846)
+#define MATH_PI (3.14159265358979323846)
 
 ///
 

@@ -4,19 +4,41 @@
 #include <windows.h>	// required for Psapi.h
 #include <Psapi.h>		// required for PROCESS_MEMORY_COUNTERS_EX					(Antimony::pmc)
 
-#include <FW1FontWrapper.h>
+#include "fbxsdk.h"
 
 #include "Console.h"
-#include "Param.h"
+//#include "Param.h"
 #include "Input.h"
-#include "Bullet.h"
-#include "Geometry.h"
+//#include "Bullet.h"
+//#include "Geometry.h"
+#include "FontRenderer.h"
 #include "CpuUsage.h"
 #include "Player.h"
 #include "Camera.h"
 #include "Spawner.h"
 
 #pragma comment (lib, "..\\ext\\FW1FontWrapper\\lib\\x86\\FW1FontWrapper.lib")
+#if _WIN32 || _WIN64
+#if _WIN64
+#define ENVIRONMENT64
+#else
+#define ENVIRONMENT32
+#endif
+#endif
+
+#ifdef ENVIRONMENT32
+#ifdef _DEBUG
+#pragma comment (lib, "..\\ext\\FBXSDK\\lib\\x86\\libfbxsdk-mtd.lib")
+#else
+#pragma comment (lib, "..\\ext\\FBXSDK\\lib\\x86\\libfbxsdk-mt.lib")
+#endif
+#elif defined(ENVIRONMENT64)
+#ifdef _DEBUG
+#pragma comment (lib, "..\\ext\\FBXSDK\\lib\\x64\\libfbxsdk-mtd.lib")
+#else
+#pragma comment (lib, "..\\ext\\FBXSDK\\lib\\x64\\libfbxsdk-mt.lib")
+#endif
+#endif
 
 ///
 
@@ -37,8 +59,6 @@ private:
 
 	wchar_t m_globalStr64[64];
 
-	IFW1Factory *m_fw1Factory;
-
 	CpuUsage m_cpuUsage;
 
 	DWORDLONG m_totalPhysMem, m_physMemAvail;
@@ -57,8 +77,13 @@ private:
 
 	std::vector<SpawnItem> m_spawnables;
 
+	IFW1Factory *m_FW1Factory;
+
 public:
-	IFW1FontWrapper *fw1Arial, *fw1Courier;
+	FontWrapper Arial, Consolas;
+
+	FbxManager *FbxManager;
+	FbxImporter *FbxImporter;
 
 	WindowParams window_main;
 	DisplayParams display;
@@ -111,9 +136,6 @@ public:
 	HRESULT log(std::wstring string, unsigned int col, bool timestamp = true);
 	HRESULT logVolatile(std::wstring string);
 	void logError(HRESULT hr);
-	bool handleErr(HRESULT *hOut, DWORD facing, HRESULT hr, const wchar_t* opt = L"");
-
-	bool compileShader(HRESULT *hr, std::wstring shader, SHADER *sh);
 
 	btDiscreteDynamicsWorld* getBtWorld();
 	void tickCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep);

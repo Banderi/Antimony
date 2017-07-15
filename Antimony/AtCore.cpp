@@ -6,12 +6,46 @@
 #include "Gameflow.h"
 #include "Timer.h"
 #include "SmartRelease.h"
+#include "FBX.h"
+#include "CConvertions.h"
 
 ///
 
 Antimony antimony;
 
 ///
+
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+void Antimony::createMainWindow(HINSTANCE hInstance)
+{
+	log(L"Creating main window handle...", CSL_SYSTEM);
+
+	WNDCLASSEX wc;
+	ZeroMemory(&wc, sizeof(WNDCLASSEX));
+
+	wc.cbSize = sizeof(WNDCLASSEX);
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+	wc.lpfnWndProc = WindowProc;
+	wc.hInstance = hInstance;
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hbrBackground = CreateSolidBrush(RGB(0, 0, 0));
+	wc.lpszClassName = L"WindowClass";
+	RegisterClassExW(&wc);
+
+	window_main.hWnd = CreateWindowExW(0,
+		L"WindowClass",
+		L"Project X",
+		DWORD(window_main.borderless * WS_POPUP) | WS_VISIBLE | WS_SYSMENU,
+		window_main.x, window_main.y,
+		window_main.width, window_main.height,
+		NULL,
+		NULL,
+		hInstance,
+		NULL);
+
+	log(L" done!\n", CSL_SUCCESS, false);
+}
 
 int Antimony::startUp(HINSTANCE hInstance, int nCmdShow)
 {
@@ -296,7 +330,7 @@ HRESULT Antimony::enumHardware()
 			if (displayModeList[i].Height == (unsigned int)desktop.bottom)
 			{
 				display.gpu_num = displayModeList[i].RefreshRate.Numerator;			//log(L"" + std::to_wstring(display.gpu_num) + L"/", CSL_INFO);
-				display.gpu_denom = displayModeList[i].RefreshRate.Denominator;		log(L"" + std::to_wstring(display.gpu_num/display.gpu_denom) + L"Hz\n", CSL_INFO, false);
+				display.gpu_denom = displayModeList[i].RefreshRate.Denominator;		log(L"" + std::to_wstring(display.gpu_num / display.gpu_denom) + L"Hz\n", CSL_INFO, false);
 			}
 		}
 	}
@@ -438,7 +472,7 @@ HRESULT Antimony::initD3D(HWND hWnd)
 	pBackBufferTexture = NULL;
 	devcon->OMSetRenderTargets(1, &targettview, depthstencilview);  // set the render target as the back buffer
 
-																	// Setup the raster description which will determine how and what polygons will be drawn.
+	// Setup the raster description which will determine how and what polygons will be drawn.
 	rzd.AntialiasedLineEnable = false;
 	rzd.CullMode = D3D11_CULL_BACK;
 	rzd.DepthBias = 0;
@@ -506,11 +540,11 @@ HRESULT Antimony::initShaders()
 {
 	log(L"Loading shaders...", CSL_SYSTEM);
 
-	if (!compileShader(&hr, L"main", &sh_main))
+	if (!compileShader(&hr, L"main", &sh_main, ied_main, sizeof(VERTEX_MAIN)))
 		return hr;
-	if (!compileShader(&hr, L"test", &sh_debug))
+	if (!compileShader(&hr, L"test", &sh_debug, ied_basic, sizeof(VERTEX_BASIC)))
 		return hr;
-	if (!compileShader(&hr, L"plain", &sh_plain))
+	if (!compileShader(&hr, L"plain", &sh_plain, ied_basic, sizeof(VERTEX_BASIC)))
 		return hr;
 
 	log(L" done!\n", CSL_SUCCESS, false);
@@ -520,13 +554,20 @@ HRESULT Antimony::initFonts()
 {
 	log(L"Loading fonts...", CSL_SYSTEM);
 
-	if (!handleErr(&hr, HRH_FONTS_CREATEDW1FACTORY, FW1CreateFactory(FW1_VERSION, &m_fw1Factory)))
-		return hr;
+	bool FW1 = true;
 
-	if (!handleErr(&hr, HRH_FONTS_CREATEWRAPPER, m_fw1Factory->CreateFontWrapper(dev, L"Arial", &fw1Arial), L"Arial"))
-		return hr;
-	if (!handleErr(&hr, HRH_FONTS_CREATEWRAPPER, m_fw1Factory->CreateFontWrapper(dev, L"Consolas", &fw1Courier), L"Consolas"))
-		return hr;
+	if (FW1)
+	{
+		//IFW1Factory *m_FW1Factory;
+
+		if (!handleErr(&hr, HRH_FONTS_CREATEDW1FACTORY, FW1CreateFactory(FW1_VERSION, &m_FW1Factory)))
+			return hr;
+
+		if (!handleErr(&hr, HRH_FONTS_CREATEWRAPPER, Arial.buildFW1(L"Arial", m_FW1Factory), L"Arial"))
+			return hr;
+		if (!handleErr(&hr, HRH_FONTS_CREATEWRAPPER, Consolas.buildFW1(L"Consolas", m_FW1Factory), L"Consolas"))
+			return hr;
+	}
 
 	log(L" done!\n", CSL_SUCCESS, false);
 	return S_OK;
@@ -539,11 +580,13 @@ HRESULT Antimony::initGraphics()
 	ZeroMemory(&bd, sizeof(bd));
 
 	bd.Usage = D3D11_USAGE_DYNAMIC;
+	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+	/*bd.Usage = D3D11_USAGE_DYNAMIC;
 	bd.ByteWidth = sizeof(VERTEX_BASIC) * 512;
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	if (!handleErr(&hr, HRH_GRAPHICS_VERTEXBUFFER, dev->CreateBuffer(&bd, NULL, &vertexbuffer)))
-		return hr;
+		return hr;*/
 
 	bd.ByteWidth = sizeof(ConstantBuffer);
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
@@ -555,9 +598,9 @@ HRESULT Antimony::initGraphics()
 	if (!handleErr(&hr, HRH_GRAPHICS_INDEXBUFFER, dev->CreateBuffer(&bd, NULL, &indexbuffer)))
 		return hr;
 
-	UINT stride = sizeof(VERTEX_BASIC);
+	/*UINT stride = sizeof(VERTEX_BASIC);
 	UINT offset = 0;
-	devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &stride, &offset);
+	devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &stride, &offset);*/
 	devcon->IASetIndexBuffer(indexbuffer, DXGI_FORMAT_R32_UINT, 0);
 	devcon->VSSetConstantBuffers(0, 1, &constantbuffer);
 
@@ -567,7 +610,7 @@ HRESULT Antimony::initGraphics()
 	mat_world = mat_identity;
 	mat_view = MLookAtLH(float3(0, 0, -1), float3(0, 0, 0), float3(0, 1, 0));
 	mat_orthoview = MLookAtLH(float3(0, 0, -1), float3(0, 0, 0), float3(0, 1, 0));
-	mat_proj = MPerspFovLH(DX_PI / 4, window_main.aspect, 0.001f, 10000.0f);
+	mat_proj = MPerspFovLH(MATH_PI / 4, window_main.aspect, 0.001f, 10000.0f);
 	mat_orthoproj = MOrthoLH(display.width, display.height, 0.001f, 10000.0f);
 
 	m_camera.moveToPoint(v3_origin + WORLD_SCALE * float3(0, 0, -1), -1);
@@ -606,19 +649,42 @@ HRESULT Antimony::initPhysics()
 	// infinite plane
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, -1, 0)));
 	phys_obj = new btObject(BTOBJECT_INFINITEGROUND, BTSOLID_INFPLANE, 0.0f, float3(0, 1, 0), ms, &btVector3(0, 0, 0), m_btWorld);
+	addPhysEntity(phys_obj);
 
 	// player's collision object
 	//cs = new btBoxShape(WORLD_SCALE * btVector3(0.15, 0.3, 0.15));
 	//cs = new btCapsuleShape(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3);
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(1, 0.3, -1)));
-	phys_obj = new btObject(BTOBJECT_PLAYER, BTSOLID_CYLINDER, 100.0f, float3(0.15, 0.3, 0.15), ms, m_btWorld);
-
+	phys_obj = new btObject(BTOBJECT_PLAYER, BTSOLID_CYLINDER, 100.0f, float3(0.1, 0.3, 0.1), ms, m_btWorld);
+	addPhysEntity(phys_obj);
 	m_player.setCollisionObject(phys_obj);
-
 	game.dbg_entityfollow = m_physEntities.size() - 1;
 
-	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, -1, 0)));
-	//phys_obj = new btObject(BTOBJECT_CAMERA, BTSOLID_SPHERE, 0.0f, float3(0.5, 0.5, 0.5), ms, m_btWorld);
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, -1, 0)));
+	phys_obj = new btObject(BTOBJECT_CAMERA, BTSOLID_SPHERE, 0.0f, float3(0.1, 0.1, 0.1), ms, m_btWorld);
+	m_camera.setCollisionObject(phys_obj);
+
+	// 6DOF connected to the world, with motor
+	//auto sh = new btSphereShape(WORLD_SCALE * 0.1);
+	//btVector3 in(0, 0, 0);
+	//sh->calculateLocalInertia(1.0, in);
+	//auto ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, -1, 0)));
+	//btRigidBody::btRigidBodyConstructionInfo rbci = btRigidBody::btRigidBodyConstructionInfo(1.0, ms, sh, in);
+	//btRigidBody* pBody = new btRigidBody(rbci);
+	////btRigidBody* pBody = createRigidBody(1.0, tr, shape);
+	//pBody->setActivationState(DISABLE_DEACTIVATION);
+	/*btTransform frame; frame.setIdentity();
+	btGeneric6DofConstraint* pGen6Dof = new btGeneric6DofConstraint(*phys_obj->getRigidBody(), frame, false);
+	m_btWorld->addConstraint(pGen6Dof);
+	m_camera.setCollisionConstraint(pGen6Dof);
+
+	m_camera.getConstr()->setAngularLowerLimit(btVector3(0, 0, 0));
+	m_camera.getConstr()->setAngularUpperLimit(btVector3(0, 0, 0));
+	m_camera.getConstr()->setLinearLowerLimit(WORLD_SCALE * btVector3(10, 0.3, -1));
+	m_camera.getConstr()->setLinearUpperLimit(WORLD_SCALE * btVector3(-10, 0.3, -1));
+	m_camera.getConstr()->getTranslationalLimitMotor()->m_enableMotor[0] = true;
+	m_camera.getConstr()->getTranslationalLimitMotor()->m_targetVelocity = btVector3(0.1, 0, 0);
+	m_camera.getConstr()->getTranslationalLimitMotor()->m_maxMotorForce[0] = 10;*/
 
 	//// player CharEntity
 	//btPairCachingGhostObject *gh = new btPairCachingGhostObject();
@@ -652,6 +718,26 @@ HRESULT Antimony::loadStartingFiles()
 {
 	// TODO: Implement FBX & test some files against it
 
+	FbxManager = FbxManager::Create();									// Prepare the FBX SDK.
+
+	FbxIOSettings *ios = FbxIOSettings::Create(FbxManager, IOSROOT);	// Create the IO settings object.
+	FbxManager->SetIOSettings(ios);
+
+	FbxImporter = FbxImporter::Create(FbxManager, "");					// Create an importer using the SDK manager.
+
+	///
+
+	//FbxScene *scene = FbxScene::Create(FbxManager, "myScene");
+
+	//LoadFBXFile("chara.fbx", FbxManager, FbxImporter, scene);
+	//LoadFBXFile("cube.fbx", m_FbxManager, m_FbxImporter, lScene);
+	//LoadFBXFile("humanoid.fbx", m_FbxManager, m_FbxImporter, lScene);
+
+	//auto meshdump = GetVertexCompound(GetFBXMesh(scene).at(0));
+	//auto vertexdump = meshdump.dumpBASIC();
+
+	//meshdump.destroyDumps();
+
 	return S_OK;
 }
 
@@ -681,35 +767,108 @@ void Antimony::releaseFiles()
 {
 	log(L"Releasing files...", CSL_SYSTEM);
 
-	smartRelease(m_fw1Factory);
-	smartRelease(fw1Arial);
-	smartRelease(fw1Courier);
+	smartRelease(m_FW1Factory);
+	//smartRelease(fw1Arial);
+	//smartRelease(fw1Courier);
+
+	FbxImporter->Destroy();
 
 	log(L" done!\n", CSL_SUCCESS, false);
 	log(L"----> END OF DEBUG CONSOLE <----\n", CSL_SYSTEM);
 	m_logFile.close();
 }
 
-bool Antimony::compileShader(HRESULT *hr, std::wstring shader, SHADER *sh)
+HRESULT Antimony::registerRID()
 {
-	ID3D10Blob *blob = nullptr;
+	log(L"Initializing RID objects...", CSL_SYSTEM);
 
-	std::wstring str = L".\\Shaders\\" + shader + L".hlsl";
+	m_rid[0].usUsagePage = 0x01;
+	m_rid[0].usUsage = 0x02;				// mouse
+	m_rid[0].dwFlags = RIDEV_NOLEGACY;
+	m_rid[0].hwndTarget = window_main.hWnd;
 
-	LPCWSTR file = str.c_str();
+	m_rid[1].usUsagePage = 0x01;
+	m_rid[1].usUsage = 0x06;				// keyboard
+	m_rid[1].dwFlags = 0;
+	m_rid[1].hwndTarget = window_main.hWnd;
 
-	if (!handleErr(hr, HRH_SHADER_COMPILE, D3DCompileFromFile(file, 0, 0, "VShader", "vs_4_0", 0, 0, &blob, 0)))
-		return 0;
-	if (!handleErr(hr, HRH_SHADER_CREATE, dev->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &sh->vs)))
-		return 0;
-	if (!handleErr(hr, HRH_SHADER_INPUTLAYOUT, dev->CreateInputLayout(ied_debug, 2, blob->GetBufferPointer(), blob->GetBufferSize(), &sh->il)))
-		return 0;
-	if (!handleErr(hr, HRH_SHADER_COMPILE, D3DCompileFromFile(file, 0, 0, "PShader", "ps_4_0", 0, 0, &blob, 0)))
-		return 0;
-	if (!handleErr(hr, HRH_SHADER_CREATE, dev->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &sh->ps)))
-		return 0;
+	m_rid[2].usUsagePage = 0x01;
+	m_rid[2].usUsage = 0x05;				// gamepad
+	m_rid[2].dwFlags = 0;
+	m_rid[2].hwndTarget = window_main.hWnd;
 
-	sh->ready = true;
+	m_rid[3].usUsagePage = 0x01;
+	m_rid[3].usUsage = 0x04;				// joystick
+	m_rid[3].dwFlags = 0;
+	m_rid[3].hwndTarget = window_main.hWnd;
 
-	return 1; // all ok
+	if (RegisterRawInputDevices(m_rid, 4, sizeof(m_rid[0])) == false)
+	{
+		logError(HRESULT_FROM_WIN32(GetLastError()));
+		return HRESULT_FROM_WIN32(GetLastError());
+	}
+	else
+	{
+		XINPUT_STATE state;
+		for (unsigned char i = 0; i < XUSER_MAX_COUNT; i++)
+		{
+			m_controller[i].disable();
+			m_controller[i].set(i);
+			ZeroMemory(&state, sizeof(XINPUT_STATE));
+
+			if (XInputGetState(i, &state) == ERROR_SUCCESS) // controller is connected
+				m_controller[i].enable();
+		}
+
+		log(L" done!\n", CSL_SUCCESS, false);
+		return S_OK;
+	}
+}
+HRESULT Antimony::handleInput(MSG msg)
+{
+	if (msg.message == WM_KEYDOWN)
+	{
+		swprintf(m_globalStr64, L" 0x%02X", msg.wParam);
+		logVolatile(m_globalStr64);
+
+		if (devConsole.isOpen())
+			devConsole.parse(msg, &controls);
+
+		return S_OK;
+	}
+	else
+	{
+		UINT dwSize;
+
+		GetRawInputData((HRAWINPUT)msg.lParam, RID_INPUT, NULL, &dwSize, sizeof(RAWINPUTHEADER));
+		LPBYTE lpb = new BYTE[dwSize];
+		if (lpb == NULL)
+			return 0;
+
+		int readSize = GetRawInputData((HRAWINPUT)msg.lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER));
+		if (readSize != dwSize)
+			return HRESULT_FROM_WIN32(GetLastError());
+
+		RAWINPUT* raw = (RAWINPUT*)lpb;
+
+		if (raw->header.dwType == RIM_TYPEKEYBOARD)
+		{
+			m_keys.updateKeyboard(raw->data.keyboard);
+		}
+		else if (raw->header.dwType == RIM_TYPEMOUSE)
+		{
+			m_mouse.update(raw->data.mouse);
+		}
+		else if (raw->header.dwType == RIM_TYPEHID)
+		{
+			for (unsigned char i = 0; i < XUSER_MAX_COUNT; i++)
+			{
+				m_controller[i].update();
+			}
+		}
+
+		delete[] lpb;
+
+		return S_OK;
+	}
 }

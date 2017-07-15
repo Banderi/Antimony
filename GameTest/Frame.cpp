@@ -34,7 +34,7 @@ void Frame()
 
 void RenderWorld()
 {
-	devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &vertex_stride, &vertex_offset);
+	//devcon->IASetVertexBuffers(0, 1, &vertexbuffer, (UINT*)sizeof(VERTEX_BASIC), (UINT*)(0));
 	setDepthBufferState(ON);
 	setShader(SHADERS_DEBUG);
 
@@ -49,7 +49,7 @@ void RenderWorld()
 }
 void RenderEntities()
 {
-	devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &vertex_stride, &vertex_offset);
+	//devcon->IASetVertexBuffers(0, 1, &vertexbuffer, (UINT*)sizeof(VERTEX_BASIC), (UINT*)(0));
 	setDepthBufferState(ON);
 	setShader(SHADERS_DEBUG);
 
@@ -117,11 +117,18 @@ void RenderEntities()
 	}
 
 	// player
-	mat_world = antimony.getPlayer()->getColl()->getMatTransform();
-	if (antimony.getPlayer()->getJumpState() != JUMPSTATE_ONGROUND)
-		Draw3DBox(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3, WORLD_SCALE * 0.15, color(1, 1.1, 1.5, 1));
-	else
-		Draw3DBox(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3, WORLD_SCALE * 0.15, COLOR_GREEN);
+	mat_world = antimony.getPlayer()->getTransform();
+	mat_temp = XMMatrixScaling(0.01, 0.01, 0.01);
+
+	antimony.getPlayer()->asset.draw(&(mat_world), antimony.game.dbg_wireframe);
+	/*if (antimony.game.dbg_wireframe)
+	{
+		mat_world = antimony.getPlayer()->getColl()->getMatTransform();
+		if (antimony.getPlayer()->getJumpState() != JUMPSTATE_ONGROUND)
+			Draw3DBox(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3, WORLD_SCALE * 0.15, color(1, 1.1, 1.5, 0.02));
+		else
+			Draw3DBox(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3, WORLD_SCALE * 0.15, color(0.9, 1.5, 1.5, 0.02));
+	}*/
 }
 void RenderHUD()
 {
@@ -129,20 +136,20 @@ void RenderHUD()
 
 	static double pause_falloff = 0;
 	pause_falloff += 2 * antimony.getDelta();
-	if (pause_falloff > DX_PI)
+	if (pause_falloff > MATH_PI)
 		pause_falloff = 0;
 
-	devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &vertex_stride, &vertex_offset);
+	//devcon->IASetVertexBuffers(0, 1, &vertexbuffer, (UINT*)sizeof(VERTEX_BASIC), (UINT*)(0));
 	setDepthBufferState(OFF);
 	setShader(SHADERS_PLAIN);
 
 	if (antimony.ifGameState(GAMESTATE_INGAME))									// In-game (non-paused, non-menu etc.)
 	{
-		//
+		pause_falloff = 0;
 	}
 	else if (antimony.ifGameState(GAMESTATE_PAUSED))							// Game is paused
 	{
-		antimony.fw1Arial->DrawString(devcon, L"GAME PAUSED", 30, antimony.display.right, 200, RGBA2DWORD(0xff, 0xff, 0xff, 0xff * sinf(pause_falloff)), FW1_CENTER);
+		antimony.Arial.render(L"GAME PAUSED", 30, antimony.display.right, 200, RGBA2DWORD(0xff, 0xff, 0xff, 0xff * sinf(pause_falloff)), FW1_CENTER);
 	}
 	else if (antimony.ifGameState(GAMESTATE_PAUSEMENU))							// Pause Menu (in-antimony.game inventory/pause menu)
 	{

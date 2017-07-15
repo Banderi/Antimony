@@ -74,7 +74,7 @@ public:
 	float getMass();
 	float3 getPrimitiveSize();
 	btVector3 getbtPos();
-	float3 getFlat3Pos();
+	float3 getFloat3Pos();
 	btTransform getbtTransform();
 	mat getMatTransform();
 	void setbtTransform(btTransform *m);
@@ -138,3 +138,5 @@ mat btToMat(const btTransform *t);
 btVector3 Float3Tobt(float3 *f);
 btVector3 Float3Tobt(const float3 *f);
 btTransform MatTobt(mat *m);
+
+btVector3 btQuaternionToEuler(const btQuaternion &TQuat);

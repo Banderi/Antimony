@@ -5,3 +5,8 @@
 ///
 
 // TODO: implement textures
+
+class TextureBundle
+{
+
+};

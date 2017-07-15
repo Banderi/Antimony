@@ -24,7 +24,7 @@ color BtnStateColor(Input bt)
 
 void Antimony::render_Debug()
 {
-	devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &vertex_stride, &vertex_offset);
+	//devcon->IASetVertexBuffers(0, 1, &vertexbuffer, (UINT*)sizeof(VERTEX_BASIC), (UINT*)(0));
 	setDepthBufferState(OFF);
 	setShader(SHADERS_PLAIN);
 
@@ -37,7 +37,7 @@ void Antimony::render_Debug()
 
 		for (int i = 0; i < m_physEntities.size(); i++)
 		{
-			p = m_physEntities.at(i)->getFlat3Pos();
+			p = m_physEntities.at(i)->getFloat3Pos();
 			n = btToFloat3(&m_physEntities.at(i)->getRigidBody()->getLinearVelocity());
 
 			Draw3DLineThin(p, p + WORLD_SCALE * 0.1 * n, COLOR_GREEN, COLOR_GREEN, &mat_identity);
@@ -45,9 +45,13 @@ void Antimony::render_Debug()
 			n = btToFloat3(&m_physEntities.at(i)->getRigidBody()->getAngularVelocity());
 
 			Draw3DLineThin(p, p + WORLD_SCALE * 0.1 * n, COLOR_RED, COLOR_RED, &mat_identity);
+
+			float3 sp = WorldToScreen(p, &(mat_view * mat_proj), float2(window_main.width, window_main.height));
+			if (sp.z > 0)
+				Draw2DDot(float2(sp.x, sp.y), 10, color(1,0,0,1));
 		}
 
-		auto& mfp = m_objectsCollisionPoints[m_player.getColl()->getRigidBody()];
+		auto &mfp = m_objectsCollisionPoints[m_player.getColl()->getRigidBody()];
 		if (!mfp.empty())
 		{
 			for (int i = 0; i < mfp.size(); i++)
@@ -58,7 +62,7 @@ void Antimony::render_Debug()
 				Draw3DLineThin(p, p + WORLD_SCALE * 0.1 * n, COLOR_BLACK, COLOR_RED, &mat_identity);
 			}
 		}
-		/*auto& mf = objectsCollisions[player.getColl()->rb];
+		/*auto &mf = objectsCollisions[player.getColl()->rb];
 		if (!mf.empty())
 		{
 			for (int i = 0; i < mf.size(); i++)
@@ -80,7 +84,7 @@ void Antimony::render_Debug()
 		{
 			case DBGCHART_FPS:
 			{
-				devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &vertex_stride, &vertex_offset);
+				//devcon->IASetVertexBuffers(0, 1, &vertexbuffer, (UINT*)sizeof(VERTEX_BASIC), (UINT*)(0));
 				setShader(SHADERS_PLAIN);
 
 				render_DebugFPS(float2(antimony.display.right, antimony.display.bottom));
@@ -93,7 +97,7 @@ void Antimony::render_Debug()
 			}
 			case DBGCHART_INPUT:
 			{
-				devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &vertex_stride, &vertex_offset);
+				//devcon->IASetVertexBuffers(0, 1, &vertexbuffer, (UINT*)sizeof(VERTEX_BASIC), (UINT*)(0));
 				setShader(SHADERS_PLAIN);
 
 				render_DebugKeyboard(float2(0, -300));
@@ -101,9 +105,9 @@ void Antimony::render_Debug()
 				render_DebugController(float2(0, -300), CONTROLLER_1);
 
 				swprintf(m_globalStr64, L"%.3f", m_mouse.X.getPos());
-				fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.right + 260, antimony.display.bottom - 180, 0xffffffff, 0);
+				Consolas.render(m_globalStr64, 10, antimony.display.right + 260, antimony.display.bottom - 180, 0xffffffff, 0);
 				swprintf(m_globalStr64, L"%.3f", m_mouse.Y.getPos());
-				fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.right + 320, antimony.display.bottom - 150, 0xffffffff, 0);
+				Consolas.render(m_globalStr64, 10, antimony.display.right + 320, antimony.display.bottom - 150, 0xffffffff, 0);
 
 				break;
 			}
@@ -131,7 +135,7 @@ void Antimony::render_DebugKeyboard(float2 pos)
 		{ 1.44, -1, 0, COLOR_WHITE }
 		// 12
 	};
-	FillBuffer<VERTEX_BASIC[]>(dev, devcon, &vertexbuffer, vertices, sizeof(vertices));
+	FillBuffer(dev, devcon, &sh_current->vb, &vertices, sizeof(vertices));
 
 	UINT indices[] =
 	{
@@ -146,7 +150,7 @@ void Antimony::render_DebugKeyboard(float2 pos)
 		11, 9, 10
 		// 24
 	};
-	FillBuffer<UINT[]>(dev, devcon, &indexbuffer, indices, sizeof(indices));
+	FillBuffer(dev, devcon, &indexbuffer, &indices, sizeof(indices));
 
 	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	mat_world = MScaling(2200, 2200, 1) * MTranslation(pos.x, -pos.y, 0);
@@ -522,7 +526,7 @@ void Antimony::render_DebugMouse(float2 pos)
 		{ 1.44, -1, 0, COLOR_WHITE }
 		// 12
 	};
-	FillBuffer<VERTEX_BASIC[]>(dev, devcon, &vertexbuffer, vertices, sizeof(vertices));
+	FillBuffer(dev, devcon, &sh_current->vb, &vertices, sizeof(vertices));
 
 	UINT indices[] =
 	{
@@ -537,7 +541,7 @@ void Antimony::render_DebugMouse(float2 pos)
 		11, 9, 10
 		// 24
 	};
-	FillBuffer<UINT[]>(dev, devcon, &indexbuffer, indices, sizeof(indices));
+	FillBuffer(dev, devcon, &indexbuffer, &indices, sizeof(indices));
 
 	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	mat_world = MScaling(2200, 2200, 1) * MTranslation(pos.x, -pos.y, 0);
@@ -581,7 +585,7 @@ void Antimony::render_DebugController(float2 pos, unsigned char c)
 		{ 1.44, -1, 0, COLOR_WHITE }
 		// 12
 	};
-	FillBuffer<VERTEX_BASIC[]>(dev, devcon, &vertexbuffer, vertices, sizeof(vertices));
+	FillBuffer(dev, devcon, &sh_current->vb, &vertices, sizeof(vertices));
 
 	UINT indices[] =
 	{
@@ -596,13 +600,13 @@ void Antimony::render_DebugController(float2 pos, unsigned char c)
 		11, 9, 10
 		// 24
 	};
-	FillBuffer<UINT[]>(dev, devcon, &indexbuffer, indices, sizeof(indices));
+	FillBuffer(dev, devcon, &indexbuffer, &indices, sizeof(indices));
 
 	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	mat_world = MScaling(2200, 2200, 1) * MTranslation(pos.x, -pos.y, 0);
 
 	// Layout
-	mat_temp = MRotZ(DX_PI) * MScaling(0.0175, 0.0175, 1) * MTranslation(0.23, -0.050, 0);
+	mat_temp = MRotZ(MATH_PI) * MScaling(0.0175, 0.0175, 1) * MTranslation(0.23, -0.050, 0);
 	setView(&(mat_temp * mat_world), &mat_orthoview, &mat_orthoproj, color(.4, .4, .4, 1));
 	devcon->DrawIndexed(18, 6, 0);
 
@@ -743,17 +747,17 @@ void Antimony::render_DebugFPS(float2 pos)
 	Draw2DRectBorderThick(200, 10, pos.x - 260, pos.y - 83, 1, border);
 
 	swprintf(m_globalStr64, L"Total entities: %i", m_physEntities.size());
-	fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 214, 0xffffffff, 0);
+	Consolas.render(m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 214, 0xffffffff, 0);
 
 	swprintf(m_globalStr64, L"FPS: %.2f (%i)", timer.GetFPSStamp(), timer.GetFramesCount());
-	fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 200, 0xffffffff, 0);
+	Consolas.render(m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 200, 0xffffffff, 0);
 	swprintf(m_globalStr64, L"Max: %.2f", timer.maxFps);
-	fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.width - 125, antimony.display.height - 200, 0xffffffff, 0);
+	Consolas.render(m_globalStr64, 10, antimony.display.width - 125, antimony.display.height - 200, 0xffffffff, 0);
 
 	swprintf(m_globalStr64, L"CPU usage: %d%%", cpu);
-	fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 78, 0xffffffff, 0);
+	Consolas.render(m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 78, 0xffffffff, 0);
 	swprintf(m_globalStr64, L"RAM usage: %.2f%%", physMemPercent);
-	fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 64, 0xffffffff, 0);
+	Consolas.render(m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 64, 0xffffffff, 0);
 	swprintf(m_globalStr64, L"Alloc.: %.3f MB / %.3f GB", physMemMB, totalPhysMemGB);
-	fw1Courier->DrawString(devcon, m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 50, 0xffffffff, 0);
+	Consolas.render(m_globalStr64, 10, antimony.display.width - 260, antimony.display.height - 50, 0xffffffff, 0);
 }

@@ -1,4 +1,5 @@
-#include "Antimony.h"
+#include "Bullet.h"
+#include "Geometry.h"
 
 ///
 
@@ -69,7 +70,7 @@ btVector3 btObject::getbtPos()
 {
 	return getbtTransform().getOrigin();
 }
-float3 btObject::getFlat3Pos()
+float3 btObject::getFloat3Pos()
 {
 	return MatToFloat3(&getMatTransform());
 }
@@ -123,8 +124,6 @@ void btObject::initObject()
 	btRigidBody::btRigidBodyConstructionInfo rbci = btRigidBody::btRigidBodyConstructionInfo(m_mass, m_motionState, m_collisionShape, *m_inertia);
 	m_rigidBody = new btRigidBody(rbci);
 
-	bool add = true;
-
 	switch (m_kind)
 	{
 		case BTOBJECT_INFINITEGROUND:
@@ -132,7 +131,6 @@ void btObject::initObject()
 			//m_rigidBody->setRestitution(0);
 			m_rigidBody->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
 
-			add = true;
 			break;
 		}
 		case BTOBJECT_STATICWORLD:
@@ -167,11 +165,23 @@ void btObject::initObject()
 		}
 		case BTOBJECT_CAMERA:
 		{
-			m_rigidBody->setFriction(0);
-			m_rigidBody->setGravity(btVector3(0, 0, 0));
+			//m_rigidBody->setFriction(0);
+			//m_rigidBody->setGravity(btVector3(0, 0, 0));
+			m_rigidBody->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
 			m_rigidBody->setActivationState(DISABLE_DEACTIVATION);
 
-			add = false;
+			//// 6DOF connected to the world, with motor
+			//btTransform frameB;
+			//frameB.setIdentity();
+			//btGeneric6DofConstraint* pGen6Dof = new btGeneric6DofConstraint(*m_rigidBody, frameB, false);
+			//m_world->addConstraint(pGen6Dof);
+			//pGen6Dof->setAngularLowerLimit(btVector3(0, 0, 0));
+			//pGen6Dof->setAngularUpperLimit(btVector3(0, 0, 0));
+			//pGen6Dof->setLinearLowerLimit(btVector3(-10., 0, 0));
+			//pGen6Dof->setLinearUpperLimit(btVector3(10., 0, 0));
+			//pGen6Dof->getTranslationalLimitMotor()->m_enableMotor[0] = true;
+			//pGen6Dof->getTranslationalLimitMotor()->m_targetVelocity[0] = 5.0f;
+			//pGen6Dof->getTranslationalLimitMotor()->m_maxMotorForce[0] = 0.1f;
 			break;
 		}
 		default:
@@ -180,8 +190,6 @@ void btObject::initObject()
 
 	m_initialtransform = this->getbtTransform();
 	m_world->addRigidBody(m_rigidBody);
-	if (add)
-		antimony.addPhysEntity(this);
 }
 btObject::btObject(unsigned int k, unsigned int p, float m, float3 z, btDefaultMotionState *s, btDiscreteDynamicsWorld *w)
 {
@@ -240,7 +248,7 @@ void DXDebugDrawer::drawLine(const btVector3& from, const btVector3& to, const b
 }
 void DXDebugDrawer::drawLine(const btVector3& from, const btVector3& to, const btVector3& col)
 {
-	/*D3DXVECTOR3 vPoints[2];
+	/*float3 vPoints[2];
 	vPoints[0].x = from.getX();
 	vPoints[0].y = from.getY();
 	vPoints[0].z = from.getZ();
@@ -253,7 +261,7 @@ void DXDebugDrawer::drawLine(const btVector3& from, const btVector3& to, const b
 	D3DXMATRIX worldMatrix;
 	D3DXMatrixIdentity(&worldMatrix);
 	device->SetTransform(D3DTS_WORLD, &worldMatrix);
-	device->DrawPrimitiveUP(D3DPT_LINELIST, 1, vPoints, sizeof(D3DXVECTOR3));*/
+	device->DrawPrimitiveUP(D3DPT_LINELIST, 1, vPoints, sizeof(float3));*/
 
 	btVector3 p1 = from;
 	btVector3 p2 = to;
@@ -330,59 +338,23 @@ btTransform MatTobt(mat *m)
 	t.setFromOpenGLMatrix((float*)m);
 	return t;
 }
+btVector3 btQuaternionToEuler(const btQuaternion &TQuat)
+{
+	btScalar W = TQuat.getW();
+	btScalar X = TQuat.getX();
+	btScalar Y = TQuat.getY();
+	btScalar Z = TQuat.getZ();
+	float WSquared = W * W;
+	float XSquared = X * X;
+	float YSquared = Y * Y;
+	float ZSquared = Z * Z;
 
-btDiscreteDynamicsWorld* Antimony::getBtWorld()
-{
-	return m_btWorld;
-}
-void Antimony::tickCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep)
-{
-	m_objectsCollisions.clear();
-	m_objectsCollisionPoints.clear();
-	int numManifolds = dynamicsWorld->getDispatcher()->getNumManifolds();
-	for (int i = 0; i < numManifolds; i++)
-	{
-		btPersistentManifold *contactManifold = dynamicsWorld->getDispatcher()->getManifoldByIndexInternal(i);
-		auto *objA = contactManifold->getBody0();
-		auto *objB = contactManifold->getBody1();
-		auto& manifoldsA = m_objectsCollisions[objA];
-		auto& manifoldsB = m_objectsCollisions[objA];
-		manifoldsA.push_back(contactManifold);
-		manifoldsB.push_back(contactManifold);
-		auto& collisionsA = m_objectsCollisionPoints[objA];
-		auto& collisionsB = m_objectsCollisionPoints[objB];
-		int numContacts = contactManifold->getNumContacts();
-		for (int j = 0; j < numContacts; j++)
-		{
-			btManifoldPoint& pt = contactManifold->getContactPoint(j);
-			collisionsA.push_back(&pt);
-			collisionsB.push_back(&pt);
-		}
-	}
-}
-void Antimony::staticCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep)
-{
-	antimony.tickCallback(dynamicsWorld, timeStep);
-}
-void Antimony::addPhysEntity(btObject *obj)
-{
-	m_physEntities.push_back(obj);
-}
-std::vector<btObject*>* Antimony::getEntities()
-{
-	return &m_physEntities;
-}
-void Antimony::resetPhysics()
-{
-	for (int i = 0; i < m_physEntities.size(); i++)
-		m_physEntities.at(i)->reset();
-}
+	btVector3 TEuler;
 
-double Antimony::getTick()
-{
-	return m_delta * m_worldSpeed;
-}
-double Antimony::getDelta()
-{
-	return m_delta;
-}
+	TEuler.setX(atan2f(2.0f * (Y * Z + X * W), -XSquared - YSquared + ZSquared + WSquared));
+	TEuler.setY(asinf(-2.0f * (X * Z - Y * W)));
+	TEuler.setZ(atan2f(2.0f * (X * Y + Z * W), XSquared - YSquared - ZSquared + WSquared));
+	TEuler *= 180/MATH_PI;
+
+	return TEuler;
+};

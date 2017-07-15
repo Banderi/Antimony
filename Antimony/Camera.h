@@ -12,12 +12,18 @@
 class Camera : public SimpleEntity, public LookAtEntity // TODO: implement camera collisions
 {
 protected:
+	btObject *m_collisionObject;
+	btGeneric6DofConstraint *m_collisionConstraint;
+
 	float m_friction;
 	float m_th, m_thVel;
 	float m_ph, m_phVel;
 	float m_quake;
 
 public:
+	float zoom;
+	float displacement;
+
 	void update(double delta);
 
 	void rotate(bool angle, float acceleration);
@@ -27,7 +33,13 @@ public:
 	void setFriction(float f);
 	float getFriction();
 
-	void addQuake(float q); // TODO: implement quake
+	void quake(float t, float q); // TODO: implement quake
+
+	void setCollisionObject(btObject *pc);
+	btObject* getColl();
+
+	void setCollisionConstraint(btGeneric6DofConstraint *pc);
+	btGeneric6DofConstraint* getConstr();
 
 	Camera();
 };

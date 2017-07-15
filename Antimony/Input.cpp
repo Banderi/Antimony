@@ -2,7 +2,6 @@
 
 #include "Warnings.h"
 #include "Input.h"
-#include "Antimony.h"
 
 #pragma comment(lib, "Xinput9_1_0.lib")
 
@@ -316,101 +315,6 @@ void XInputController::disable()
 bool XInputController::isEnabled()
 {
 	return m_enabled;
-}
-
-HRESULT Antimony::registerRID()
-{
-	log(L"Initializing RID objects...", CSL_SYSTEM);
-
-	m_rid[0].usUsagePage = 0x01;
-	m_rid[0].usUsage = 0x02;				// mouse
-	m_rid[0].dwFlags = RIDEV_NOLEGACY;
-	m_rid[0].hwndTarget = window_main.hWnd;
-
-	m_rid[1].usUsagePage = 0x01;
-	m_rid[1].usUsage = 0x06;				// keyboard
-	m_rid[1].dwFlags = 0;
-	m_rid[1].hwndTarget = window_main.hWnd;
-
-	m_rid[2].usUsagePage = 0x01;
-	m_rid[2].usUsage = 0x05;				// gamepad
-	m_rid[2].dwFlags = 0;
-	m_rid[2].hwndTarget = window_main.hWnd;
-
-	m_rid[3].usUsagePage = 0x01;
-	m_rid[3].usUsage = 0x04;				// joystick
-	m_rid[3].dwFlags = 0;
-	m_rid[3].hwndTarget = window_main.hWnd;
-
-	if (RegisterRawInputDevices(m_rid, 4, sizeof(m_rid[0])) == false)
-	{
-		logError(HRESULT_FROM_WIN32(GetLastError()));
-		return HRESULT_FROM_WIN32(GetLastError());
-	}
-	else
-	{
-		XINPUT_STATE state;
-		for (unsigned char i = 0; i < XUSER_MAX_COUNT; i++)
-		{
-			m_controller[i].disable();
-			m_controller[i].set(i);
-			ZeroMemory(&state, sizeof(XINPUT_STATE));
-
-			if (XInputGetState(i, &state) == ERROR_SUCCESS) // controller is connected
-				m_controller[i].enable();
-		}
-
-		log(L" done!\n", CSL_SUCCESS, false);
-		return S_OK;
-	}
-}
-HRESULT Antimony::handleInput(MSG msg)
-{
-	if (msg.message == WM_KEYDOWN)
-	{
-		swprintf(m_globalStr64, L" 0x%02X", msg.wParam);
-		logVolatile(m_globalStr64);
-
-		if (devConsole.isOpen())
-			devConsole.parse(msg);
-
-		return S_OK;
-	}
-	else
-	{
-		UINT dwSize;
-
-		GetRawInputData((HRAWINPUT)msg.lParam, RID_INPUT, NULL, &dwSize, sizeof(RAWINPUTHEADER));
-		LPBYTE lpb = new BYTE[dwSize];
-		if (lpb == NULL)
-			return 0;
-
-		int readSize = GetRawInputData((HRAWINPUT)msg.lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER));
-		if (readSize != dwSize)
-			return HRESULT_FROM_WIN32(GetLastError());
-
-		RAWINPUT* raw = (RAWINPUT*)lpb;
-
-		if (raw->header.dwType == RIM_TYPEKEYBOARD)
-		{
-			m_keys.updateKeyboard(raw->data.keyboard);
-		}
-		else if (raw->header.dwType == RIM_TYPEMOUSE)
-		{
-			m_mouse.update(raw->data.mouse);
-		}
-		else if (raw->header.dwType == RIM_TYPEHID)
-		{
-			for (unsigned char i = 0; i< XUSER_MAX_COUNT; i++)
-			{
-				m_controller[i].update();
-			}
-		}
-
-		delete[] lpb;
-
-		return S_OK;
-	}
 }
 
 std::string GetKeyName(unsigned int k)

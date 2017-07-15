@@ -19,6 +19,12 @@ void Antimony::step()
 	m_delta = timer.GetDelta(TIMER_FRAME_GLOBAL);
 	double fstep = m_delta * m_worldSpeed;
 
+	if (GetFocus() == window_main.hWnd)
+	{
+		ShowCursor(false);
+		ClipCursor(&window_main.plane);
+	}
+
 	updateGameState();
 
 	if (ifGameState(GAMESTATE_INGAME))									// In-game (non-paused, non-menu etc.)
@@ -51,7 +57,7 @@ void Antimony::step()
 }
 void Antimony::endStep()
 {
-	devConsole.draw();												// Draw the dev console
+	devConsole.draw(&display, getDelta(), &Consolas);					// Draw the dev console
 
 	if (game.debug)
 	{
@@ -71,17 +77,23 @@ void Antimony::endStep()
 }
 HRESULT Antimony::prepareFrame()
 {
-	devcon->ClearRenderTargetView(targettview, RGBA{ 0.0f, 0.2f, 0.4f, 0.0f });			// clear the render target view
-	devcon->ClearDepthStencilView(depthstencilview, D3D11_CLEAR_DEPTH, 1.0f, 0);		// clear depth stencil
+	devcon->ClearRenderTargetView(targettview, RGBA{ 0.0f, 0.2f, 0.4f, 0.0f });					// clear the render target view
+	devcon->ClearDepthStencilView(depthstencilview, D3D11_CLEAR_DEPTH, 1.0f, 0);				// clear depth stencil
 
-	devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &vertex_stride, &vertex_offset);	// set vertex buffer
-	devcon->IASetIndexBuffer(indexbuffer, DXGI_FORMAT_R32_UINT, 0);						// set index buffer
-	devcon->VSSetConstantBuffers(0, 1, &constantbuffer);								// set constant buffer
+	//devcon->IASetVertexBuffers(0, 1, &vertexbuffer, (UINT*)sizeof(VERTEX_BASIC), (UINT*)(0));	// set vertex buffer
+	devcon->IASetIndexBuffer(indexbuffer, DXGI_FORMAT_R32_UINT, 0);								// set index buffer
+	devcon->VSSetConstantBuffers(0, 1, &constantbuffer);										// set constant buffer
+
+	Consolas.clearFW1();
+	Arial.clearFW1();
 
 	return S_OK;
 }
 HRESULT Antimony::presentFrame()
 {
+	Consolas.presentFW1();
+	Arial.presentFW1();
+
 	if (display.vsync)
 		return swapchain->Present(1, 0);
 	else
@@ -133,9 +145,9 @@ void Antimony::updateCameraControls(MouseController *mhandle, KeysController *kh
 	float x_slide = 6 * controls.x_sensitivity * delta;
 	float radius = 1;
 	float maxpitch = 0.1;
-	static float zoom = 1.2;
-	static float _theta = DX_PI / 2;
-	static float _phi = DX_PI / 2;
+	//static float zoom = 1;
+	static float _theta = MATH_PI / 2;
+	static float _phi = MATH_PI / 2;
 
 	// camera rotation
 	if (m_camera.isFree())
@@ -149,42 +161,72 @@ void Antimony::updateCameraControls(MouseController *mhandle, KeysController *kh
 		}
 		else if (mhandle->RMB.getState() > BTN_UNPRESSED || xhandle->LT.getState() > BTN_UNPRESSED) // zoom
 		{
-			zoom += float(mhandle->Y.getVel()) * 0.0015;
-			zoom -= float(xhandle->RY.getVel()) * 0.0015;
+			m_camera.displacement += float(mhandle->Y.getVel()) * 0.0015;
+			m_camera.displacement -= float(xhandle->RY.getVel()) * 0.0015;
 		}
-		zoom -= float(mhandle->Z.getVel()) * 0.0015;
+		m_camera.zoom -= float(mhandle->Z.getVel()) * 0.0015;
 	}
 
-	if (zoom < 0)
-		zoom = 0;
-	if (_phi >= DX_PI - maxpitch)
-		_phi = DX_PI - maxpitch;
+	if (m_camera.displacement < 0.2)
+		m_camera.displacement = 0.2;
+	if (m_camera.zoom < 0.1)
+		m_camera.zoom = 0.1;
+	if (m_camera.zoom > 3.9)
+		m_camera.zoom = 3.9;
+	if (_phi >= MATH_PI - maxpitch)
+		_phi = MATH_PI - maxpitch;
 	if (_phi <= maxpitch)
 		_phi = maxpitch;
 
-	eye.x = (radius + zoom * zoom) * cosf(_theta) * sinf(_phi);
-	eye.y = (radius + zoom * zoom) * cosf(_phi);
-	eye.z = (radius + zoom * zoom) * sinf(_theta) * sinf(_phi);
+	eye.x = (radius + m_camera.displacement * m_camera.displacement) * cosf(_theta) * sinf(_phi);
+	eye.y = (radius + m_camera.displacement * m_camera.displacement) * cosf(_phi);
+	eye.z = (radius + m_camera.displacement * m_camera.displacement) * sinf(_theta) * sinf(_phi);
 
-	float3 height = v3_origin;//float3(0, 0.75, 0);
+	float3 height = float3(0, 0.26, 0);
 	float3 entity = MatToFloat3(&m_physEntities.at(game.dbg_entityfollow%m_physEntities.size())->getMatTransform());//player.getPos();
 
 	m_camera.lookAtPoint(entity + WORLD_SCALE * (height + eye), game.camera_friction * (.99999999) + !game.camera_friction);
-	m_camera.moveToPoint(entity + WORLD_SCALE * (height - eye * zoom), game.camera_friction * (.9999999) + !game.camera_friction);
+	m_camera.moveToPoint(entity + WORLD_SCALE * (height - eye * m_camera.displacement), game.camera_friction * (.9999999) + !game.camera_friction);
 
 	// reset camera
 	if (mhandle->MMB.getState() == BTN_HELD || xhandle->RS.getState() == BTN_HELD)
 	{
 		m_camera.lock();
 		//camera.LookAtPoint(v3_origin, .99999);
-		m_camera.lookAtPoint(m_player.getColl()->getFlat3Pos(), .99999);
-		zoom = 1.2;
+		m_camera.lookAtPoint(m_player.getColl()->getFloat3Pos(), .99999);
+		m_camera.displacement = 1;
+		m_camera.zoom = 1;
 	}
 	else if (!m_camera.isFree())
 		m_camera.unlock();
 
 	m_camera.update(delta);
-	mat_view = MLookAtLH(m_camera.getPos(), m_camera.getLookAt(), float3(0, 1, 0));
+
+	float3 look = entity + WORLD_SCALE * height;
+	float3 pos = m_camera.getPos();
+	float3 ray = (pos - look); ray.Normalize();
+	float3 start = look + 0.1 * ray;
+
+	float3 finalpos = pos;
+
+	if (m_camera.displacement > 0.1 && true)
+	{
+		btVector3 btFrom = Float3Tobt(&start);
+		btVector3 btTo = Float3Tobt(&pos);
+		btCollisionWorld::ClosestRayResultCallback res(btFrom, btTo);
+		m_btWorld->rayTest(btFrom, btTo, res);
+
+		//btTransform t; t.setIdentity();
+		//t.setOrigin(Float3Tobt(&start));
+		if (res.hasHit()) {
+			finalpos = btToFloat3(&res.m_hitPointWorld) - 0.1 * ray;
+			//t.setOrigin(res.m_hitPointWorld);
+		}
+		//m_camera.getColl()->getRigidBody()->setWorldTransform(t);
+	}
+
+	mat_view = MLookAtLH(finalpos, m_camera.getLookAt(), float3(0, 1, 0));
+	mat_proj = MPerspFovLH(m_camera.zoom * MATH_PI / 4, window_main.aspect, 0.001f, 10000.0f);
 }
 void Antimony::updateAI(double delta)
 {
@@ -203,8 +245,8 @@ void Antimony::updateWorld(double delta)
 
 	static double h = 0;
 	if (ifGameState(GAMESTATE_INGAME))
-		h += 0.5f * DX_PI * delta;
-	if (h >= 2 * DX_PI)
+		h += 0.5f * MATH_PI * delta;
+	if (h >= 2 * MATH_PI)
 		h = 0;
 
 	if (0)

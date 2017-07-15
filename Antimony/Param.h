@@ -27,10 +27,10 @@
 #define AA_32X		32
 #define AA_64X		64
 
-#define DBGCHART_PAGES_COUNT 3
+#define DBGCHART_PAGES_COUNT 2
 #define DBGCHART_FPS	0x0
-#define DBGCHART_PIE	0x1
-#define DBGCHART_INPUT	0x2
+#define DBGCHART_INPUT	0x1
+#define DBGCHART_PIE	0x2
 
 ///
 

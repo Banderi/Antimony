@@ -3,6 +3,8 @@
 #include <vector>
 
 #include "DirectX.h"
+#include "Param.h"
+#include "FontRenderer.h"
 
 ///
 
@@ -43,13 +45,13 @@ public:
 	void close();
 	bool isOpen();
 
-	void parse(MSG msg);
+	void parse(MSG msg, ControlParams *ctrls);
 	bool send(std::wstring cmd);
 	void clear();
 	void purgeHistory();
 	void log(std::wstring string, unsigned char col);
 
-	void draw();
+	void draw(DisplayParams *display, double delta, FontWrapper *font);
 
 	Console()
 	{

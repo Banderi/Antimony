@@ -9,13 +9,13 @@ HRESULT hr;
 
 ///
 
-bool Antimony::handleErr(HRESULT *hOut, DWORD facing, HRESULT hr, const wchar_t* opt)
+bool handleErr(HRESULT *hOut, DWORD facing, HRESULT hr, const wchar_t* opt)
 {
 	*hOut = hr;
 
 	if (FAILED(hr))
 	{
-		logError(hr);
+		antimony.logError(hr);
 
 		wchar_t buffer[512] = {};
 		_com_error err(hr);
@@ -137,9 +137,17 @@ bool Antimony::handleErr(HRESULT *hOut, DWORD facing, HRESULT hr, const wchar_t*
 			swprintf(buffer,
 				L"Unable to create input layout from shader.\nError code: %s (0x%X)", errMsg, hr);
 			break;
+		case HRH_SHADER_VERTEXBUFFER:
+			swprintf(buffer,
+				L"Unable to create shader's vertex buffer.\nError code: %s (0x%X)", errMsg, hr);
+			break;
 
 			// InitFonts(...)
 		case HRH_FONTS_CREATEDW1FACTORY:
+			swprintf(buffer,
+				L"Unable to create font wrapper factory.\nError code: %s (0x%X)", errMsg, hr);
+			break;
+		case HRH_FONTS_CREATEDW1GEOMETRY:
 			swprintf(buffer,
 				L"Unable to create font wrapper factory.\nError code: %s (0x%X)", errMsg, hr);
 			break;
@@ -161,9 +169,19 @@ bool Antimony::handleErr(HRESULT *hOut, DWORD facing, HRESULT hr, const wchar_t*
 			swprintf(buffer,
 				L"Unable to create index buffer.\nError code: %s (0x%X)", errMsg, hr);
 			break;
+
+			// FillBuffer(...)
+		case HRH_BUFFER_MAPPING:
+			swprintf(buffer,
+				L"Unable to map buffer data.\nError code: %s (0x%X)", errMsg, hr);
+			break;
+		case HRH_BUFFER_OVERFLOW:
+			swprintf(buffer,
+				L"Unable to fill buffer with data.\nError code: %s (0x%X)", errMsg, hr);
+			break;
 		}
 
-		MessageBoxW(window_main.hWnd, buffer, L"Error", MB_OK);
+		MessageBoxW(antimony.window_main.hWnd, buffer, L"Error", MB_OK);
 
 		return false;
 	}

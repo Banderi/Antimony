@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Entity.h"
+#include "Asset.h"
 
 ///
 
@@ -47,6 +48,8 @@ public:
 	btVector3 m_linWorldVel;
 	btVector3 m_angWorldVel;
 
+	Asset asset;
+
 	//btVector3 rvel;
 
 	void update(double delta, std::map<const btCollisionObject*, std::vector<btPersistentManifold*>> objectsCollisions);
@@ -57,6 +60,7 @@ public:
 
 	void setCollisionObject(btObject *pc);
 	btObject* getColl();
+	mat getTransform();
 
 	Vector3 getPos();
 	bool getMovingState();

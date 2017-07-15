@@ -136,27 +136,37 @@ void Temp_StartingFiles()
 	// test walls
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(-3, 1, -1)));
 	phys_obj = new btObject(BTOBJECT_STATICWORLD, BTSOLID_BOX, 0.0f, float3(0.3, 2, 5), ms, &btVector3(0, 0, 0), antimony.getBtWorld());
+	antimony.addPhysEntity(phys_obj);
 
 	// moving platforms
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 0.5, 0)));
 	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), ms, &btVector3(0, 0, 0), antimony.getBtWorld());
+	antimony.addPhysEntity(phys_obj);
 
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 1, 0)));
 	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), ms, &btVector3(0, 0, 0), antimony.getBtWorld());
+	antimony.addPhysEntity(phys_obj);
 
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 2, 2)));
 	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), ms, &btVector3(0, 0, 0), antimony.getBtWorld());
+	antimony.addPhysEntity(phys_obj);
 
 	// test cubes
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 6, 0)));
 	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, antimony.getBtWorld());
+	antimony.addPhysEntity(phys_obj);
 
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 40, 0)));
 	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, antimony.getBtWorld());
+	antimony.addPhysEntity(phys_obj);
 
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 80, 0)));
 	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, antimony.getBtWorld());
+	antimony.addPhysEntity(phys_obj);
 
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 4, 2)));
 	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, antimony.getBtWorld());
+	antimony.addPhysEntity(phys_obj);
+
+	antimony.getPlayer()->asset.LoadFBX("chara.fbx");
 }
