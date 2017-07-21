@@ -7,6 +7,20 @@
 
 #include "Geometry.h"
 
+#if _WIN32 || _WIN64
+#if _WIN64
+#define ENVIRONMENT64
+#else
+#define ENVIRONMENT32
+#endif
+#endif
+
+#ifdef ENVIRONMENT32
+#pragma comment (lib, "..\\ext\\FBXSDK\\lib\\x86\\libfbxsdk.lib")
+#elif defined(ENVIRONMENT64)
+#pragma comment (lib, "..\\ext\\FBXSDK\\lib\\x64\\libfbxsdk.lib")
+#endif
+
 ///
 
 float2 FbxToFloat2(FbxVector2 *fbx);

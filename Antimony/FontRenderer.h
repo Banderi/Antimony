@@ -7,6 +7,8 @@
 
 #include "Geometry.h"
 
+#pragma comment (lib, "..\\ext\\FW1FontWrapper\\lib\\x86\\FW1FontWrapper.lib")
+
 ///
 
 #define FCACHE_PAST_LIFETIME	true
