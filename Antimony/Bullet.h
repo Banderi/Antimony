@@ -13,10 +13,6 @@
 #include "BulletCollision\CollisionDispatch\btGhostObject.h"
 #include "LinearMath\btIDebugDraw.h"
 
-#pragma comment(lib, "BulletDynamics.lib")
-#pragma comment(lib, "BulletCollision.lib")
-#pragma comment(lib, "LinearMath.lib")
-
 ///
 
 #define BTOBJECT_NULL				0x000
@@ -140,3 +136,19 @@ btVector3 Float3Tobt(const float3 *f);
 btTransform MatTobt(mat *m);
 
 btVector3 btQuaternionToEuler(const btQuaternion &TQuat);
+
+namespace Antimony
+{
+	extern btDiscreteDynamicsWorld *btWorld;
+	extern std::vector<btObject*> physEntities;
+
+	extern std::map<const btCollisionObject*, std::vector<btManifoldPoint*>> m_objectsCollisionPoints;
+	extern std::map<const btCollisionObject*, std::vector<btPersistentManifold*>> m_objectsCollisions;
+
+	btDiscreteDynamicsWorld* getBtWorld();
+	void tickCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep);
+	void staticCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep);
+	void addPhysEntity(btObject *obj);
+	std::vector<btObject*>* getEntities();
+	void resetPhysics();
+}

@@ -184,36 +184,40 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>libfbxsdk-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Lib>
+      <AdditionalOptions>/IGNORE:4006 %(AdditionalOptions)</AdditionalOptions>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Animation.cpp" />
     <ClCompile Include="Asset.cpp" />
-    <ClCompile Include="AtConsoleCommands.cpp" />
-    <ClCompile Include="AtPhysics.cpp" />
-    <ClCompile Include="AtPlayer.cpp" />
+    <ClCompile Include="ConsoleCommands.cpp" />
     <ClCompile Include="CConvertions.cpp" />
     <ClCompile Include="Console.cpp" />
-    <ClCompile Include="AtCore.cpp" />
+    <ClCompile Include="Core.cpp" />
     <ClCompile Include="Bullet.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Character.cpp" />
     <ClCompile Include="CpuUsage.cpp" />
-    <ClCompile Include="AtDebug.cpp" />
+    <ClCompile Include="Debug.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="FBX.cpp" />
-    <ClCompile Include="FBXCommon.cpp" />
     <ClCompile Include="FontRenderer.cpp" />
-    <ClCompile Include="AtRenderer.cpp" />
-    <ClCompile Include="AtGameflow.cpp" />
+    <ClCompile Include="Gameplay.cpp" />
+    <ClCompile Include="Path.cpp" />
+    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="Gameflow.cpp" />
     <ClCompile Include="Geometry.cpp" />
-    <ClCompile Include="AtHresult.cpp" />
+    <ClCompile Include="Hresult.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="Player.cpp" />
-    <ClCompile Include="AtSpawner.cpp" />
-    <ClCompile Include="AtStep.cpp" />
+    <ClCompile Include="Spawner.cpp" />
+    <ClCompile Include="Step.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Animation.h" />
     <ClInclude Include="Asset.h" />
     <ClInclude Include="Bullet.h" />
     <ClInclude Include="Camera.h" />
@@ -221,21 +225,24 @@
     <ClInclude Include="Character.h" />
     <ClInclude Include="Console.h" />
     <ClInclude Include="CpuUsage.h" />
+    <ClInclude Include="Debug.h" />
     <ClInclude Include="DirectX.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="FBX.h" />
-    <ClInclude Include="FBXCommon.h" />
     <ClInclude Include="FontRenderer.h" />
     <ClInclude Include="Gameflow.h" />
+    <ClInclude Include="Gameplay.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="Hresult.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="Antimony.h" />
     <ClInclude Include="Param.h" />
-    <ClInclude Include="pchfx.h" />
+    <ClInclude Include="Path.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="Renderer.h" />
     <ClInclude Include="SmartRelease.h" />
     <ClInclude Include="Spawner.h" />
+    <ClInclude Include="Step.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Warnings.h" />
@@ -270,7 +277,7 @@
     </FxCompile>
     <FxCompile Include="..\Debug\Shaders\main.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_Static|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_Static|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Static|Win32'">true</ExcludedFromBuild>
     </FxCompile>
@@ -311,13 +318,19 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="..\Debug\Shaders\plain.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_Static|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_Static|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Static|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </FxCompile>
+    <FxCompile Include="..\Debug\Shaders\plain_3D.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Static|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_Static|Win32'">false</ExcludedFromBuild>
+    </FxCompile>
     <FxCompile Include="..\Debug\Shaders\test.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_Static|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_Static|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Static|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>

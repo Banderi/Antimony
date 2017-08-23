@@ -1,6 +1,10 @@
 #include "Bullet.h"
 #include "Geometry.h"
 
+#pragma comment(lib, "BulletDynamics.lib")
+#pragma comment(lib, "BulletCollision.lib")
+#pragma comment(lib, "LinearMath.lib")
+
 ///
 
 btVector3 bt_origin = btVector3(0, 0, 0);
@@ -358,3 +362,58 @@ btVector3 btQuaternionToEuler(const btQuaternion &TQuat)
 
 	return TEuler;
 };
+
+///
+
+btDiscreteDynamicsWorld* Antimony::btWorld;
+std::vector<btObject*> Antimony::physEntities;
+
+std::map<const btCollisionObject*, std::vector<btManifoldPoint*>> Antimony::m_objectsCollisionPoints;
+std::map<const btCollisionObject*, std::vector<btPersistentManifold*>> Antimony::m_objectsCollisions;
+
+btDiscreteDynamicsWorld* Antimony::getBtWorld()
+{
+	return btWorld;
+}
+void Antimony::tickCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep)
+{
+	m_objectsCollisions.clear();
+	m_objectsCollisionPoints.clear();
+	int numManifolds = dynamicsWorld->getDispatcher()->getNumManifolds();
+	for (int i = 0; i < numManifolds; i++)
+	{
+		btPersistentManifold *contactManifold = dynamicsWorld->getDispatcher()->getManifoldByIndexInternal(i);
+		auto *objA = contactManifold->getBody0();
+		auto *objB = contactManifold->getBody1();
+		auto& manifoldsA = m_objectsCollisions[objA];
+		auto& manifoldsB = m_objectsCollisions[objA];
+		manifoldsA.push_back(contactManifold);
+		manifoldsB.push_back(contactManifold);
+		auto& collisionsA = m_objectsCollisionPoints[objA];
+		auto& collisionsB = m_objectsCollisionPoints[objB];
+		int numContacts = contactManifold->getNumContacts();
+		for (int j = 0; j < numContacts; j++)
+		{
+			btManifoldPoint& pt = contactManifold->getContactPoint(j);
+			collisionsA.push_back(&pt);
+			collisionsB.push_back(&pt);
+		}
+	}
+}
+void Antimony::staticCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep)
+{
+	Antimony::tickCallback(dynamicsWorld, timeStep);
+}
+void Antimony::addPhysEntity(btObject *obj)
+{
+	physEntities.push_back(obj);
+}
+std::vector<btObject*>* Antimony::getEntities()
+{
+	return &physEntities;
+}
+void Antimony::resetPhysics()
+{
+	for (int i = 0; i < physEntities.size(); i++)
+		physEntities.at(i)->reset();
+}

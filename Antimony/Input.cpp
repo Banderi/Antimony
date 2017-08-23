@@ -2,6 +2,8 @@
 
 #include "Warnings.h"
 #include "Input.h"
+#include "Debug.h"
+#include "Console.h"
 
 #pragma comment(lib, "Xinput9_1_0.lib")
 
@@ -124,19 +126,19 @@ void MouseController::update(RAWMOUSE rmouse)
 
 	USHORT flags = rmouse.usButtonFlags;
 
-	for (unsigned char i = 0; i < m_mouseArray.size(); i++)
+	for (unsigned char i = 0; i < mouseArray.size(); i++)
 	{
-		if (flags & m_mouseArray.at(i)->getFlagDown())
-			m_mouseArray.at(i)->update(true);
-		else if (flags & m_mouseArray.at(i)->getFlagUp())
-			m_mouseArray.at(i)->update(false);
+		if (flags & mouseArray.at(i)->getFlagDown())
+			mouseArray.at(i)->update(true);
+		else if (flags & mouseArray.at(i)->getFlagUp())
+			mouseArray.at(i)->update(false);
 	}
 }
 void MouseController::reset()
 {
-	for (unsigned char i = 0; i < m_mouseArray.size(); i++)
+	for (unsigned char i = 0; i < mouseArray.size(); i++)
 	{
-		m_mouseArray.at(i)->update(-1);
+		mouseArray.at(i)->update(-1);
 	}
 
 	X.update();
@@ -179,10 +181,16 @@ void XInputController::update()
 {
 	ZeroMemory(&m_state, sizeof(XINPUT_STATE));
 
-	if (XInputGetState(m_number, &m_state) == ERROR_SUCCESS) // controller is connected
-		enable();
-	else
-		disable();
+	static double life = clock();
+
+	if (clock() - life > 10)
+	{
+		if (XInputGetState(m_number, &m_state) == ERROR_SUCCESS) // controller is connected
+			enable();
+		else
+			disable();
+		life = clock();
+	}
 
 	if (!isEnabled())
 		return;
@@ -708,4 +716,114 @@ std::string GetKeyName(unsigned int k)
 		default:
 			return "???";
 	}
+}
+
+///
+
+HRESULT Antimony::registerRID()
+{
+	log(L"Initializing RID objects...", CSL_SYSTEM);
+
+	rid[0].usUsagePage = 0x01;
+	rid[0].usUsage = 0x02;				// mouse
+	rid[0].dwFlags = RIDEV_NOLEGACY;
+	rid[0].hwndTarget = window_main.hWnd;
+
+	rid[1].usUsagePage = 0x01;
+	rid[1].usUsage = 0x06;				// keyboard
+	rid[1].dwFlags = 0;
+	rid[1].hwndTarget = window_main.hWnd;
+
+	rid[2].usUsagePage = 0x01;
+	rid[2].usUsage = 0x05;				// gamepad
+	rid[2].dwFlags = 0;
+	rid[2].hwndTarget = window_main.hWnd;
+
+	rid[3].usUsagePage = 0x01;
+	rid[3].usUsage = 0x04;				// joystick
+	rid[3].dwFlags = 0;
+	rid[3].hwndTarget = window_main.hWnd;
+
+	if (RegisterRawInputDevices(rid, 4, sizeof(rid[0])) == false)
+	{
+		logError(HRESULT_FROM_WIN32(GetLastError()));
+		return HRESULT_FROM_WIN32(GetLastError());
+	}
+	else
+	{
+		XINPUT_STATE state;
+		for (unsigned char i = 0; i < XUSER_MAX_COUNT; i++)
+		{
+			controller[i].disable();
+			controller[i].set(i);
+			ZeroMemory(&state, sizeof(XINPUT_STATE));
+
+			if (XInputGetState(i, &state) == ERROR_SUCCESS) // controller is connected
+				controller[i].enable();
+		}
+
+		log(L" done!\n", CSL_SUCCESS, false);
+		return S_OK;
+	}
+}
+HRESULT Antimony::handleInput(MSG msg)
+{
+	if (msg.message == WM_KEYDOWN)
+	{
+		/*swprintf_s(buf, L" 0x%02X", msg.wParam);
+		logVolatile(buf);*/
+
+		if (devConsole.isOpen())
+			devConsole.parse(msg, &controls);
+
+		return S_OK;
+	}
+	else
+	{
+		UINT dwSize;
+
+		GetRawInputData((HRAWINPUT)msg.lParam, RID_INPUT, NULL, &dwSize, sizeof(RAWINPUTHEADER));
+		LPBYTE lpb = new BYTE[dwSize];
+		if (lpb == NULL)
+			return 0;
+
+		int readSize = GetRawInputData((HRAWINPUT)msg.lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER));
+		if (readSize != dwSize)
+			return HRESULT_FROM_WIN32(GetLastError());
+
+		RAWINPUT* raw = (RAWINPUT*)lpb;
+
+		if (raw->header.dwType == RIM_TYPEKEYBOARD)
+		{
+			keys.updateKeyboard(raw->data.keyboard);
+		}
+		else if (raw->header.dwType == RIM_TYPEMOUSE)
+		{
+			mouse.update(raw->data.mouse);
+		}
+		else if (raw->header.dwType == RIM_TYPEHID)
+		{
+			for (unsigned char i = 0; i < XUSER_MAX_COUNT; i++)
+			{
+				controller[i].update();
+			}
+		}
+
+		delete[] lpb;
+
+		return S_OK;
+	}
+}
+
+namespace Antimony
+{
+	RAWINPUTDEVICE rid[4];
+
+	MouseController mouse;
+	KeysController keys;
+	XInputController controller[4];
+
+	bool wm_message = false;
+	bool wm_input = false;
+	bool wm_keydown = false;
 }

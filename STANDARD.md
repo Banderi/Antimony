@@ -44,13 +44,13 @@ The order of content in the files is:
 	- Header inclusion
 		- System headers
 		- Project (internal) headers
-			- `Warnings.h`
+			- `Warnings.h` (if needed)
 			- Corresponding header (if .cpp file)
 			- All other headers
 		- External headers
-	- Library inclusion
+	- Library inclusion (if .cpp file)
 - Macros
-	- Namespace statements
+	- Namespace `using` statements
 	- Typedefs
 	- Macro definitions
 		- Functions
@@ -58,6 +58,11 @@ The order of content in the files is:
 - Global variables forward declaration (.h) or definition (.cpp)
 - Class/structs
 	- Interface definition (.h) or methods implementation (.cpp)
-	- Global items forward declaration (.h) or definition (.cpp)
+	- Global items forward declaration (.h) or definition (.cpp) (please use the `Antimony::` namespace where possible)
 - Functions	
 	- Prototypes/functions forward declaration (.h) or implementation (.cpp)
+- Antimony namespace
+	- Global `Antimony::` functions definition (if .cpp file)
+	- Namespace block
+		- Global `Antimony::` items forward declaration (.h) or definition (.cpp)
+		- Global `Antimony::` prototypes/functions forward declaration (if header file)

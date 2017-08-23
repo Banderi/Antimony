@@ -36,6 +36,9 @@ void Character::update(double delta, std::map<const btCollisionObject*, std::vec
 	m_linWorldVel = bt_origin;
 	m_angWorldVel = bt_origin;
 
+	asset.update(delta);
+	updateContact(JS_NULL);
+
 	auto& mf = objectsCollisions[m_collisionObject->getRigidBody()];	// get current world manifolds
 
 	if (!mf.empty())
@@ -51,8 +54,6 @@ void Character::update(double delta, std::map<const btCollisionObject*, std::vec
 				float a = n.angle(btVector3(0, 1, 0));					// get angle between the normal and the 'up' vector
 				if (a <= MATH_PI * 0.2)
 				{
-					m_jumping = 0;
-
 					// math hocus pocus
 					btVector3 d = m_collisionObject->getbtPos() - b->getWorldTransform().getOrigin();
 					m_angWorldVel = b->getAngularVelocity();
@@ -67,7 +68,9 @@ void Character::update(double delta, std::map<const btCollisionObject*, std::vec
 					m_linWorldVel.setZ(0);*/
 					//m_linWorldVel = bt_origin;
 
-					goto contact;										// skip all other contact points/manifolds
+					updateContact(JS_CONTACT);
+
+					goto endloop;										// skip all other contact points/manifolds
 				}
 				//else if (a2 <= MATH_PI * 0.2 && b1 == physEntities.at(0)->rb) // infinite plane has inverted normals (why???)
 				//{
@@ -80,46 +83,59 @@ void Character::update(double delta, std::map<const btCollisionObject*, std::vec
 				//}
 				else
 				{
-					m_jumping = 1;
+					//m_jumping = 1;
+					updateContact(JS_FREE);
 				}
 			}
-			m_jumping = 1;
+			//m_jumping = 1;
 		}
-	contact:;
+		updateContact(JS_FREE);
+	endloop:;
 	}
 	else
 	{
-		m_jumping = 1;
+		updateContact(JS_FREE);
+		//m_jumping = 1;
 	}
 
 	m_collisionObject->getRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
 }
 void Character::updateContact(char contact)
 {
-	if (contact == 1)			// no contact
+	if (contact == JS_FREE)				// no contact
 	{
-		if (m_jumping != JUMPSTATE_INAIR)
-		{
-			m_jumping = JUMPSTATE_JUMPING;
-		}
-		else
+		m_jumpState = JUMPSTATE_INAIR;
+		asset.animController()->current_anim = 0;
+		/*else
 		{
 			m_jumping = JUMPSTATE_INAIR;
+			asset.animController()->current_anim = 4;
+		}*/
+	}
+	if (contact == JS_JUMP)				// actively jumping
+	{
+		m_jumpState = JUMPSTATE_JUMPING;
+		asset.animController()->current_anim = 4;
+	}
+	else if (contact == JS_CONTACT)		// contact
+	{
+		if (m_jumpState != JUMPSTATE_ONGROUND)
+		{
+			m_jumpState = JUMPSTATE_LANDING;
+			asset.animController()->current_anim = 4;
 		}
 	}
-	else if (contact == 0)		// contact is firing
+	else if (contact == JS_NULL)		// default (no changes)
 	{
-		m_jumping = JUMPSTATE_ONGROUND;
-	}
-	else if (contact == -1)		// default (no changes)
-	{
-		if (m_jumping == JUMPSTATE_JUMPING)
+		if (m_jumpState == JUMPSTATE_JUMPING)
 		{
-			m_jumping = JUMPSTATE_INAIR;
+			m_jumpState = JUMPSTATE_INAIR;
+			asset.animController()->current_anim = 0;
 		}
-		else if (m_jumping == JUMPSTATE_LANDING)
+		else if (m_jumpState == JUMPSTATE_LANDING)
 		{
-			m_jumping = JUMPSTATE_ONGROUND;
+			m_jumpState = JUMPSTATE_ONGROUND;
+			asset.animController()->current_anim = 3;
 		}
 	}
 }
@@ -152,7 +168,7 @@ void Character::move(btVector3 *v, float s)
 		d = btVector3(0, angle, 0);
 	}
 
-	if (!m_jumping)
+	if (m_jumpState == JUMPSTATE_ONGROUND)
 	{
 		m_collisionObject->getRigidBody()->setLinearVelocity(m_linWorldVel + (*v) * s);		// move with linear velocity when standing on an object
 		m_collisionObject->getRigidBody()->setAngularVelocity(m_angWorldVel + (d) * 10);	// rotate to face movement direction
@@ -165,11 +181,13 @@ void Character::move(btVector3 *v, float s)
 }
 void Character::attemptJump()
 {
-	if (m_jumping)
+	if (m_jumpState != JUMPSTATE_ONGROUND)
 		return;
 
 	btVector3 v = btVector3(m_collisionObject->getRigidBody()->getLinearVelocity().getX() * 0.3, m_jumpSpeed, m_collisionObject->getRigidBody()->getLinearVelocity().getZ() * 0.3);
 	m_collisionObject->getRigidBody()->setLinearVelocity(v);
+
+	updateContact(JS_JUMP);
 }
 void Character::setCollisionObject(btObject *pc)
 {
@@ -194,17 +212,17 @@ bool Character::getMovingState()
 }
 char Character::getJumpState()
 {
-	return m_jumping;
+	return m_jumpState;
 }
 char Character::getActionState()
 {
-	return m_action;
+	return m_actionState;
 }
 Character::Character()
 {
 	m_moving = false;
-	m_jumping = 0;
-	m_action = 0;
+	m_jumpState = 0;
+	m_actionState = 0;
 	//rvel = btVector3(0, 0, 0);
 	m_movSpeed = WORLD_SCALE * 0.5f;
 	m_jumpSpeed = WORLD_SCALE * 5;

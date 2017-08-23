@@ -1,13 +1,11 @@
 #pragma once
 
 #include <Windows.h>
-#include <time.h>		// required for clock					(Console::send)
+#include <time.h>				// required for clock					(Console::send)
 
-#include "FW1FontWrapper.h"
+#include "FW1FontWrapper.h"		// from /ext/FW1FontWrapper/include
 
 #include "Geometry.h"
-
-#pragma comment (lib, "..\\ext\\FW1FontWrapper\\lib\\x86\\FW1FontWrapper.lib")
 
 ///
 
@@ -76,3 +74,9 @@ public:
 		}
 	}
 };
+
+namespace Antimony
+{
+	extern FontWrapper Arial, Consolas;
+	extern IFW1Factory *FW1Factory;
+}

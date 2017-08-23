@@ -10,6 +10,11 @@
 #define JUMPSTATE_INAIR		0x02
 #define JUMPSTATE_LANDING	0x03
 
+#define JS_NULL			-1
+#define JS_CONTACT		 0
+#define JS_FREE			 1
+#define JS_JUMP			 2
+
 ///
 
 // (UNUSED)
@@ -38,8 +43,8 @@ protected:
 	btObject *m_collisionObject;
 
 	bool m_moving;
-	char m_jumping;
-	char m_action;
+	char m_jumpState;
+	char m_actionState;
 	// TODO: 3D character asset
 
 public:

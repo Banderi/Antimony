@@ -1,5 +1,5 @@
-#include "Camera.h"
 #include "Warnings.h"
+#include "Camera.h"
 
 ///
 
@@ -14,12 +14,36 @@ void Camera::update(double delta)
 	m_thVel *= m_friction * delta;
 	m_phVel *= m_friction * delta;
 
-	float3 dir = XMVector3Normalize(m_lookat - m_pos);
+	float3 dir = V3Normalize(m_lookat - m_pos);
 	float3 n = dir.Cross(float3(0, 1, 0));
 	float det = n.Dot(n);
 
 	m_th = -atan2f(-dir.z, dir.Dot(float3(1, 0, 0)));
 	m_ph = atan2f(n.Dot(n), dir.Dot(float3(0, 1, 0)));
+}
+void Camera::enableZoom(bool s)
+{
+	m_zoom_enabled = s;
+}
+void Camera::enableDolly(bool s)
+{
+	m_dolly_enabled = s;
+}
+void Camera::noclip(bool s)
+{
+	m_noclip = s;
+}
+bool Camera::isZoomEnabled()
+{
+	return m_zoom_enabled;
+}
+bool Camera::isDollyEnabled()
+{
+	return m_dolly_enabled;
+}
+bool Camera::isNoclip()
+{
+	return m_noclip;
 }
 void Camera::rotate(bool angle, float accelaration)
 {
@@ -80,6 +104,18 @@ Camera::Camera()
 	m_ph = 0.0f;
 	m_phVel = 0.0f;
 
+	m_dolly_enabled = false;
+	m_zoom_enabled = false;
+	m_noclip = false;
+
+	object = nullptr;
+	displacement = float3(0, 0, 0);
 	zoom = 1;
-	displacement = 1;
+	dolly = 1;
+	minZoom = 0.1;
+	maxZoom = 3.9;
+	minDolly = 0.1;
+	maxDolly = -1;
+	minPitch = 0.1;
+	maxPitch = MATH_PI - 0.1;
 }

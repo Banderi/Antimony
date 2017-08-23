@@ -1,6 +1,8 @@
 #pragma once
 
 #include <windows.h>	// required for various WinSDK typedefs
+#include <windows.h>	// required for Psapi.h
+#include <Psapi.h>		// required for PROCESS_MEMORY_COUNTERS_EX					(Antimony::pmc)
 #include <vector>
 
 ///
@@ -36,3 +38,13 @@ public:
 
 	CpuUsage(void);
 };
+
+namespace Antimony
+{
+	extern CpuUsage cpuUsage;
+
+	extern DWORDLONG totalPhysMem, physMemAvail;
+	extern ULONG_PTR physMemUsedByMe;
+	extern MEMORYSTATUSEX memInfo;
+	extern PROCESS_MEMORY_COUNTERS_EX pmc;
+}

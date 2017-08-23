@@ -235,8 +235,8 @@ void Console::draw(DisplayParams *display, double delta, FontWrapper *font)
 	if (m_drawerTimout > 0)
 	{
 		//devcon->IASetVertexBuffers(0, 1, &vertexbuffer, (UINT*)sizeof(VERTEX_BASIC), (UINT*)(0));
-		setDepthBufferState(OFF);
-		setShader(SHADERS_PLAIN);
+		Antimony::setDepthBufferState(OFF);
+		Antimony::setShader(SHADERS_PLAIN);
 		Draw2DFullRect(
 			display->width - cpadding, lheight * m_historyMaxLineCount,
 			display->left + cpadding * 0.5, display->top + (lheight * m_historyMaxLineCount) * m_drawerTimout,
@@ -277,7 +277,7 @@ void Console::draw(DisplayParams *display, double delta, FontWrapper *font)
 			f[0] = c[i];
 			font->render(f, 12, cmdx + 8 + i * fclear, cmdy, 0xffffffff, NULL);
 		}
-		//antimony.fw1Courier->DrawString(devcon, m_cmdStr.c_str(), fsize, cmdx + 8, cmdy, 0xffffffff, NULL);
+		//Antimony::fw1Courier->DrawString(devcon, m_cmdStr.c_str(), fsize, cmdx + 8, cmdy, 0xffffffff, NULL);
 
 		if (m_showCaret)
 			font->render(L"|", fsize, cmdx + 7 + m_caretPos * fclear, cmdy + 1, 0xbbffffff, FW1_ALIASED);
@@ -364,3 +364,5 @@ UINT32 ColorCode(unsigned char c)
 		}
 	}
 }
+
+Console Antimony::devConsole;

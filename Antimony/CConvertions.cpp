@@ -5,31 +5,34 @@
 
 ///
 
-const char* cc_cs(const wchar_t* ws)			// wchar_T*	-->	char*
-{
-	return cc_str(cc_wstr(ws)).c_str();
-}
-const char* cc_cs(std::string str)				// string	-->	char*
-{
-	return str.c_str();
-}
-const char* cc_cs(std::wstring wstr)			// wstring	-->	char*
-{
-	return cc_str(wstr).c_str();
-}
-
-const wchar_t* cc_wcs(const char* cs)			// char*	-->	wchar_t*
-{
-	return cc_wstr(cs).c_str();
-}
-const wchar_t* cc_wcs(std::string str)			// string	-->	wchar_t*
-{
-	return cc_wstr(str).c_str();
-}
-const wchar_t* cc_wcs(std::wstring wstr)		// wstring	-->	wchar_t*
-{
-	return wstr.c_str();
-}
+//const char* cc_cs(const wchar_t* ws)			// wchar_T*	-->	char*
+//{
+//	return cc_str(cc_wstr(ws)).c_str();
+//}
+//const char* cc_cs(std::string str)				// string	-->	char*
+//{
+//	return str.c_str();
+//}
+//const char* cc_cs(std::wstring wstr)			// wstring	-->	char*
+//{
+//	auto str = cc_str(wstr);
+//	auto cstr = new const char;
+//	cstr = str.c_str();
+//	return cstr;
+//}
+//
+//const wchar_t* cc_wcs(const char* cs)			// char*	-->	wchar_t*
+//{
+//	return cc_wstr(cs).c_str();
+//}
+//const wchar_t* cc_wcs(std::string str)			// string	-->	wchar_t*
+//{
+//	return cc_wstr(str).c_str();
+//}
+//const wchar_t* cc_wcs(std::wstring wstr)		// wstring	-->	wchar_t*
+//{
+//	return wstr.c_str();
+//}
 
 std::string cc_str(const char* cs)				// char*	-->	string
 {
@@ -38,7 +41,7 @@ std::string cc_str(const char* cs)				// char*	-->	string
 }
 std::string cc_str(const wchar_t* ws)			// wchar_T*	-->	string
 {
-	return cc_str(cc_cs(ws));
+	return cc_str(cc_wstr(ws));
 }
 std::string cc_str(std::wstring wstr)			// wstring	-->	string
 {

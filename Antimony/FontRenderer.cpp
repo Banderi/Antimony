@@ -1,4 +1,7 @@
-#include "Antimony.h"
+#include "Warnings.h"
+#include "FontRenderer.h"
+
+#pragma comment (lib, "..\\ext\\FW1FontWrapper\\lib\\x86\\FW1FontWrapper.lib")
 
 ///
 
@@ -192,3 +195,6 @@ bool RenderedText::update(bool accessed)
 	else
 		return FCACHE_OPERATIONAL;
 }
+
+FontWrapper Antimony::Arial, Antimony::Consolas;
+IFW1Factory* Antimony::FW1Factory;

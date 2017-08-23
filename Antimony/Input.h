@@ -7,6 +7,8 @@
 #include <Xinput.h>
 #include <vector>
 
+#include "Warnings.h"
+
 ///
 
 #define MOUSE_LEFT		0
@@ -140,7 +142,7 @@ class MouseController
 {
 private:
 	bool m_reset;
-	std::vector<Input_Mouse*> m_mouseArray;
+	std::vector<Input_Mouse*> mouseArray;
 
 public:
 	Input_Mouse LMB;
@@ -162,9 +164,9 @@ public:
 		MMB.set(RI_MOUSE_MIDDLE_BUTTON_UP, RI_MOUSE_MIDDLE_BUTTON_DOWN, "Middle Mouse Button");
 		RMB.set(RI_MOUSE_RIGHT_BUTTON_UP, RI_MOUSE_RIGHT_BUTTON_DOWN, "Right Mouse Button");
 
-		m_mouseArray.push_back(&LMB);
-		m_mouseArray.push_back(&MMB);
-		m_mouseArray.push_back(&RMB);
+		mouseArray.push_back(&LMB);
+		mouseArray.push_back(&MMB);
+		mouseArray.push_back(&RMB);
 
 		exclusive = 1;
 		m_reset = 0;
@@ -333,3 +335,19 @@ public:
 		disable();
 	}
 };
+
+namespace Antimony
+{
+	extern RAWINPUTDEVICE rid[4];
+
+	extern MouseController mouse;
+	extern KeysController keys;
+	extern XInputController controller[4];
+
+	extern bool wm_message;
+	extern bool wm_input;
+	extern bool wm_keydown;
+
+	HRESULT registerRID();
+	HRESULT handleInput(MSG msg);
+}

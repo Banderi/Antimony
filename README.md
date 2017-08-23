@@ -31,8 +31,8 @@ The project currently supports static linkage against official Microsoft C Runti
 
 The project currently does not make use of the deprecated D3DX libraries, instead it uses the included [SimpleMath](https://blogs.msdn.microsoft.com/shawnhar/2013/01/08/simplemath-a-simplified-wrapper-for-directxmath/) library from the official [Microsoft DirectX Tool Kit for DirectX 11](https://github.com/Microsoft/DirectXTK), so no installation and inclusion of the deprecated DirectX SDK is required.
 
-The project currently makes use of and includes parts of the [Autodesk FBX SDK 2013](http://usa.autodesk.com/adsk/servlet/pc/item?siteID=123112&id=10775847), [FW1FontWrapper Library](https://fw1.codeplex.com/) and [Bullet 3](https://github.com/bulletphysics/bullet3), which have been added to the source control for continuous integration. Note that the Autodesk FBX SDK and the FW1FontWrapper library are linked dynamically, due to the following reasons:
-- The used FBX SDK static .lib files can only be linked with MSVC ver. 1800
+The project currently makes use of and includes parts of the [Autodesk FBX SDK 2017](http://usa.autodesk.com/adsk/servlet/pc/item?siteID=123112&id=25408427, [FW1FontWrapper Library](https://fw1.codeplex.com/) and [Bullet 3](https://github.com/bulletphysics/bullet3), which have been added to the source control for continuous integration. Note that the Autodesk FBX SDK and the FW1FontWrapper library are linked dynamically, due to the following reasons:
+- Some (communty) sources note that statically linking to the FBX SDK would go against the ToS (likely false)
 - The FBX SDK is many times larger than the Antimony engine at the current stage and would benefit more from dynamic linkage
 - The distribution of the FW1FontWrapper library offers no static .lib files out of the box
 
@@ -51,4 +51,4 @@ See also the list of [contributors](https://github.com/Banderi/Project-X/contrib
 
 ## License
 
-This project is currently licensed under the [GPL v3.0 License](http://choosealicense.com/licenses/gpl-3.0/) - see the [LICENSE.md](LICENSE.md) file for details
+This project is currently licensed under a license based on the [BSD](https://choosealicense.com/licenses/bsd-2-clause/) and [MIT](https://choosealicense.com/licenses/mit/) licenses - see the [LICENSE.md](LICENSE.md) file for details

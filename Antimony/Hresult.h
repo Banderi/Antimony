@@ -53,4 +53,8 @@ extern HRESULT hr;
 
 ///
 
-bool handleErr(HRESULT *hOut, DWORD facing, HRESULT hr, const wchar_t* opt = L"");
+namespace Antimony
+{
+	bool handleErr(HRESULT *hOut, DWORD facing, HRESULT hr, const wchar_t* opt = L"");
+	void logError(HRESULT hr);
+}

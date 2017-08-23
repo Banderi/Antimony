@@ -40,6 +40,16 @@ typedef Vector2 float2;
 typedef Vector3 float3;
 typedef Vector4 float4;
 
+#define V3Transform XMVector3Transform
+#define V3Cross XMVector3Cross
+#define V3Dot XMVector3Dot
+#define V3Normalize XMVector3Normalize
+#define V3Angle XMVector3AngleBetweenVectors
+
+#define MQuatSlerp XMQuaternionSlerp
+#define MQuatSquad XMQuaternionSquad
+#define MQuatSquadS XMQuaternionSquadSetup
+
 #define MSet XMMatrixSet
 
 #define MTranslation XMMatrixTranslation

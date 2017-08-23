@@ -65,4 +65,9 @@ public:
 	}
 };
 
+namespace Antimony
+{
+	extern Console devConsole;
+}
+
 UINT32 ColorCode(unsigned char c);

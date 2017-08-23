@@ -144,8 +144,15 @@ CpuUsage::CpuUsage(void)
 	ZeroMemory(&m_ftPrevProcUser, sizeof(FILETIME));
 
 	m_maxRecords = 100;
-	for (unsigned int i = 1; i < usageStream.size(); i++)
+	for (unsigned int i = 0; i < m_maxRecords; i++)
 	{
 		usageStream.push_back(0);
 	}
 }
+
+CpuUsage Antimony::cpuUsage;
+
+DWORDLONG Antimony::totalPhysMem, Antimony::physMemAvail;
+ULONG_PTR Antimony::physMemUsedByMe;
+MEMORYSTATUSEX Antimony::memInfo;
+PROCESS_MEMORY_COUNTERS_EX Antimony::pmc;

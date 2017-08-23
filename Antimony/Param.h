@@ -135,3 +135,12 @@ struct ControlParams
 	unsigned int k_jump;					//
 	unsigned int k_action;					//
 };
+
+namespace Antimony
+{
+	extern WindowParams window_main;
+	extern DisplayParams display;
+	extern AudioParams audio;
+	extern GameParams game;
+	extern ControlParams controls;
+}

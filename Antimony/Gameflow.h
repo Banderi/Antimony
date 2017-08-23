@@ -30,3 +30,14 @@
 
 #define SUBSYS_VISUAL			0x30
 #define SUBSYS_FISHEYE			0x31
+
+///
+
+namespace Antimony
+{
+	extern unsigned int gameState;
+
+	void setGameState(unsigned int state);
+	unsigned int getGameState();
+	bool ifGameState(unsigned int state);
+}

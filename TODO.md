@@ -37,22 +37,39 @@
         - [ ] World/region and triggers files
         - [ ] Sound files
         - [ ] Main asset archive/compression system
+	- [ ] Implement debugging tools
+		- [ ] Developer console
+			- [x] Base layout
+			- [x] Commands system
+			- [ ] Autocomplete
+		- [x] Log
+		- [x] Debug renderer
+		- [ ] Free camera
+		- [ ] Debug charts
+			- [x] FPS counter
+			- [ ] Polymesh/vertex count
+			- [ ] Frame time pie charts
     - [ ] Implement launcher/external settings editor
         - [ ] Version build management/updater
         - [ ] GUI and text editor for config.ini
         - [ ] Compatibility and requirements check
     - [x] Implement controller input
     - [ ] Implement sound system
+		- [ ] 3D sounds
 	- [ ] Implement scripting system (Lua?)
 		- [ ] Link to AI, triggers, camera etc.
     - [ ] Implement core AI structure
+		- [ ] Pathfinding
     - [ ] Implement core triggers mechanics
-    - [ ] Implement core physics
+    - [x] Implement core physics
 		- [x] Core collision system
 		- [ ] Kinematic objects (moving platforms)
-		- [ ] Camera collisions
+		- [x] Camera collisions
     - [ ] Implement core player controller mechanics
     - [ ] Implement core world mechanics
+		- [x] Entity spawner
+		- [ ] Triggers/events
+		- [ ] Map controller
     - [ ] Implement core save/load system
     - [ ] Implement core cutscene/FMV system
 	- [ ] Implement core multiplayer system
@@ -82,7 +99,8 @@
 - [x] Fix camera interpolation
 - [x] Fix high framerate usage by the debug renderer -- compiling with `release` optimization gives expected results for the moment
 - [x] Fix character controller collisions
-- [x] Fix platform movements
+- [ ] Fix platform movements (completely)
+- [ ] Fix developer console display
 
 ### Roadmap:
 - [ ] Get basic gameplay engine working, test some assets against it

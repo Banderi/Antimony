@@ -296,3 +296,6 @@ paket-files/
 # JetBrains Rider
 .idea/
 *.sln.iml
+old_GNU3.md
+ext/FBXSDK/lib/x86/libfbxsdk-static.lib
+ext/FBXSDK/lib/x86/libfbxsdk-static_d.lib
