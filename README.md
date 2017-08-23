@@ -1,4 +1,4 @@
-![Antimony](http://i.imgur.com/y2NENkt.png)
+![Antimony](http://i.imgur.com/gnDWjMN.png)
 
 | Continuous Integration    | Last build    |
 | ------------- |:-------------:|
