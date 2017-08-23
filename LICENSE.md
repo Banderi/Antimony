@@ -24,7 +24,7 @@ conditions are accepted:
   
 * Note the author or the official repo if you found a bug or fix to one
 
-  Sharing modification of parts of the software provided, or suggestions in
+  Sharing modifications of parts of the software provided, or suggestions in
   regards to features or parts of the code, that would prove beneficial to bug
   fixing or completion to unfinished, broken or planned features of the
   software is greatly incouraged and appreciated.
