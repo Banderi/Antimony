@@ -16,10 +16,8 @@ void Asset::loadFBX(std::wstring file, float3 s)
 	FbxScene *scene = FbxScene::Create(Antimony::FBXManager, fileFBX);
 	if (LoadFBXFile(file, Antimony::FBXManager, Antimony::FBXImporter, scene))
 	{
-		m_geometry = GetVertexCompound(GetFBXMesh(scene).at(0)); // get mesh data from first (root node) mesh in the scene
-
-		m_animcontroller.initialize(scene, 10.0f);
-		//GetSkeleton(scene->GetRootNode(), &m_skeleton, NULL, 0);
+		m_geometry = GetVertexCompound(GetFBXMesh(scene).at(0));	// get mesh data from first (root node) mesh in the scene
+		m_animcontroller.initialize(scene);							// initialize animation controller
 
 		auto as = 325;
 	}
@@ -46,8 +44,6 @@ void Asset::draw(mat *mat_world, bool debug)
 	mat w = s * r * *mat_world;
 
 	DrawMesh(&m_geometry, &w);
-
-	PoseTRS null;
 
 	if (debug || true)
 	{
