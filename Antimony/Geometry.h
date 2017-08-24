@@ -159,10 +159,6 @@ public:
 
 unsigned long RGBA2DWORD(int iR, int iG, int iB, int iA);
 
-//double CubicInterpolate(double y0, double y1, double y2, double y3, double mu);
-//float3 CubicInterpolate(float3 y0, float3 y1, float3 y2, float3 y3, double mu);
-template<typename T> T CubicInterpolate(T y0, T y1, T y2, T y3, double mu);
-
 mat TransposeMatrix(const mat &mIn);
 float3 MatToFloat3(mat *m);
 
@@ -171,28 +167,6 @@ mat HingeBillboard(float3 p1, float3 p2, float3 pos);
 mat FreeBillboard(float3 cam, float3 pos, float3 up, mat *view);
 
 void CalculateSmoothNormals(VERTEX_MAIN vin[], UINT vcount, UINT iin[], UINT icount, std::vector<std::vector<float3>> *normalgroups, bool surf_weighting = false, bool ang_weighting = true);
-
-//template <typename T> HRESULT Antimony::FillBuffer(ID3D11Device *dev, ID3D11DeviceContext *devcon, ID3D11Buffer **out, T in, UINT size)
-//{
-//	HRESULT hr;
-//
-//	D3D11_MAPPED_SUBRESOURCE ms;
-//	hr = devcon->Map(*out, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms);
-//	if (!handleErr(&hr, HRH_BUFFER_MAPPING, hr))
-//		return hr;
-//	D3D11_BUFFER_DESC bd;
-//	(*out)->GetDesc(&bd);
-//	UINT buffsize = bd.ByteWidth;
-//	if (size > buffsize)
-//	{
-//		handleErr(&hr, HRH_BUFFER_OVERFLOW, DISP_E_BUFFERTOOSMALL);
-//		return DISP_E_BUFFERTOOSMALL;
-//	}
-//	memcpy(ms.pData, in, size);
-//	devcon->Unmap(*out, NULL);
-//
-//	return S_OK;
-//}
 
 // TODO: Make drawing functions independent from shaders
 

@@ -14,6 +14,7 @@ struct Joint
 	Joint *parent;
 	FbxNode* node;
 	mat bind_pose;
+	mat transform;
 	float length;
 	bool is_leaf;					// Set to 1 for a leaf, 0 for a branch.
 
@@ -30,6 +31,7 @@ class Skeleton
 public:
 	std::vector<Joint> joints_hierarchy;
 	std::vector<Joint*> joints_sequential;
+	std::vector<mat*> transform_sequential;
 	bool valid;
 
 	void initialize(FbxNode *node, Joint *parent, int depth);
@@ -69,10 +71,12 @@ public:
 	UINT next_anim;
 	bool reversed;
 	double time;
+	double prev_time;
 
 	void initialize(FbxScene *scene);
 	void update(double delta);
-	mat getMat(int index);
+	void updateSkeleton(UINT index);
+	mat getMat(UINT index);
 
 	bool loadCached(std::wstring file);
 	bool saveCached(std::wstring file);
@@ -82,7 +86,8 @@ public:
 		current_anim = 0;
 		next_anim = 0;
 		reversed = false;
-		time = 0;
+		time = -1;
+		prev_time = -1;
 	}
 };
 

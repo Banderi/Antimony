@@ -24,7 +24,7 @@ public:
 	TextureBundle getTextures();
 
 	void draw(mat *mat_world = &mat_world, bool debug = false);
-	void drawSkeleton(mat *mat_world, mat *mat_parent, Joint *node, bool root);
+	void drawSkeleton(mat *mat_world, bool names);
 
 	void update(double delta);
 

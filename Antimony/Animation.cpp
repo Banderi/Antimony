@@ -29,17 +29,15 @@ void Skeleton::initialize(FbxNode *node, Joint *parent, int depth)
 
 		//siblings->resize(siblings->size() + 1);			// add a new empty joint to the list to fill later
 		//current = &siblings->back();						// select the newly created container as current joint
-		auto cname = node->GetName();
-		newjoint.name = cc_wstr(cname);
 
-		//newjoint.parent = parent;							// DOESN'T WORK
+		newjoint.name = cc_wstr(node->GetName());
 
 		FbxAMatrix matrix = parent ? node->EvaluateLocalTransform() : node->EvaluateGlobalTransform();
 		newjoint.bind_pose = FbxToMat(&matrix);
+		newjoint.transform = FbxToMat(&matrix);
 
 		siblings->push_back(newjoint);
 		current = &siblings->back();
-		//skeleton->joints_sequential.push_back(current);	// DOESN'T WORK
 
 		depth++;
 	}
@@ -47,12 +45,7 @@ void Skeleton::initialize(FbxNode *node, Joint *parent, int depth)
 	// iterate trough children
 	for (int i = 0; i < node->GetChildCount(); i++)
 	{
-		FbxNode *child = node->GetChild(i);
-		initialize(child, current, depth);
-		/*if (process_node)
-		GetSkeleton(child, skeleton, current, depth);
-		else
-		GetSkeleton(child, skeleton, NULL, depth);*/
+		initialize(node->GetChild(i), current, depth);
 	}
 }
 bool Skeleton::validate()
@@ -73,6 +66,7 @@ bool Skeleton::buildSequentialVector(std::vector<Joint> *branch, Joint *parent)
 	{
 		branch->at(i).parent = parent;
 		joints_sequential.push_back(&branch->at(i));
+		transform_sequential.push_back(&branch->at(i).transform);
 		branch->at(i).index = joints_sequential.size()-1;
 		buildSequentialVector(&branch->at(i).children, &branch->at(i));
 	}
@@ -161,8 +155,26 @@ void AnimationController::update(double delta)
 
 	if (time < 0)	// dunno how it'd happen, but why not
 		time = 0;
+
+
+	if (time != prev_time)
+	{
+		updateSkeleton(0);
+	}
 }
-mat AnimationController::getMat(int index)
+void AnimationController::updateSkeleton(UINT index)
+{
+	Joint *joint = skeleton.joints_sequential.at(index);
+
+	joint->transform = getMat(index);
+
+	if (joint->parent)
+		joint->transform *= joint->parent->transform;
+
+	for (UINT i = 0; i < joint->children.size(); i++)
+		updateSkeleton(joint->children.at(i).index);
+}
+mat AnimationController::getMat(UINT index)
 {
 	mat xmm;
 

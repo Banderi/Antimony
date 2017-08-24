@@ -182,48 +182,6 @@ unsigned long RGBA2DWORD(int iR, int iG, int iB, int iA)
 	return ((iA * 256 + iB) * 256 + iG) * 256 + iR;
 }
 
-//double CubicInterpolate(double y0, double y1, double y2, double y3, double mu)
-//{
-//	double a0, a1, a2, a3, mu2;
-//
-//	mu2 = mu*mu;
-//	a0 = y3 - y2 - y0 + y1;
-//	a1 = y0 - y1 - a0;
-//	a2 = y2 - y0;
-//	a3 = y1;
-//
-//	return(a0*mu*mu2 + a1*mu2 + a2*mu + a3);
-//}
-//float3 CubicInterpolate(float3 y0, float3 y1, float3 y2, float3 y3, double mu)
-//{
-//	float3 a0, a1, a2, a3;
-//	double mu2;
-//
-//	mu2 = mu*mu;
-//	a0 = y3 - y2 - y0 + y1;
-//	a1 = y0 - y1 - a0;
-//	a2 = y2 - y0;
-//	a3 = y1;
-//
-//	return(a0*mu*mu2 + a1*mu2 + a2*mu + a3);
-//}
-template<typename T> T CubicInterpolate(T y0, T y1, T y2, T y3, double mu)
-{
-	T a0, a1, a2, a3;
-	double mu2;
-
-	mu2 = mu*mu;
-	a0 = y3 - y2 - y0 + y1;
-	a1 = y0 - y1 - a0;
-	a2 = y2 - y0;
-	a3 = y1;
-
-	return(a0*mu*mu2 + a1*mu2 + a2*mu + a3);
-}
-template double CubicInterpolate<double>(double y0, double y1, double y2, double y3, double mu);
-template float3 CubicInterpolate<float3>(float3 y0, float3 y1, float3 y2, float3 y3, double mu);
-template Quaternion CubicInterpolate<Quaternion>(Quaternion y0, Quaternion y1, Quaternion y2, Quaternion y3, double mu);
-
 mat TransposeMatrix(const mat &mIn)
 {
 	mat mat_temp;

@@ -47,7 +47,7 @@ void Asset::draw(mat *mat_world, bool debug)
 
 	if (debug || true)
 	{
-		drawSkeleton(mat_world, &mat_identity, &m_animcontroller.skeleton.joints_hierarchy.at(0), true);
+		drawSkeleton(mat_world, false);
 
 		/*auto sh_temp = sh_current;
 		Antimony::setShader(SHADERS_PLAIN);
@@ -71,56 +71,49 @@ void Asset::draw(mat *mat_world, bool debug)
 		Antimony::setShader(sh_temp);*/
 	}
 }
-void Asset::drawSkeleton(mat *mat_world, mat *mat_parent, Joint *node, bool root)
+void Asset::drawSkeleton(mat *mat_world, bool names)
 {
 	auto sh_temp = sh_current;
 	Antimony::setShader(SHADERS_PLAIN);
 
-	if (m_animcontroller.skeleton.valid)
+	if (!m_animcontroller.skeleton.valid)
+		return;
+
+	for (UINT i = 0; i < m_animcontroller.skeleton.joints_sequential.size(); i++)
 	{
-		if (root)
-		{
-			auto p = WorldToScreen(V3Transform(v3_origin, *mat_world), &(mat_view * mat_proj));
-			if (p.z > 0)
-				Draw2DDot(float2(p.x, p.y), 4, COLOR_BLUE);
-			mat_parent = &mat_identity;
-		}
-		bool tip = false;
-		if (node->children.size() == 0)
-			tip = true;
+		Joint *joint = m_animcontroller.skeleton.joints_sequential.at(i);
+		mat mat_parent = joint->parent ? joint->parent->transform : mat_identity;
+		mat mat_bone = joint->transform;
+		/*mat mat_parent = joint->parent ? *m_animcontroller.skeleton.transform_sequential.at(joint->parent->index) : mat_identity;
+		mat mat_bone = *m_animcontroller.skeleton.transform_sequential.at(i);*/
 
-		//PoseTRS pose = node->bind_pose;
-		//auto bone_length = node->length;
-		//PoseTRS pose = m_animcontroller.getPose(node->index);		// get local joint transform from animation controller
-		mat mat_bone = m_animcontroller.getMat(node->index) * *mat_parent;		// global joint transform matrix
-		//pose.matrix(mat_parent);
-		//mat_bone = node->bind_pose_mat * *mat_parent;
+		mat s = MScalVector(m_scale * 0.01);									// asset's scale
+		mat w = s * *mat_world;													// final world transform
 
-		mat s = MScalVector(m_scale) * MScalVector(float3(0.01));	// asset's scale
-		mat w = s * *mat_world;										// final world transform
-
-		auto p_parent = WorldToScreen(V3Transform(v3_origin, *mat_parent * w), &(mat_view * mat_proj));
+		auto p_parent = WorldToScreen(V3Transform(v3_origin, mat_parent * w), &(mat_view * mat_proj));
 		auto p_origin = WorldToScreen(V3Transform(v3_origin, mat_bone * w), &(mat_view * mat_proj));
 		auto p_offset = WorldToScreen(V3Transform(v3_origin, MTranslation(0, 0.1, 0) * mat_bone * w), &(mat_view * mat_proj));
 
-		if (p_origin.z > 0)
+		if (!joint->parent)
 		{
-			if (tip)
-				Draw2DDot(float2(p_origin.x, p_origin.y), 4, COLOR_GREEN);						// green dot for dangling bone
+			auto p = WorldToScreen(V3Transform(v3_origin, *mat_world), &(mat_view * mat_proj));
+			if (p.z > 0)
+				Draw2DDot(float2(p.x, p.y), 4, COLOR_BLUE);									// blue dot for origin
+		}
+		else
+		{
+			if (joint->children.size() == 0)
+			{
+				Draw2DDot(float2(p_origin.x, p_origin.y), 4, COLOR_GREEN);					// green dot for dangling bone
+			}
 			else
 			{
-				Draw2DDot(float2(p_origin.x, p_origin.y), 4, COLOR_BLUE);						// blue dot for joint between bones
-				if (p_offset.z > 0)
-					Antimony::Consolas.render(node->name.c_str(), 12, Antimony::display.right + p_offset.x + 1, Antimony::display.bottom + p_offset.y + 1, RGBA2DWORD(128, 128, 255, 255), NULL);
+				Draw2DDot(float2(p_origin.x, p_origin.y), 4, COLOR_BLUE);					// blue dot for joint between bones
+				if (p_offset.z > 0 && names)
+					Antimony::Consolas.render(joint->name.c_str(), 12, Antimony::display.right + p_offset.x + 1, Antimony::display.bottom + p_offset.y + 1, RGBA2DWORD(128, 128, 255, 255), NULL);
 			}
 
-			if (!root && p_parent.z > 0)
-				Draw2DLineThin((float2)p_parent, (float2)p_origin, COLOR_BLUE, COLOR_BLUE);		// bone (blue line)
-		}
-
-		for (UINT i = 0; i < node->children.size(); i++)
-		{
-			drawSkeleton(mat_world, &mat_bone, &node->children.at(i), false);					// draw children recursively
+			Draw2DLineThin((float2)p_parent, (float2)p_origin, COLOR_BLUE, COLOR_BLUE);		// bone (blue line)
 		}
 	}
 

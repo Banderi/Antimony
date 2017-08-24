@@ -33,18 +33,6 @@ void Antimony::step()
 		ShowCursor(false);
 		ClipCursor(&window_main.plane);
 	}
-	/*static double program_life = 0;
-	life += delta;
-
-	if (life > 10)
-	{
-		if (GetFocus() == window_main.hWnd)
-		{
-			ShowCursor(false);
-			ClipCursor(&window_main.plane);
-		}
-		life = 0;
-	}*/
 
 	updateGameState();
 
@@ -309,8 +297,6 @@ void Antimony::updateAI(double delta)
 }
 void Antimony::updatePhysics(double delta)
 {
-	// TODO: Implement physics
-
 	btWorld->stepSimulation(delta, 10, 1.f / 240.f);
 }
 void Antimony::updateWorld(double delta)

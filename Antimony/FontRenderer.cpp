@@ -53,6 +53,7 @@ float FontWrapper::getWidth(const wchar_t *str, float s, RECT r, UINT f)
 	{
 		// TODO: Sprite rendering
 	}
+	return 0.0f;
 }
 void FontWrapper::render(const wchar_t *str, float s, float x, float y, UINT32 c, UINT flags, ID3D11DeviceContext *con)
 {
