@@ -22,7 +22,7 @@ conditions are accepted:
   of the unmodified example code in the official repository, or the unmodified
   example assets distributed with it is not allowed.
   
-* Note the author or the official repo if you found a bug or fix to one
+* Note the author or the official repo if you find a bug or fix to one
 
   Sharing modifications of parts of the software provided, or suggestions in
   regards to features or parts of the code, that would prove beneficial to bug
