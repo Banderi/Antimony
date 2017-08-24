@@ -136,4 +136,7 @@ HRESULT Antimony::logVolatile(std::wstring string)
 		return S_OK;
 }
 
-std::wofstream Antimony::logFile;
+namespace Antimony
+{
+	std::wofstream logFile;
+}

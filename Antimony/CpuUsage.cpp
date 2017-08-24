@@ -150,9 +150,13 @@ CpuUsage::CpuUsage(void)
 	}
 }
 
-CpuUsage Antimony::cpuUsage;
 
-DWORDLONG Antimony::totalPhysMem, Antimony::physMemAvail;
-ULONG_PTR Antimony::physMemUsedByMe;
-MEMORYSTATUSEX Antimony::memInfo;
-PROCESS_MEMORY_COUNTERS_EX Antimony::pmc;
+namespace Antimony
+{
+	CpuUsage cpuUsage;
+
+	DWORDLONG totalPhysMem, physMemAvail;
+	ULONG_PTR physMemUsedByMe;
+	MEMORYSTATUSEX memInfo;
+	PROCESS_MEMORY_COUNTERS_EX pmc;
+}

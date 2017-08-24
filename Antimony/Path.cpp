@@ -4,6 +4,7 @@
 #include "Path.h"
 
 ///
+
 void Antimony::BuildPaths()
 {
 	WCHAR *temp = new WCHAR[MAX_PATH];

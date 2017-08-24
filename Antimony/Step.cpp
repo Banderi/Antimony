@@ -18,8 +18,7 @@ char BoolToSign(bool b)
 	return 0;
 }
 
-double Antimony::delta = 0;
-float Antimony::worldSpeed = 1;
+///
 
 void Antimony::step()
 {
@@ -406,4 +405,10 @@ double Antimony::getTick()
 double Antimony::getDelta()
 {
 	return delta;
+}
+
+namespace Antimony
+{
+	double delta = 0;
+	float worldSpeed = 1;
 }

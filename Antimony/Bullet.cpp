@@ -365,16 +365,6 @@ btVector3 btQuaternionToEuler(const btQuaternion &TQuat)
 
 ///
 
-btDiscreteDynamicsWorld* Antimony::btWorld;
-std::vector<btObject*> Antimony::physEntities;
-
-std::map<const btCollisionObject*, std::vector<btManifoldPoint*>> Antimony::m_objectsCollisionPoints;
-std::map<const btCollisionObject*, std::vector<btPersistentManifold*>> Antimony::m_objectsCollisions;
-
-btDiscreteDynamicsWorld* Antimony::getBtWorld()
-{
-	return btWorld;
-}
 void Antimony::tickCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep)
 {
 	m_objectsCollisions.clear();
@@ -408,12 +398,25 @@ void Antimony::addPhysEntity(btObject *obj)
 {
 	physEntities.push_back(obj);
 }
-std::vector<btObject*>* Antimony::getEntities()
-{
-	return &physEntities;
-}
 void Antimony::resetPhysics()
 {
 	for (int i = 0; i < physEntities.size(); i++)
 		physEntities.at(i)->reset();
+}
+//btDiscreteDynamicsWorld* Antimony::getBtWorld()
+//{
+//	return btWorld;
+//}
+//std::vector<btObject*>* Antimony::getEntities()
+//{
+//	return &physEntities;
+//}
+
+namespace Antimony
+{
+	btDiscreteDynamicsWorld* btWorld;
+	std::vector<btObject*> physEntities;
+
+	std::map<const btCollisionObject*, std::vector<btManifoldPoint*>> m_objectsCollisionPoints;
+	std::map<const btCollisionObject*, std::vector<btPersistentManifold*>> m_objectsCollisions;
 }

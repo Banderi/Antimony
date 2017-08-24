@@ -389,5 +389,8 @@ VertexCompound GetVertexCompound(FbxMesh *mesh)
 	return compound;
 }
 
-FbxManager* Antimony::FBXManager;
-FbxImporter* Antimony::FBXImporter;
+namespace Antimony
+{
+	FbxManager *FBXManager;
+	FbxImporter *FBXImporter;
+}

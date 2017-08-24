@@ -15,8 +15,6 @@
 //#include "FBX.h"
 #include "Frame.h"
 
-#pragma comment (lib, "Shlwapi.lib")
-
 ///
 
 using namespace std;
@@ -64,18 +62,18 @@ void RenderEntities()
 	Antimony::setShader(SHADERS_PLAIN3D);
 
 	// entities
-	for (unsigned int i = 0; i < Antimony::getEntities()->size(); i++)
+	for (unsigned int i = 0; i < Antimony::physEntities.size(); i++)
 	{
-		if (Antimony::getEntities()->at(i)->getKind() == BTOBJECT_PLAYER)
+		if (Antimony::physEntities.at(i)->getKind() == BTOBJECT_PLAYER)
 			continue;
-		mat_world = Antimony::getEntities()->at(i)->getMatTransform();
+		mat_world = Antimony::physEntities.at(i)->getMatTransform();
 		color c;
-		int state = Antimony::getEntities()->at(i)->getRigidBody()->getActivationState();
+		int state = Antimony::physEntities.at(i)->getRigidBody()->getActivationState();
 
 
-		if (Antimony::getEntities()->at(i)->getKind() == BTOBJECT_STATICWORLD)
+		if (Antimony::physEntities.at(i)->getKind() == BTOBJECT_STATICWORLD)
 			c = color(0.3, 0.3, 0.3, 1);
-		else if (Antimony::getEntities()->at(i)->getKind() == BTOBJECT_KINEMATICWORLD)
+		else if (Antimony::physEntities.at(i)->getKind() == BTOBJECT_KINEMATICWORLD)
 			c = color(0.6, 0.0, 0.0, 1);
 		else
 		{
@@ -104,16 +102,16 @@ void RenderEntities()
 			}
 		}
 
-		switch (Antimony::getEntities()->at(i)->getPrimitive())
+		switch (Antimony::physEntities.at(i)->getPrimitive())
 		{
 			case BTSOLID_BOX:
 			{
-				Draw3DBox(Antimony::getEntities()->at(i)->getPrimitiveSize(), c);
+				Draw3DBox(Antimony::physEntities.at(i)->getPrimitiveSize(), c);
 				break;
 			}
 			case BTSOLID_CYLINDER:
 			{
-				Draw3DBox(Antimony::getEntities()->at(i)->getPrimitiveSize(), c);
+				Draw3DBox(Antimony::physEntities.at(i)->getPrimitiveSize(), c);
 				break;
 			}
 			case BTSOLID_INFPLANE:
@@ -122,7 +120,7 @@ void RenderEntities()
 			}
 			default:
 			{
-				Draw3DBox(Antimony::getEntities()->at(i)->getPrimitiveSize(), c);
+				Draw3DBox(Antimony::physEntities.at(i)->getPrimitiveSize(), c);
 				break;
 			}
 		}

@@ -795,8 +795,11 @@ void Antimony::releaseFiles()
 	logFile.close();
 }
 
-WindowParams Antimony::window_main;
-DisplayParams Antimony::display;
-AudioParams Antimony::audio;
-GameParams Antimony::game;
-ControlParams Antimony::controls;
+namespace Antimony
+{
+	WindowParams window_main;
+	DisplayParams display;
+	AudioParams audio;
+	GameParams game;
+	ControlParams controls;
+}

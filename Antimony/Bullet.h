@@ -104,24 +104,18 @@ public:
 	DXDebugDrawer();
 	virtual ~DXDebugDrawer();
 
-	virtual void   drawLine(const btVector3& from, const btVector3& to, const btVector3& fromColor, const btVector3& toColor);
-
-	virtual void   drawLine(const btVector3& from, const btVector3& to, const btVector3& col);
-
-	virtual void   drawSphere(const btVector3& p, btScalar radius, const btVector3& col);
-
-	virtual void   drawTriangle(const btVector3& a, const btVector3& b, const btVector3& c, const btVector3& col, btScalar alpha);
-
-	virtual void   drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& col);
-
-	virtual void   reportErrorWarning(const char* warningString);
-
-	virtual void   draw3dText(const btVector3& location, const char* textString);
-
-	virtual void   setDebugMode(int debugMode);
-
-	virtual int    getDebugMode() const { return m_debugMode; }
-
+	virtual void drawLine(const btVector3& from, const btVector3& to, const btVector3& fromColor, const btVector3& toColor);
+	virtual void drawLine(const btVector3& from, const btVector3& to, const btVector3& col);
+	virtual void drawSphere(const btVector3& p, btScalar radius, const btVector3& col);
+	virtual void drawTriangle(const btVector3& a, const btVector3& b, const btVector3& c, const btVector3& col, btScalar alpha);
+	virtual void drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& col);
+	virtual void reportErrorWarning(const char* warningString);
+	virtual void draw3dText(const btVector3& location, const char* textString);
+	virtual void setDebugMode(int debugMode);
+	virtual int getDebugMode() const
+	{
+		return m_debugMode;
+	}
 };
 
 ///
@@ -145,10 +139,10 @@ namespace Antimony
 	extern std::map<const btCollisionObject*, std::vector<btManifoldPoint*>> m_objectsCollisionPoints;
 	extern std::map<const btCollisionObject*, std::vector<btPersistentManifold*>> m_objectsCollisions;
 
-	btDiscreteDynamicsWorld* getBtWorld();
 	void tickCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep);
 	void staticCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep);
 	void addPhysEntity(btObject *obj);
-	std::vector<btObject*>* getEntities();
 	void resetPhysics();
+	/*btDiscreteDynamicsWorld* getBtWorld();
+	std::vector<btObject*>* getEntities();*/
 }

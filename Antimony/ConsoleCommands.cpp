@@ -1,4 +1,4 @@
-#pragma warning (disable : 4101)		// unregerenced local variable
+#pragma warning (disable : 4101)		// unreferenced local variable
 
 
 #include <Shlwapi.h>	// required for StrToIntExW				(Console::send)

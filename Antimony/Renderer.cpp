@@ -28,6 +28,8 @@ color BtnStateColor(Input bt)
 	}
 }
 
+///
+
 void Antimony::render_Debug()
 {
 	//devcon->IASetVertexBuffers(0, 1, &vertexbuffer, (UINT*)sizeof(VERTEX_BASIC), (UINT*)(0));

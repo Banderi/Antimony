@@ -196,5 +196,8 @@ bool RenderedText::update(bool accessed)
 		return FCACHE_OPERATIONAL;
 }
 
-FontWrapper Antimony::Arial, Antimony::Consolas;
-IFW1Factory* Antimony::FW1Factory;
+namespace Antimony
+{
+	FontWrapper Arial, Consolas;
+	IFW1Factory* FW1Factory;
+}

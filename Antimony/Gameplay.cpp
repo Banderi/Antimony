@@ -2,9 +2,6 @@
 
 ///
 
-Player Antimony::player;
-Camera Antimony::camera_main;
-
 Player* Antimony::getPlayer()
 {
 	return &player;
@@ -49,8 +46,6 @@ void Antimony::attachCamera(float3 pos, bool zoom, bool dolly)
 	camera_main.dolly = 1;
 }
 
-unsigned char Antimony::subSystem;
-
 void Antimony::setSubSystem(unsigned char subs)
 {
 	subSystem = subs;
@@ -67,3 +62,10 @@ bool Antimony::ifSubSystem(unsigned char subs)
 		return false;
 }
 
+namespace Antimony
+{
+	Player player;
+	Camera camera_main;
+
+	unsigned char subSystem;
+}

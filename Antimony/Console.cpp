@@ -365,4 +365,7 @@ UINT32 ColorCode(unsigned char c)
 	}
 }
 
-Console Antimony::devConsole;
+namespace Antimony
+{
+	Console devConsole;
+}

@@ -9,27 +9,7 @@
 #include "..\Antimony\Gameplay.h"
 #include "..\Antimony\Gameflow.h"
 
-//#if _WIN32 || _WIN64
-//#if _WIN64
-//#define ENVIRONMENT64
-//#else
-//#define ENVIRONMENT32
-//#endif
-//#endif
-//
-//#ifdef ENVIRONMENT32
-//#ifdef _DEBUG
-//#pragma comment (lib, "..\\ext\\FBXSDK\\lib\\x86\\libfbxsdk-static_d.lib")
-//#else
-//#pragma comment (lib, "..\\ext\\FBXSDK\\lib\\x86\\libfbxsdk.lib")
-//#endif
-//#elif defined(ENVIRONMENT64)
-//#ifdef _DEBUG
-//#pragma comment (lib, "..\\ext\\FBXSDK\\lib\\x64\\libfbxsdk-static_d.lib")
-//#else
-//#pragma comment (lib, "..\\ext\\FBXSDK\\lib\\x64\\libfbxsdk-static.lib")
-//#endif
-//#endif
+#pragma comment (lib, "Shlwapi.lib")
 
 ///
 
@@ -141,13 +121,13 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 					{
 						Antimony::game.dbg_entityfollow--;
 						if (Antimony::game.dbg_entityfollow < 0)
-							Antimony::game.dbg_entityfollow = Antimony::getEntities()->size() - 1;
+							Antimony::game.dbg_entityfollow = Antimony::physEntities.size() - 1;
 						break;
 					}
 					case VK_OEM_PERIOD:
 					{
 						Antimony::game.dbg_entityfollow++;
-						if (Antimony::game.dbg_entityfollow > Antimony::getEntities()->size() - 1)
+						if (Antimony::game.dbg_entityfollow > Antimony::physEntities.size() - 1)
 							Antimony::game.dbg_entityfollow = 0;
 						break;
 					}
@@ -188,37 +168,37 @@ void Temp_StartingFiles()
 
 	// test walls
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(-3, 1, -1)));
-	phys_obj = new btObject(BTOBJECT_STATICWORLD, BTSOLID_BOX, 0.0f, float3(0.3, 2, 5), ms, &btVector3(0, 0, 0), Antimony::getBtWorld());
+	phys_obj = new btObject(BTOBJECT_STATICWORLD, BTSOLID_BOX, 0.0f, float3(0.3, 2, 5), ms, &btVector3(0, 0, 0), Antimony::btWorld);
 	Antimony::addPhysEntity(phys_obj);
 
 	// moving platforms
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 0.5, 0)));
-	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), ms, &btVector3(0, 0, 0), Antimony::getBtWorld());
+	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), ms, &btVector3(0, 0, 0), Antimony::btWorld);
 	Antimony::addPhysEntity(phys_obj);
 
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 1, 0)));
-	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), ms, &btVector3(0, 0, 0), Antimony::getBtWorld());
+	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), ms, &btVector3(0, 0, 0), Antimony::btWorld);
 	Antimony::addPhysEntity(phys_obj);
 
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 2, 2)));
-	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), ms, &btVector3(0, 0, 0), Antimony::getBtWorld());
+	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), ms, &btVector3(0, 0, 0), Antimony::btWorld);
 	Antimony::addPhysEntity(phys_obj);
 
 	// test cubes
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 6, 0)));
-	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, Antimony::getBtWorld());
+	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, Antimony::btWorld);
 	Antimony::addPhysEntity(phys_obj);
 
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 40, 0)));
-	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, Antimony::getBtWorld());
+	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, Antimony::btWorld);
 	Antimony::addPhysEntity(phys_obj);
 
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 80, 0)));
-	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, Antimony::getBtWorld());
+	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, Antimony::btWorld);
 	Antimony::addPhysEntity(phys_obj);
 
 	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 4, 2)));
-	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, Antimony::getBtWorld());
+	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, Antimony::btWorld);
 	Antimony::addPhysEntity(phys_obj);
 
 	Antimony::getPlayer()->asset.loadFBX(L"chibi_wolf_anim.fbx", float3(0.2));
