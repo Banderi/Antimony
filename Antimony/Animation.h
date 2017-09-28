@@ -18,6 +18,8 @@ struct Joint
 	float length;
 	bool is_leaf;					// Set to 1 for a leaf, 0 for a branch.
 
+	void update(mat *t);
+
 	Joint()
 	{
 		index = -1;

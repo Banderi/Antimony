@@ -22,7 +22,7 @@
 #ifdef ENVIRONMENT32
 	#ifdef FBXSDK_SHARED
 		#ifdef _DEBUG
-			#pragma comment (lib, "..\\ext\\FBXSDK\\lib\\x86\\libfbxsdk_d.lib")
+			#pragma comment (lib, "..\\ext\\FBXSDK\\lib\\x86\\libfbxsdk.lib")
 		#else
 			#pragma comment (lib, "..\\ext\\FBXSDK\\lib\\x86\\libfbxsdk.lib")
 		#endif

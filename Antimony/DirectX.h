@@ -1,113 +1,131 @@
 #pragma once
 
-#include <d3d11_1.h>
-#pragma comment (lib, "d3d11.lib")
-#pragma comment(lib, "dxgi.lib")
+#define DX11
+#define SIMPLEMATH
 
-#ifdef D3DX
+#ifdef DX9
+	// no
+#elif defined(DX11)
 
-#include <d3dx11.h>
-#include <d3dx10.h>
+	#include <d3d11_1.h>
+	#pragma comment (lib, "d3d11.lib")
+	#pragma comment(lib, "dxgi.lib")
 
-#pragma comment (lib, "d3dx11.lib")
-#pragma comment (lib, "d3dx10.lib")
+	#ifdef D3DX			// D3DX library (deprecated)
 
-typedef float2 float2
-typedef float3 float3
-typedef D3DXVECTOR4 float4
-typedef D3DXMATRIX mat
-typedef D3DXCOLOR color
+		#include <d3dx11.h>
+		#include <d3dx10.h>
 
-#else
+		#pragma comment (lib, "d3dx11.lib")
+		#pragma comment (lib, "d3dx10.lib")
 
-#include <D3Dcompiler.h>
+		typedef float2 float2
+		typedef float3 float3
+		typedef D3DXVECTOR4 float4
+		typedef D3DXMATRIX mat
+		typedef D3DXCOLOR color
 
-#include "SimpleMath.h"
+	#elif defined(SIMPLEMATH)	// SimpleMath library
 
-#pragma comment (lib, "D3DCompiler.lib")
+		#include <D3Dcompiler.h>
 
-///
+		#define _XM_NO_INTRINSICS_
+		#include "SimpleMath.h"
 
-using namespace DirectX;
-using namespace DirectX::SimpleMath;
+		#pragma comment (lib, "D3DCompiler.lib")
 
-typedef float RGBA[4];
-typedef Vector4 color;
-typedef XMVECTOR vec;
-typedef XMMATRIX mat;
+		///
 
-typedef Vector2 float2;
-typedef Vector3 float3;
-typedef Vector4 float4;
+		using namespace DirectX;
+		using namespace DirectX::SimpleMath;
 
-#define V3Transform XMVector3Transform
-#define V3Cross XMVector3Cross
-#define V3Dot XMVector3Dot
-#define V3Normalize XMVector3Normalize
-#define V3Angle XMVector3AngleBetweenVectors
+		typedef float RGBA[4];
+		typedef Vector4 color;
+		typedef XMVECTOR vec;
+		typedef XMMATRIX mat;
 
-#define MQuatSlerp XMQuaternionSlerp
-#define MQuatSquad XMQuaternionSquad
-#define MQuatSquadS XMQuaternionSquadSetup
+		typedef Vector2 float2;
+		typedef Vector3 float3;
+		typedef Vector4 float4;
 
-#define MSet XMMatrixSet
+		#define V3Transform XMVector3Transform
+		#define V3Cross XMVector3Cross
+		#define V3Dot XMVector3Dot
+		#define V3Normalize XMVector3Normalize
+		#define V3Angle XMVector3AngleBetweenVectors
 
-#define MTranslation XMMatrixTranslation
-#define MTranslVector XMMatrixTranslationFromVector
-#define MScaling XMMatrixScaling
-#define MScalVector XMMatrixScalingFromVector
-#define MRotX XMMatrixRotationX
-#define MRotY XMMatrixRotationY
-#define MRotZ XMMatrixRotationZ
-#define MRotRPY XMMatrixRotationRollPitchYaw
-#define MRotRPYVector XMMatrixRotationRollPitchYawFromVector
-#define MRotNormal XMMatrixRotationNormal
-#define MRotAxis XMMatrixRotationAxis
-#define MRotQuaternion XMMatrixRotationQuaternion
+		#define MQuatSlerp XMQuaternionSlerp
+		#define MQuatSquad XMQuaternionSquad
+		#define MQuatSquadS XMQuaternionSquadSetup
 
-#define MTransformation XMMatrixTransformation
-#define MTransf2D XMMatrixTransformation2D
-#define MTransfAffine XMMatrixAffineTransformation
-#define MTransfAffine2D XMMatrixAffineTransformation2D
-#define MReflect XMMatrixReflect
-#define MShadow XMMatrixShadow
-#define MIdentity XMMatrixIdentity
-#define MMultiply XMMatrixMultiply
-#define MMultTranspose XMMatrixMultiplyTranspose
-#define MTranspose XMMatrixTranspose
-#define MInverse XMMatrixInverse
-#define MDeterminant XMMatrixDeterminant
-#define MDecompose XMMatrixDecompose
+		#define MSet XMMatrixSet
 
-#define MIsNaN XMMatrixIsNaN
-#define MIsInfinite XMMatrixIsInfinite
-#define MIsIdentity XMMatrixIsIdentity
+		#define MTranslation XMMatrixTranslation
+		#define MTranslVector XMMatrixTranslationFromVector
+		#define MScaling XMMatrixScaling
+		#define MScalVector XMMatrixScalingFromVector
+		#define MRotX XMMatrixRotationX
+		#define MRotY XMMatrixRotationY
+		#define MRotZ XMMatrixRotationZ
+		#define MRotRPY XMMatrixRotationRollPitchYaw
+		#define MRotRPYVector XMMatrixRotationRollPitchYawFromVector
+		#define MRotNormal XMMatrixRotationNormal
+		#define MRotAxis XMMatrixRotationAxis
+		#define MRotQuaternion XMMatrixRotationQuaternion
 
-#define MLookAtLH XMMatrixLookAtLH
-#define MLookAtRH XMMatrixLookAtRH
-#define MLookToLH XMMatrixLookToLH
-#define MLookToRH XMMatrixLookToRH
-#define MPerspLH XMMatrixPerspectiveLH
-#define MPerspRH XMMatrixPerspectiveRH
-#define MPerspFovLH XMMatrixPerspectiveFovLH
-#define MPerspFovRH XMMatrixPerspectiveFovRH
-#define MPerspOffCenterLH XMMatrixPerspectiveOffCenterLH
-#define MPerspOffCenterRH XMMatrixPerspectiveOffCenterRH
-#define MOrthoLH XMMatrixOrthographicLH
-#define MOrthoRH XMMatrixOrthographicRH
-#define MOrthoOffCenterLH XMMatrixOrthographicOffCenterLH
-#define MOrthoOffCenterRH XMMatrixOrthographicOffCenterRH
+		#define MTransformation XMMatrixTransformation
+		#define MTransf2D XMMatrixTransformation2D
+		#define MTransfAffine XMMatrixAffineTransformation
+		#define MTransfAffine2D XMMatrixAffineTransformation2D
+		#define MReflect XMMatrixReflect
+		#define MShadow XMMatrixShadow
+		#define MIdentity XMMatrixIdentity
+		#define MMultiply XMMatrixMultiply
+		#define MMultTranspose XMMatrixMultiplyTranspose
+		#define MTranspose XMMatrixTranspose
+		#define MInverse XMMatrixInverse
+		#define MDeterminant XMMatrixDeterminant
+		#define MDecompose XMMatrixDecompose
 
-#define COLOR_WHITE		color(1,1,1,1)
-#define COLOR_BLACK		color(0,0,0,1)
-#define COLOR_RED		color(1,0,0,1)
-#define COLOR_GREEN		color(0,1,0,1)
-#define COLOR_BLUE		color(0,0,1,1)
+		#define MIsNaN XMMatrixIsNaN
+		#define MIsInfinite XMMatrixIsInfinite
+		#define MIsIdentity XMMatrixIsIdentity
 
-#define MATH_PI (3.14159265358979323846)
+		#define MLookAtLH XMMatrixLookAtLH
+		#define MLookAtRH XMMatrixLookAtRH
+		#define MLookToLH XMMatrixLookToLH
+		#define MLookToRH XMMatrixLookToRH
+		#define MPerspLH XMMatrixPerspectiveLH
+		#define MPerspRH XMMatrixPerspectiveRH
+		#define MPerspFovLH XMMatrixPerspectiveFovLH
+		#define MPerspFovRH XMMatrixPerspectiveFovRH
+		#define MPerspOffCenterLH XMMatrixPerspectiveOffCenterLH
+		#define MPerspOffCenterRH XMMatrixPerspectiveOffCenterRH
+		#define MOrthoLH XMMatrixOrthographicLH
+		#define MOrthoRH XMMatrixOrthographicRH
+		#define MOrthoOffCenterLH XMMatrixOrthographicOffCenterLH
+		#define MOrthoOffCenterRH XMMatrixOrthographicOffCenterRH
 
-///
+		#ifdef _XM_NO_INTRINSICS_
+			#define vector_floats vector4_f32
+		#else
+			#define vector_floats m128_f32
+		#endif
 
-extern int frame_count;
+		#define COLOR_WHITE		color(1,1,1,1)
+		#define COLOR_BLACK		color(0,0,0,1)
+		#define COLOR_RED		color(1,0,0,1)
+		#define COLOR_GREEN		color(0,1,0,1)
+		#define COLOR_BLUE		color(0,0,1,1)
 
+		#define MATH_PI (3.14159265358979323846)
+
+		///
+
+		extern int frame_count;
+
+	#endif
+
+#elif defined(OPENGL)
+#elif defined(VULKAN)
 #endif

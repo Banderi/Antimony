@@ -37,7 +37,7 @@ std::wstring Antimony::FilePath(std::wstring filename)
 	if (!use_absolute_paths)
 		return filename;
 	else
-		fullpath = Antimony::process_workingdir + filename;
+		fullpath = Antimony::process_workingdir + L"\\" + filename;
 	return fullpath;
 }
 

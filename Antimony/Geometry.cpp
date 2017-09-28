@@ -308,17 +308,17 @@ void CalculateSmoothNormals(VERTEX_MAIN vin[], UINT vcount, UINT iin[], UINT ico
 			continue;
 		}
 
-		float angle = XMVector3AngleBetweenVectors((p2 - p1), (p3 - p1)).m128_f32[0];
+		float angle = XMVector3AngleBetweenVectors((p2 - p1), (p3 - p1)).vector_floats[0];
 		float w = (angle);
 		float3 na = n * w;
 		normalgroups->at(iin[f]).push_back(na);
 
-		angle = XMVector3AngleBetweenVectors((p3 - p2), (p1 - p2)).m128_f32[0];
+		angle = XMVector3AngleBetweenVectors((p3 - p2), (p1 - p2)).vector_floats[0];
 		w = (angle);
 		na = n * w;
 		normalgroups->at(iin[f + 1]).push_back(na);
 
-		angle = XMVector3AngleBetweenVectors((p1 - p3), (p2 - p3)).m128_f32[0];
+		angle = XMVector3AngleBetweenVectors((p1 - p3), (p2 - p3)).vector_floats[0];
 		w = (angle);
 		na = n * w;
 		normalgroups->at(iin[f + 2]).push_back(na);
@@ -481,7 +481,7 @@ void Draw2DLineThick(float2 p1, float2 p2, float t, color c1, color c2, color di
 
 	p1.y = -p1.y;
 	p2.y = -p2.y;
-	float dist = *XMVector2Length(p1 - p2).m128_f32;
+	float dist = *XMVector2Length(p1 - p2).vector_floats;
 
 	VERTEX_BASIC vertices[] =
 	{

@@ -7,6 +7,16 @@
 
 ///
 
+void Joint::update(mat *t)
+{
+	transform = *t;
+
+	if (parent)
+	{
+		transform *= parent->transform;
+	}
+}
+
 void Skeleton::initialize(FbxNode *node, Joint *parent, int depth)
 {
 	bool skeleton_found = false;
@@ -159,12 +169,34 @@ void AnimationController::update(double delta)
 
 	if (time != prev_time)
 	{
-		updateSkeleton(0);
+		//updateSkeleton(0);
+
+		for (UINT i = 0; i < skeleton.joints_sequential.size(); i++)
+		{
+			Joint *joint = skeleton.joints_sequential.at(i);
+
+			/*wchar_t buf[64];
+			swprintf_s(buf, L"%p", (void *)joint);
+			Antimony::log(L"Joint: " + std::to_wstring(i) + L" " + joint->name + L" " + std::wstring(buf), CSL_INFO);*/
+
+			joint->update(&getMat(i));
+
+			/*Antimony::log(L" T0", CSL_INFO);
+
+			if (joint->parent)
+			{
+				joint->transform *= joint->parent->transform;
+				Antimony::log(L" T1", CSL_INFO);
+			}*/
+
+			//Antimony::log(L"\n", CSL_INFO);
+		}
 	}
 }
 void AnimationController::updateSkeleton(UINT index)
 {
-	Joint *joint = skeleton.joints_sequential.at(index);
+	Joint *joint = NULL;
+	joint = skeleton.joints_sequential.at(index);
 
 	joint->transform = getMat(index);
 
