@@ -94,7 +94,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		}
 		case WM_KEYDOWN:
 		{
-			if (!Antimony::devConsole.isOpen())
+			if (Antimony::devConsole.isClosed())
 			{
 				switch (wParam)
 				{
@@ -139,7 +139,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 					}
 					case 0x46:
 					{
-						if (!Antimony::devConsole.isOpen())
+						if (Antimony::devConsole.isClosed())
 						{
 							if (Antimony::camera_main.object == nullptr)
 							{
@@ -167,37 +167,37 @@ void Temp_StartingFiles()
 	btObject *phys_obj;
 
 	// test walls
-	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(-3, 1, -1)));
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(-3, 1, -1)));
 	phys_obj = new btObject(BTOBJECT_STATICWORLD, BTSOLID_BOX, 0.0f, float3(0.3, 2, 5), ms, &btVector3(0, 0, 0), Antimony::btWorld);
 	Antimony::addPhysEntity(phys_obj);
 
 	// moving platforms
-	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 0.5, 0)));
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 0.5, 0)));
 	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), ms, &btVector3(0, 0, 0), Antimony::btWorld);
 	Antimony::addPhysEntity(phys_obj);
 
-	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 1, 0)));
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(3, 1, 0)));
 	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), ms, &btVector3(0, 0, 0), Antimony::btWorld);
 	Antimony::addPhysEntity(phys_obj);
 
-	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 2, 2)));
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(3, 2, 2)));
 	phys_obj = new btObject(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), ms, &btVector3(0, 0, 0), Antimony::btWorld);
 	Antimony::addPhysEntity(phys_obj);
 
 	// test cubes
-	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 6, 0)));
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 6, 0)));
 	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, Antimony::btWorld);
 	Antimony::addPhysEntity(phys_obj);
 
-	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 40, 0)));
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 40, 0)));
 	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, Antimony::btWorld);
 	Antimony::addPhysEntity(phys_obj);
 
-	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, 80, 0)));
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 80, 0)));
 	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, Antimony::btWorld);
 	Antimony::addPhysEntity(phys_obj);
 
-	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(3, 4, 2)));
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(3, 4, 2)));
 	phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, Antimony::btWorld);
 	Antimony::addPhysEntity(phys_obj);
 

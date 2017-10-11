@@ -35,8 +35,6 @@
 #define BTSOLID_CYLINDER			0x03
 #define BTSOLID_CAPSULE				0x04
 
-#define WORLD_SCALE 1.0f
-
 ///
 
 extern btVector3 bt_origin;

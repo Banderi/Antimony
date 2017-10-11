@@ -32,6 +32,10 @@ bool Console::isOpen()
 {
 	return m_open;
 }
+bool Console::isClosed()
+{
+	return !m_open;
+}
 
 void Console::parse(MSG msg, ControlParams *ctrls)
 {
@@ -112,7 +116,7 @@ void Console::parse(MSG msg, ControlParams *ctrls)
 		}
 		default:
 		{
-			if (msg.wParam == ctrls->k_console)
+			if (msg.wParam == ctrls->k_console)		// do not print console key
 				break;
 			else
 			{

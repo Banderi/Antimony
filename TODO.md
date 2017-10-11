@@ -29,12 +29,15 @@
 	- [ ] Implement advanced camera controller
 		- [ ] Flyby
 		- [ ] LookAt
+		- [ ] Quakes
     - [ ] Implement core asset file system
         - [ ] FBX models
-            - [ ] Mesh container management/loading
-            - [ ] 3D Animation
+            - [x] Mesh container management/loading
+            - [x] 3D Animation
         - [ ] 2D assets
-        - [ ] World/region and triggers files
+        - [ ] World/map assets
+			- [ ] Scripts/triggers
+			- [ ] Geodata/collision
         - [ ] Sound files
         - [ ] Main asset archive/compression system
 	- [ ] Implement debugging tools
@@ -97,7 +100,7 @@
 ### Bugs:
 - [x] Fix keyboard input setting to '1' repeatedly
 - [x] Fix camera interpolation
-- [x] Fix high framerate usage by the debug renderer -- compiling with `release` optimization gives expected results for the moment
+- [x] Fix high cpu usage by the debug renderer -- compiling with `release` optimization gives expected results for the moment
 - [x] Fix character controller collisions
 - [ ] Fix platform movements (completely)
 - [ ] Fix developer console display

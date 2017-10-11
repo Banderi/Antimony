@@ -49,7 +49,7 @@ bool Antimony::standardSpawn(std::wstring id, float3 pos)
 {
 	if (id == L"cube")
 	{
-		btDefaultMotionState *ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * Float3Tobt(&pos)));
+		btDefaultMotionState *ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), Float3Tobt(&pos)));
 		btObject *phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, Antimony::btWorld);
 		Antimony::addPhysEntity(phys_obj);
 		return true;

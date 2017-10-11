@@ -224,8 +224,8 @@ Character::Character()
 	m_jumpState = 0;
 	m_actionState = 0;
 	//rvel = btVector3(0, 0, 0);
-	m_movSpeed = WORLD_SCALE * 0.5f;
-	m_jumpSpeed = WORLD_SCALE * 5;
+	m_movSpeed = 0.5f;
+	m_jumpSpeed = 5;
 	m_collisionObject = nullptr;
 }
 Character::~Character()

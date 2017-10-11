@@ -169,8 +169,8 @@ void Antimony::readConfig()
 
 	window_main.plane = { window_main.x, window_main.y, window_main.width + window_main.x, window_main.height + window_main.y };
 	window_main.top = -window_main.height * 0.5;	//	-1,-1--------- 1,-1
-	window_main.bottom = window_main.height * 0.5;	//	  |             |
-	window_main.right = window_main.width * 0.5;	//	  |             |
+	window_main.bottom = window_main.height * 0.5;	//	 |       |
+	window_main.right = window_main.width * 0.5;	//	 |       |
 	window_main.left = -window_main.width * 0.5;	//	-1, 1--------- 1, 1
 
 													// get display settings
@@ -192,8 +192,8 @@ void Antimony::readConfig()
 	}
 
 	display.top = -display.height * 0.5;	//	-1,-1--------- 1,-1
-	display.bottom = display.height * 0.5;	//	  |             |
-	display.right = display.width * 0.5;	//	  |             |
+	display.bottom = display.height * 0.5;	//	 |       |
+	display.right = display.width * 0.5;	//	 |       |
 	display.left = -display.width * 0.5;	//	-1, 1--------- 1, 1
 
 	display.tex_filtering = GetPrivateProfileIntW(L"display", L"TexFiltering", 0, L".\\config.ini");
@@ -478,7 +478,7 @@ HRESULT Antimony::initD3D(HWND hWnd)
 		return hr;
 	pBackBufferTexture->Release();
 	pBackBufferTexture = NULL;
-	devcon->OMSetRenderTargets(1, &targettview, depthstencilview);  // set the render target as the back buffer
+	devcon->OMSetRenderTargets(1, &targettview, depthstencilview); // set the render target as the back buffer
 
 	// Setup the raster description which will determine how and what polygons will be drawn.
 	rzd.AntialiasedLineEnable = false;
@@ -630,7 +630,7 @@ HRESULT Antimony::initGraphics()
 	mat_proj = MPerspFovLH(MATH_PI / 4, window_main.aspect, 0.001f, 10000.0f);
 	mat_orthoproj = MOrthoLH(display.width, display.height, 0.001f, 10000.0f);
 
-	camera_main.moveToPoint(v3_origin + WORLD_SCALE * float3(0, 0, -1), -1);
+	camera_main.moveToPoint(v3_origin + float3(0, 0, -1), -1);
 	camera_main.lookAtPoint(v3_origin, -1);
 
 	log(L" done!\n", CSL_SUCCESS, false);
@@ -654,7 +654,7 @@ HRESULT Antimony::initPhysics()
 
 	// btWorld initialization
 	btWorld = new btDiscreteDynamicsWorld(disp, bp, sol, cfg);
-	btWorld->setGravity(WORLD_SCALE * btVector3(0, -10, 0));
+	btWorld->setGravity( btVector3(0, -10, 0));
 	btWorld->setDebugDrawer(btDebugDrawer);
 	btWorld->setInternalTickCallback(Antimony::staticCallback);
 
@@ -669,20 +669,20 @@ HRESULT Antimony::initPhysics()
 	addPhysEntity(phys_obj);
 
 	// player's collision object
-	//cs = new btBoxShape(WORLD_SCALE * btVector3(0.15, 0.3, 0.15));
-	//cs = new btCapsuleShape(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3);
-	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(1, 0.3, -1)));
+	//cs = new btBoxShape( btVector3(0.15, 0.3, 0.15));
+	//cs = new btCapsuleShape( 0.15, 0.3);
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(1, 0.3, -1)));
 	phys_obj = new btObject(BTOBJECT_PLAYER, BTSOLID_CYLINDER, 100.0f, float3(0.1, 0.3, 0.1), ms, btWorld);
 	addPhysEntity(phys_obj);
 	player.setCollisionObject(phys_obj);
 	game.dbg_entityfollow = physEntities.size() - 1;
 
-	/*ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), WORLD_SCALE * btVector3(0, -1, 0)));
+	/*ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, -1, 0)));
 	phys_obj = new btObject(BTOBJECT_CAMERA, BTSOLID_SPHERE, 0.0f, float3(0.1, 0.1, 0.1), ms, btWorld);
 	camera_main.setCollisionObject(phys_obj);*/
 
 	// 6DOF connected to the world, with motor
-	//auto sh = new btSphereShape(WORLD_SCALE * 0.1);
+	//auto sh = new btSphereShape( 0.1);
 	//btVector3 in(0, 0, 0);
 	//sh->calculateLocalInertia(1.0, in);
 	//auto ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, -1, 0)));
@@ -697,8 +697,8 @@ HRESULT Antimony::initPhysics()
 
 	camera_main.getConstr()->setAngularLowerLimit(btVector3(0, 0, 0));
 	camera_main.getConstr()->setAngularUpperLimit(btVector3(0, 0, 0));
-	camera_main.getConstr()->setLinearLowerLimit(WORLD_SCALE * btVector3(10, 0.3, -1));
-	camera_main.getConstr()->setLinearUpperLimit(WORLD_SCALE * btVector3(-10, 0.3, -1));
+	camera_main.getConstr()->setLinearLowerLimit( btVector3(10, 0.3, -1));
+	camera_main.getConstr()->setLinearUpperLimit( btVector3(-10, 0.3, -1));
 	camera_main.getConstr()->getTranslationalLimitMotor()->m_enableMotor[0] = true;
 	camera_main.getConstr()->getTranslationalLimitMotor()->m_targetVelocity = btVector3(0.1, 0, 0);
 	camera_main.getConstr()->getTranslationalLimitMotor()->m_maxMotorForce[0] = 10;*/

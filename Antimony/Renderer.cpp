@@ -48,11 +48,11 @@ void Antimony::render_Debug()
 			p = physEntities.at(i)->getFloat3Pos();
 			n = btToFloat3(&physEntities.at(i)->getRigidBody()->getLinearVelocity());
 
-			Draw3DLineThin(p, p + WORLD_SCALE * 0.1 * n, COLOR_GREEN, COLOR_GREEN, &mat_identity);
+			Draw3DLineThin(p, p + 0.1 * n, COLOR_GREEN, COLOR_GREEN, &mat_identity);
 
 			n = btToFloat3(&physEntities.at(i)->getRigidBody()->getAngularVelocity());
 
-			Draw3DLineThin(p, p + WORLD_SCALE * 0.1 * n, COLOR_RED, COLOR_RED, &mat_identity);
+			Draw3DLineThin(p, p + 0.1 * n, COLOR_RED, COLOR_RED, &mat_identity);
 
 			float3 sp = WorldToScreen(p, &(mat_view * mat_proj), float2(window_main.width, window_main.height));
 			if (sp.z > 0)
@@ -67,7 +67,7 @@ void Antimony::render_Debug()
 				p = btToFloat3(&mfp.at(i)->getPositionWorldOnB());
 				n = btToFloat3(&mfp.at(i)->m_normalWorldOnB);
 
-				Draw3DLineThin(p, p + WORLD_SCALE * 0.1 * n, COLOR_BLACK, COLOR_RED, &mat_identity);
+				Draw3DLineThin(p, p + 0.1 * n, COLOR_BLACK, COLOR_RED, &mat_identity);
 			}
 		}
 		/*auto &mf = objectsCollisions[player.getColl()->rb];
@@ -81,7 +81,7 @@ void Antimony::render_Debug()
 				Vector3 p = btToFloat3(&b1->getWorldTransform().getOrigin());
 				Vector3 n = btToFloat3(&b1->getTotalTorque());
 
-				Draw3DLineThin(p, p + WORLD_SCALE * 0.1 * n, COLOR_RED, COLOR_RED, &mat_identity);
+				Draw3DLineThin(p, p + 0.1 * n, COLOR_RED, COLOR_RED, &mat_identity);
 			}
 		}*/
 	}

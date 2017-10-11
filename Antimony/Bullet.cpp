@@ -23,22 +23,22 @@ btCollisionShape* btObject::getShapeFromPrimitive(unsigned int p, float3 s)
 		}
 		case BTSOLID_BOX:
 		{
-			cs = new btBoxShape(WORLD_SCALE * Float3Tobt(&s));
+			cs = new btBoxShape( Float3Tobt(&s));
 			break;
 		}
 		case BTSOLID_SPHERE:
 		{
-			cs = new btSphereShape(WORLD_SCALE * s.x);
+			cs = new btSphereShape( s.x);
 			break;
 		}
 		case BTSOLID_CYLINDER:
 		{
-			cs = new btCylinderShape(WORLD_SCALE * Float3Tobt(&s));
+			cs = new btCylinderShape( Float3Tobt(&s));
 			break;
 		}
 		case BTSOLID_CAPSULE:
 		{
-			cs = new btCapsuleShape(WORLD_SCALE * s.x, WORLD_SCALE * s.y);
+			cs = new btCapsuleShape( s.x, s.y);
 			break;
 		}
 		default:

@@ -44,9 +44,10 @@ public:
 	void open();
 	void close();
 	bool isOpen();
+	bool isClosed();	// gee you're lazy
 
-	void parse(MSG msg, ControlParams *ctrls);
-	bool send(std::wstring cmd);
+	void parse(MSG msg, ControlParams *ctrls);		// parse messages (keys etc.)
+	bool send(std::wstring cmd);					// send command
 	void clear();
 	void purgeHistory();
 	void log(std::wstring string, unsigned char col);

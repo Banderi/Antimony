@@ -24,8 +24,8 @@ SHADER sh_main, sh_debug, sh_plain, sh_plain3D;
 SHADER *sh_current = nullptr;
 
 mat mat_identity, mat_temp, mat_temp2, mat_world, mat_view, mat_proj, mat_orthoview, mat_orthoproj;
-float2  v2_origin = float2(0, 0);
-float3  v3_origin = float3(0, 0, 0);
+float2 v2_origin = float2(0, 0);
+float3 v3_origin = float3(0, 0, 0);
 
 D3D11_INPUT_ELEMENT_DESC ied_basic[] = {
 	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -339,7 +339,7 @@ void CalculateSmoothNormals(VERTEX_MAIN vin[], UINT vcount, UINT iin[], UINT ico
 		//// loop through all vertices in face A
 		//for (UINT vt = 0; vt < 3; vt++)
 		//{
-		//	//  for each face B in mesh
+		//	// for each face B in mesh
 		//	for (UINT f2 = 0; f2 < icount; f2 += 3)
 		//	{
 		//		// ignore self
@@ -354,7 +354,7 @@ void CalculateSmoothNormals(VERTEX_MAIN vin[], UINT vcount, UINT iin[], UINT ico
 		//			// accumulate normal
 		//			// v1, v2, v3 are the vertices of face A
 		//			// face B shares v1
-		//			if ((vin[iin[f2]].position == p1) || (vin[iin[f2 + 1]].position == p1)  || (vin[iin[f2 + 2]].position == p1))
+		//			if ((vin[iin[f2]].position == p1) || (vin[iin[f2 + 1]].position == p1) || (vin[iin[f2 + 2]].position == p1))
 		//			{
 		//				auto angle = XMVector3AngleBetweenVectors((p1 - p2), (p1 - p3)).m128_f32[0];
 		//				n += n2 * angle; // multiply by angle
@@ -956,18 +956,6 @@ void Draw3DBox(Vector3 l, color c, mat *mat_world, color diffuse, ID3D11Device *
 		{ float3(w, h, b), XMVector3Normalize(float3(1, 1, 1)), float2(0, 0) },			//	  0 o		  |
 		{ float3(-w, h, b), XMVector3Normalize(float3(-1, 1, 1)), float2(0, 0) }		//				1 o
 	};
-	//VERTEX_BASIC vertices[] =
-	//{
-	//	{ float3(-w, -h, -b), c },	//			7 o
-	//	{ float3(w, -h, -b), c },	//			  |		  6 o
-	//	{ float3(w, h, -b), c },	//	  3 o	  |			|
-	//	{ float3(-w, h, -b), c },	//		|	  |	2 o		|
-	//	{ float3(-w, -h, b), c },	//		|	4 o   |		|
-	//	{ float3(w, -h, b), c },	//		|		  |   5 o
-	//	{ float3(w, h, b), c },		//	  0 o		  |
-	//	{ float3(-w, h, b), c }		//				1 o
-	//};
-	//Antimony::FillBuffer(dv, devc, &sh->vb, &vertices, sizeof(vertices));
 	UINT indices[] =
 	{
 		0, 3, 2,

@@ -40,14 +40,14 @@ void RenderWorld()
 	Antimony::setShader(SHADERS_DEBUG);
 
 	// ground wireframe
-	Draw3DLineThin(WORLD_SCALE * float3(-2, 0, -2), WORLD_SCALE * float3(-2, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-	Draw3DLineThin(WORLD_SCALE * float3(0, 0, -2), WORLD_SCALE * float3(0, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-	Draw3DLineThin(WORLD_SCALE * float3(2, 0, -2), WORLD_SCALE * float3(2, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-	Draw3DLineThin(WORLD_SCALE * float3(-2, 0, -2), WORLD_SCALE * float3(2, 0, -2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-	Draw3DLineThin(WORLD_SCALE * float3(-2, 0, 0), WORLD_SCALE * float3(2, 0, 0), COLOR_BLACK, COLOR_BLACK, &mat_identity);
-	Draw3DLineThin(WORLD_SCALE * float3(-2, 0, 2), WORLD_SCALE * float3(2, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
+	Draw3DLineThin( float3(-2, 0, -2), float3(-2, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
+	Draw3DLineThin( float3(0, 0, -2), float3(0, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
+	Draw3DLineThin( float3(2, 0, -2), float3(2, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
+	Draw3DLineThin( float3(-2, 0, -2), float3(2, 0, -2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
+	Draw3DLineThin( float3(-2, 0, 0), float3(2, 0, 0), COLOR_BLACK, COLOR_BLACK, &mat_identity);
+	Draw3DLineThin( float3(-2, 0, 2), float3(2, 0, 2), COLOR_BLACK, COLOR_BLACK, &mat_identity);
 	Antimony::setDepthBufferState(ON);
-	Draw3DLineThin(WORLD_SCALE * float3(0, 0, 0), WORLD_SCALE * float3(0, 0.5, 0), COLOR_BLACK, COLOR_BLACK, &mat_identity);
+	Draw3DLineThin( float3(0, 0, 0), float3(0, 0.5, 0), COLOR_BLACK, COLOR_BLACK, &mat_identity);
 
 	auto _p = WorldToScreen(float3(1, 1, 1), &(mat_view * mat_proj), float2(Antimony::display.width, Antimony::display.height));
 	if (_p.z > 0)
@@ -139,9 +139,9 @@ void RenderEntities()
 	{
 		mat_world = Antimony::getPlayer()->getColl()->getMatTransform();
 		if (Antimony::getPlayer()->getJumpState() != JUMPSTATE_ONGROUND)
-			Draw3DBox(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3, WORLD_SCALE * 0.15, color(1, 1.1, 1.5, 0.02));
+			Draw3DBox( 0.15, 0.3, 0.15, color(1, 1.1, 1.5, 0.02));
 		else
-			Draw3DBox(WORLD_SCALE * 0.15, WORLD_SCALE * 0.3, WORLD_SCALE * 0.15, color(0.9, 1.5, 1.5, 0.02));
+			Draw3DBox( 0.15, 0.3, 0.15, color(0.9, 1.5, 1.5, 0.02));
 	}*/
 
 	mat_world = MTranslation(0, -0.01, 0);

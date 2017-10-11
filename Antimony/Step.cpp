@@ -55,7 +55,7 @@ void Antimony::step()
 		updatePhysics(fstep);													// btWorld step
 		updateCameraControls(&mouse, &keys, &controller[0], fstep);				// update camera (--> mat_view)
 	}
-	else if (ifGameState(GAMESTATE_PAUSED) && !devConsole.isOpen())		// Game is paused
+	else if (ifGameState(GAMESTATE_PAUSED) && devConsole.isClosed())		// Game is paused
 	{
 		camera_main.unlock();
 
@@ -248,8 +248,8 @@ void Antimony::updateCameraControls(MouseController *mhandle, KeysController *kh
 	if (camera_main.object)
 		entity = camera_main.object->getFloat3Pos(); //MatToFloat3(&physEntities.at(game.dbg_entityfollow%physEntities.size())->getMatTransform());//player.getPos();
 
-	camera_main.lookAtPoint(entity + WORLD_SCALE * (height + eye), game.camera_friction * (.99999999) + !game.camera_friction);
-	camera_main.moveToPoint(entity + WORLD_SCALE * (height - eye * camera_main.dolly), game.camera_friction * (.9999999) + !game.camera_friction);
+	camera_main.lookAtPoint(entity + (height + eye), game.camera_friction * (.99999999) + !game.camera_friction);
+	camera_main.moveToPoint(entity + (height - eye * camera_main.dolly), game.camera_friction * (.9999999) + !game.camera_friction);
 
 	// reset camera
 	if (mhandle->MMB.getState() == BTN_HELD || xhandle->RS.getState() == BTN_HELD)
@@ -265,7 +265,7 @@ void Antimony::updateCameraControls(MouseController *mhandle, KeysController *kh
 
 	camera_main.update(delta);
 
-	float3 look = entity + WORLD_SCALE * height;
+	float3 look = entity + height;
 	float3 pos = camera_main.getPos();
 	float3 ray = (pos - look); ray.Normalize();
 	float3 start = look + 0.1 * ray;
@@ -317,13 +317,13 @@ void Antimony::updateWorld(double delta)
 		Sleep(f);
 	}
 
-	physEntities.at(3)->setMatTransform(&(MTranslation(WORLD_SCALE * 0, WORLD_SCALE * 0.5, WORLD_SCALE * 0) * MRotY(h)));
-	physEntities.at(4)->setMatTransform(&(MTranslation(WORLD_SCALE * 3, WORLD_SCALE * 1, WORLD_SCALE * sinf(h))));
+	physEntities.at(3)->setMatTransform(&(MTranslation( 0, 0.5, 0) * MRotY(h)));
+	physEntities.at(4)->setMatTransform(&(MTranslation( 3, 1, sinf(h))));
 	physEntities.at(4)->updateKinematic(delta);
-	physEntities.at(5)->setMatTransform(&(MTranslation(WORLD_SCALE * 3, WORLD_SCALE * (1 - 0.5 * sinf(h)), 2)));
+	physEntities.at(5)->setMatTransform(&(MTranslation( 3, (1 - 0.5 * sinf(h)), 2)));
 	//physEntities.at(5)->updateKinematic(delta);
-	//physEntities.at(5)->getRigidBody()->setLinearVelocity(btVector3(0, WORLD_SCALE * (sinf(h)), 0));
-	//physEntities.at(5)->getRigidBody()->setLinearFactor(btVector3(0, WORLD_SCALE * (sinf(h)), 0));
+	//physEntities.at(5)->getRigidBody()->setLinearVelocity(btVector3(0, (sinf(h)), 0));
+	//physEntities.at(5)->getRigidBody()->setLinearFactor(btVector3(0, (sinf(h)), 0));
 	//physEntities.at(5)->getRigidBody()->setLinearVelocity(bt_origin);
 }
 void Antimony::updateGameState()
@@ -332,14 +332,14 @@ void Antimony::updateGameState()
 	{
 		case GAMESTATE_INGAME:				// In-game (non-paused, non-menu etc.)
 		{
-			if (keys.sk_escape.getState() == BTN_PRESSED && !devConsole.isOpen())		// Escape
+			if (keys.sk_escape.getState() == BTN_PRESSED && devConsole.isClosed())		// Escape
 			{
 				if (game.debug)
 					PostQuitMessage(0);
 				else
 					setGameState(GAMESTATE_PAUSEMENU);
 			}
-			else if (keys.pause.getState() == BTN_PRESSED && !devConsole.isOpen())		// Pause key
+			else if (keys.pause.getState() == BTN_PRESSED && devConsole.isClosed())		// Pause key
 			{
 				setGameState(GAMESTATE_PAUSED);
 			}
@@ -347,7 +347,7 @@ void Antimony::updateGameState()
 		}
 		case GAMESTATE_PAUSEMENU:			// Pause menu (in-game inventory/pause menu)
 		{
-			if (keys.sk_escape.getState() == BTN_PRESSED && !devConsole.isOpen())
+			if (keys.sk_escape.getState() == BTN_PRESSED && devConsole.isClosed())
 			{
 				// TODO: Implement quit button & pause menu
 				//setGameState(GAMESTATE_INGAME);
@@ -357,14 +357,14 @@ void Antimony::updateGameState()
 		}
 		case GAMESTATE_PAUSED:
 		{
-			if (keys.sk_escape.getState() == BTN_PRESSED && !devConsole.isOpen())		// Escape
+			if (keys.sk_escape.getState() == BTN_PRESSED && devConsole.isClosed())		// Escape
 			{
 				if (game.debug)
 					PostQuitMessage(0);
 				else
 					setGameState(GAMESTATE_PAUSEMENU);
 			}
-			else if (keys.pause.getState() == BTN_PRESSED && !devConsole.isOpen())		// Pause key
+			else if (keys.pause.getState() == BTN_PRESSED && devConsole.isClosed())		// Pause key
 			{
 				setGameState(GAMESTATE_INGAME);
 			}
