@@ -54,15 +54,14 @@ void Antimony::createMainWindow(HINSTANCE hInstance)
 
 int Antimony::startUp(HINSTANCE hInstance, int nCmdShow)
 {
+	buildPaths();
+	readConfig();
+
 #ifdef _DEBUG
 	game.debug = true;
 #endif
 
-	BuildPaths();
-
-	cpuUsage.SetMaxRecords(100);
-
-	logFile.open(FilePath(L"log.txt"));
+	logFile.open(filePath(L"log.txt"));
 	if (game.debug) // set by debugger
 	{
 		if (!handleErr(&hr, HRH_MAIN_DEBUGMONIOR, initDebugMonitor()))
@@ -70,7 +69,7 @@ int Antimony::startUp(HINSTANCE hInstance, int nCmdShow)
 	}
 	log(L"---> START OF DEBUG CONSOLE <---\n", CSL_SYSTEM);
 
-	readConfig();
+
 
 	if (game.debug) // set by config
 	{
@@ -83,27 +82,27 @@ int Antimony::startUp(HINSTANCE hInstance, int nCmdShow)
 	}
 
 	setGameState(GAMESTATE_LOADING_1);
-	setSubSystem(SUBSYS_FPS_TPS);
 
 	createMainWindow(hInstance);
 	ShowWindow(window_main.hWnd, nCmdShow);
 
-	if (!handleErr(&hr, HRH_MAIN_ENUMHW, enumHardware()))
+	if (!handleErr(nullptr, HRH_MAIN_ENUMHW, enumHardware()))
 		return 0;
-	if (!handleErr(&hr, HRH_MAIN_INITD3D, initD3D(window_main.hWnd)))
+	if (!handleErr(nullptr, HRH_MAIN_INITD3D, initDirectX11(window_main.hWnd)))
 		return 0;
-	if (!handleErr(&hr, HRH_MAIN_REGHID, initControls()))
+	if (!handleErr(nullptr, HRH_MAIN_ASSETLOADERS, initAssetLoaders()))
 		return 0;
-	if (!handleErr(&hr, HRH_MAIN_INITSHADERS, initShaders()))
+	if (!handleErr(nullptr, HRH_MAIN_INITGRAPHICS, initGraphics()))
 		return 0;
-	if (!handleErr(&hr, HRH_MAIN_INITFONTS, initFonts()))
+	if (!handleErr(nullptr, HRH_MAIN_INITSHADERS, initShaders()))
 		return 0;
-	if (!handleErr(&hr, HRH_MAIN_INITGRAPHICS, initGraphics()))
+	if (!handleErr(nullptr, HRH_MAIN_INITFONTS, initFonts()))
 		return 0;
-	if (!handleErr(&hr, HRH_MAIN_INITPHYSICS, initPhysics()))
+	if (!handleErr(nullptr, HRH_MAIN_REGHID, initControls()))
 		return 0;
-	if (!handleErr(&hr, HRH_MAIN_STARTINGFILES, loadStartingFiles()))
+	if (!handleErr(nullptr, HRH_MAIN_INITPHYSICS, initPhysics()))
 		return 0;
+
 
 	ShowCursor(false);
 	ClipCursor(&window_main.plane);
@@ -113,6 +112,12 @@ int Antimony::startUp(HINSTANCE hInstance, int nCmdShow)
 	setGameState(GAMESTATE_SPLASH);
 
 	///
+
+	if (ifSubSystem(SUBSYS_NONE))
+	{
+		handleErr(nullptr, HRH_MAIN_NOSUBSYSTEM, E_INVALIDARG);
+		return 0;
+	}
 
 	log(L"Entering main loop...\n", CSL_SYSTEM);
 
@@ -364,7 +369,7 @@ HRESULT Antimony::enumHardware()
 
 	return S_OK;
 }
-HRESULT Antimony::initD3D(HWND hWnd)
+HRESULT Antimony::initDirectX11(HWND hWnd)
 {
 	log(L"Initializing D3D11...", CSL_SYSTEM);
 
@@ -375,6 +380,7 @@ HRESULT Antimony::initD3D(HWND hWnd)
 	D3D11_RASTERIZER_DESC rzd;
 	D3D11_VIEWPORT viewport;
 	D3D11_BLEND_DESC bsd;
+	D3D11_BUFFER_DESC bd;
 
 	ZeroMemory(&scd, sizeof(DXGI_SWAP_CHAIN_DESC));
 	ZeroMemory(&txd, sizeof(D3D11_TEXTURE2D_DESC));
@@ -383,6 +389,7 @@ HRESULT Antimony::initD3D(HWND hWnd)
 	ZeroMemory(&rzd, sizeof(D3D11_RASTERIZER_DESC));
 	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
 	ZeroMemory(&bsd, sizeof(D3D11_BLEND_DESC));
+	ZeroMemory(&bd, sizeof(bd));
 
 	ID3D11Texture2D *pBackBufferTexture = NULL;
 	ID3D11Texture2D *pDepthStencilBufferTexture = NULL;
@@ -521,6 +528,29 @@ HRESULT Antimony::initD3D(HWND hWnd)
 		return hr;
 	devcon->OMSetBlendState(blendstate, 0, 0xffffffff);
 
+	// Fill the index and vertex buffers
+	bd.Usage = D3D11_USAGE_DYNAMIC;
+	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	bd.ByteWidth = sizeof(ConstantBuffer);
+	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	if (!handleErr(&hr, HRH_GRAPHICS_CONSTANTBUFFER, dev->CreateBuffer(&bd, NULL, &constantbuffer)))
+		return hr;
+	bd.ByteWidth = sizeof(UINT) * 1024 * 1024;
+	bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	if (!handleErr(&hr, HRH_GRAPHICS_INDEXBUFFER, dev->CreateBuffer(&bd, NULL, &indexbuffer)))
+		return hr;
+	devcon->IASetIndexBuffer(indexbuffer, DXGI_FORMAT_R32_UINT, 0);
+	devcon->VSSetConstantBuffers(0, 1, &constantbuffer);
+	devcon->PSSetConstantBuffers(0, 1, &constantbuffer);
+
+	// Set up global projection matrices
+	mat_identity = MIdentity();
+	mat_world = mat_identity;
+	mat_view = MLookAtLH(float3(0, 0, -1), float3(0, 0, 0), float3(0, 1, 0));
+	mat_orthoview = MLookAtLH(float3(0, 0, -1), float3(0, 0, 0), float3(0, 1, 0));
+	mat_proj = MPerspFovLH(MATH_PI / 4, window_main.aspect, 0.001f, 10000.0f);
+	mat_orthoproj = MOrthoLH(display.width, display.height, 0.001f, 10000.0f);
+
 	log(L" done!\n", CSL_SUCCESS, false);
 
 	return S_OK;
@@ -590,48 +620,11 @@ HRESULT Antimony::initFonts()
 }
 HRESULT Antimony::initGraphics()
 {
-	log(L"Loading starting graphics...", CSL_SYSTEM);
+	log(L"Loading starting engine graphics...", CSL_SYSTEM);
 
-	D3D11_BUFFER_DESC bd; // buffer description
-	ZeroMemory(&bd, sizeof(bd));
 
-	bd.Usage = D3D11_USAGE_DYNAMIC;
-	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	//
 
-	/*bd.Usage = D3D11_USAGE_DYNAMIC;
-	bd.ByteWidth = sizeof(VERTEX_BASIC) * 512;
-	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	if (!handleErr(&hr, HRH_GRAPHICS_VERTEXBUFFER, dev->CreateBuffer(&bd, NULL, &vertexbuffer)))
-		return hr;*/
-
-	bd.ByteWidth = sizeof(ConstantBuffer);
-	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	if (!handleErr(&hr, HRH_GRAPHICS_CONSTANTBUFFER, dev->CreateBuffer(&bd, NULL, &constantbuffer)))
-		return hr;
-
-	bd.ByteWidth = sizeof(UINT) * 1024 * 1024;
-	bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	if (!handleErr(&hr, HRH_GRAPHICS_INDEXBUFFER, dev->CreateBuffer(&bd, NULL, &indexbuffer)))
-		return hr;
-
-	/*UINT stride = sizeof(VERTEX_BASIC);
-	UINT offset = 0;
-	devcon->IASetVertexBuffers(0, 1, &vertexbuffer, &stride, &offset);*/
-	devcon->IASetIndexBuffer(indexbuffer, DXGI_FORMAT_R32_UINT, 0);
-	devcon->VSSetConstantBuffers(0, 1, &constantbuffer);
-	devcon->PSSetConstantBuffers(0, 1, &constantbuffer);
-
-	///
-
-	mat_identity = MIdentity();
-	mat_world = mat_identity;
-	mat_view = MLookAtLH(float3(0, 0, -1), float3(0, 0, 0), float3(0, 1, 0));
-	mat_orthoview = MLookAtLH(float3(0, 0, -1), float3(0, 0, 0), float3(0, 1, 0));
-	mat_proj = MPerspFovLH(MATH_PI / 4, window_main.aspect, 0.001f, 10000.0f);
-	mat_orthoproj = MOrthoLH(display.width, display.height, 0.001f, 10000.0f);
-
-	camera_main.moveToPoint(v3_origin + float3(0, 0, -1), -1);
-	camera_main.lookAtPoint(v3_origin, -1);
 
 	log(L" done!\n", CSL_SUCCESS, false);
 	return S_OK;
@@ -660,68 +653,13 @@ HRESULT Antimony::initPhysics()
 
 	///
 
-	btDefaultMotionState *ms;
-	btObject *phys_obj;
-
 	// infinite plane
-	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, -1, 0)));
-	phys_obj = new btObject(BTOBJECT_INFINITEGROUND, BTSOLID_INFPLANE, 0.0f, float3(0, 1, 0), ms, &btVector3(0, 0, 0), btWorld);
-	addPhysEntity(phys_obj);
+	addPhysEntity(BTOBJECT_INFINITEGROUND, BTSOLID_INFPLANE, 0.0f, float3(0, 1, 0), float3(0, -1, 0), float3(0, 0, 0), btWorld);
 
 	// player's collision object
-	//cs = new btBoxShape( btVector3(0.15, 0.3, 0.15));
-	//cs = new btCapsuleShape( 0.15, 0.3);
-	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(1, 0.3, -1)));
-	phys_obj = new btObject(BTOBJECT_PLAYER, BTSOLID_CYLINDER, 100.0f, float3(0.1, 0.3, 0.1), ms, btWorld);
-	addPhysEntity(phys_obj);
-	player.setCollisionObject(phys_obj);
+	addPhysEntity(BTOBJECT_PLAYER, BTSOLID_CYLINDER, 100.0f, float3(0.1, 0.3, 0.1), float3(1, 0.3, -1), btWorld);
+	player.setCollisionObject(lastAddedPhysObj);
 	game.dbg_entityfollow = physEntities.size() - 1;
-
-	/*ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, -1, 0)));
-	phys_obj = new btObject(BTOBJECT_CAMERA, BTSOLID_SPHERE, 0.0f, float3(0.1, 0.1, 0.1), ms, btWorld);
-	camera_main.setCollisionObject(phys_obj);*/
-
-	// 6DOF connected to the world, with motor
-	//auto sh = new btSphereShape( 0.1);
-	//btVector3 in(0, 0, 0);
-	//sh->calculateLocalInertia(1.0, in);
-	//auto ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, -1, 0)));
-	//btRigidBody::btRigidBodyConstructionInfo rbci = btRigidBody::btRigidBodyConstructionInfo(1.0, ms, sh, in);
-	//btRigidBody* pBody = new btRigidBody(rbci);
-	////btRigidBody* pBody = createRigidBody(1.0, tr, shape);
-	//pBody->setActivationState(DISABLE_DEACTIVATION);
-	/*btTransform frame; frame.setIdentity();
-	btGeneric6DofConstraint* pGen6Dof = new btGeneric6DofConstraint(*phys_obj->getRigidBody(), frame, false);
-	btWorld->addConstraint(pGen6Dof);
-	camera_main.setCollisionConstraint(pGen6Dof);
-
-	camera_main.getConstr()->setAngularLowerLimit(btVector3(0, 0, 0));
-	camera_main.getConstr()->setAngularUpperLimit(btVector3(0, 0, 0));
-	camera_main.getConstr()->setLinearLowerLimit( btVector3(10, 0.3, -1));
-	camera_main.getConstr()->setLinearUpperLimit( btVector3(-10, 0.3, -1));
-	camera_main.getConstr()->getTranslationalLimitMotor()->m_enableMotor[0] = true;
-	camera_main.getConstr()->getTranslationalLimitMotor()->m_targetVelocity = btVector3(0.1, 0, 0);
-	camera_main.getConstr()->getTranslationalLimitMotor()->m_maxMotorForce[0] = 10;*/
-
-	//// player CharEntity
-	//btPairCachingGhostObject *gh = new btPairCachingGhostObject();
-	////gh->setWorldTransform(MatTobt(&MTranslation(0, 0.6, -1)));
-	//btConvexShape *xs = new btBoxShape(btVector3(0.15, 0.3, 0.15));
-	//CharEntity *char_obj = new CharEntity(L"player", gh, xs);
-	////bp->getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
-	//
-	////gh->setCollisionFlags(1);
-
-	////char_obj->cc->warp(btVector3(1, 0.6, -1));
-	//char_obj->cc->warp(Float3Tobt(&player.GetPosDest()));
-
-	///*btVector3 *in = new btVector3;
-	//cs->calculateLocalInertia(1, *in);
-	//btRigidBody::btRigidBodyConstructionInfo rbci = btRigidBody::btRigidBodyConstructionInfo(100, ms, xs, *in);
-	//btRigidBody *rb = new btRigidBody(rbci);
-	//btWorld->addRigidBody(rb);*/
-
-	//player.cont = char_obj;
 
 	///
 
@@ -731,10 +669,8 @@ HRESULT Antimony::initPhysics()
 	log(L" done!\n", CSL_SUCCESS, false);
 	return S_OK;
 }
-HRESULT Antimony::loadStartingFiles()
+HRESULT Antimony::initAssetLoaders()
 {
-	// TODO: Implement FBX & test some files against it
-
 	FBXManager = FbxManager::Create();									// Prepare the FBX SDK.
 
 	FbxIOSettings *ios = FbxIOSettings::Create(FBXManager, IOSROOT);	// Create the IO settings object.
@@ -743,17 +679,6 @@ HRESULT Antimony::loadStartingFiles()
 	FBXImporter = FbxImporter::Create(FBXManager, "");					// Create an importer using the SDK manager.
 
 	///
-
-	//FbxScene *scene = FbxScene::Create(FBXManager, "myScene");
-
-	//LoadFBXFile("chara.fbx", FBXManager, FBXImporter, scene);
-	//LoadFBXFile("cube.fbx", m_FBXManager, m_FBXImporter, lScene);
-	//LoadFBXFile("humanoid.fbx", m_FBXManager, m_FBXImporter, lScene);
-
-	//auto meshdump = GetVertexCompound(GetFBXMesh(scene).at(0));
-	//auto vertexdump = meshdump.dumpBASIC();
-
-	//meshdump.destroyDumps();
 
 	return S_OK;
 }

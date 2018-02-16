@@ -1,4 +1,4 @@
-#include <regex>		// required for std::find_if			(Antimony::spawn)
+#include <regex>				// required for std::find_if			(Antimony::spawn)
 
 #include "Spawner.h"
 #include "Bullet.h"
@@ -49,9 +49,7 @@ bool Antimony::standardSpawn(std::wstring id, float3 pos)
 {
 	if (id == L"cube")
 	{
-		btDefaultMotionState *ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), Float3Tobt(&pos)));
-		btObject *phys_obj = new btObject(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), ms, Antimony::btWorld);
-		Antimony::addPhysEntity(phys_obj);
+		Antimony::addPhysEntity(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), pos, Antimony::btWorld);
 		return true;
 	}
 	else if (id == L"test")

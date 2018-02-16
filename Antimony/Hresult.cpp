@@ -13,7 +13,8 @@ HRESULT hr;
 
 bool Antimony::handleErr(HRESULT *hOut, DWORD facing, HRESULT hr, const wchar_t* opt)
 {
-	*hOut = hr;
+	if (hOut != nullptr)
+		*hOut = hr;
 
 	if (FAILED(hr))
 	{
@@ -60,6 +61,14 @@ bool Antimony::handleErr(HRESULT *hOut, DWORD facing, HRESULT hr, const wchar_t*
 		case HRH_MAIN_STARTINGFILES:
 			swprintf_s(buffer,
 				L"Could not load starting files! Program will now terminate.");
+			break;
+		case HRH_MAIN_ASSETLOADERS:
+			swprintf_s(buffer,
+				L"Could not load set up asset loaders! Program will now terminate.");
+			break;
+		case HRH_MAIN_NOSUBSYSTEM:
+			swprintf_s(buffer,
+				L"No subsystem was set! Program will now terminate.");
 			break;
 
 			// EnumHardware(...)

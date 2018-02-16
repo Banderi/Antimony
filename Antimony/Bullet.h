@@ -133,6 +133,7 @@ namespace Antimony
 {
 	extern btDiscreteDynamicsWorld *btWorld;
 	extern std::vector<btObject*> physEntities;
+	extern btObject *lastAddedPhysObj;
 
 	extern std::map<const btCollisionObject*, std::vector<btManifoldPoint*>> m_objectsCollisionPoints;
 	extern std::map<const btCollisionObject*, std::vector<btPersistentManifold*>> m_objectsCollisions;
@@ -140,6 +141,10 @@ namespace Antimony
 	void tickCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep);
 	void staticCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep);
 	void addPhysEntity(btObject *obj);
+	void addPhysEntity(unsigned int k, unsigned int p, float m, float3 z, float4 q, float3 t, float3 i, btDiscreteDynamicsWorld *w);
+	void addPhysEntity(unsigned int k, unsigned int p, float m, float3 z, float4 q, float3 t, btDiscreteDynamicsWorld *w);
+	void addPhysEntity(unsigned int k, unsigned int p, float m, float3 z, float3 t, float3 i, btDiscreteDynamicsWorld *w);
+	void addPhysEntity(unsigned int k, unsigned int p, float m, float3 z, float3 t, btDiscreteDynamicsWorld *w);
 	void resetPhysics();
 	/*btDiscreteDynamicsWorld* getBtWorld();
 	std::vector<btObject*>* getEntities();*/

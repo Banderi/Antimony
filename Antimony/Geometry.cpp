@@ -1075,7 +1075,7 @@ bool Antimony::compileShader(HRESULT *hr, std::wstring shader, SHADER *sh, D3D11
 {
 	ID3D10Blob *blob = nullptr;
 
-	std::wstring fullpath = FilePath(L"\\Shaders\\", shader + L".hlsl");
+	std::wstring fullpath = filePath(L"\\Shaders\\", shader + L".hlsl");
 	LPCWSTR file = fullpath.c_str();
 
 	if (!handleErr(hr, HRH_SHADER_COMPILE, D3DCompileFromFile(file, 0, 0, "VShader", "vs_4_0", 0, 0, &blob, 0)))

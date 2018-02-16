@@ -134,7 +134,7 @@ void RenderEntities()
 
 	//Antimony::setShader(SHADERS_PLAIN);
 
-	Antimony::getPlayer()->asset.draw(&(mat_world), Antimony::game.dbg_wireframe);
+	Antimony::getPlayer()->asset.draw(&(mat_world), Antimony::game.dbg_info);
 	/*if (Antimony::game.dbg_wireframe)
 	{
 		mat_world = Antimony::getPlayer()->getColl()->getMatTransform();

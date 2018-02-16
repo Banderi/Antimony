@@ -90,7 +90,7 @@ bool LoadFBXFile(std::wstring file, FbxManager *fbxmngr, FbxImporter *fbximport,
 	bool result = false;
 
 	std::wstring fullpath;
-	fullpath = Antimony::FilePath(L"\\Models\\", file);
+	fullpath = Antimony::filePath(L"\\Models\\", file);
 
 	//fullpath = L".\\Models\\" + file;
 

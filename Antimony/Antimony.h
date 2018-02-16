@@ -22,13 +22,13 @@ namespace Antimony
 	int startUp(HINSTANCE hInstance, int nCmdShow);
 	void readConfig();
 	HRESULT enumHardware();
-	HRESULT initD3D(HWND hWnd);
+	HRESULT initDirectX11(HWND hWnd);
 	HRESULT initControls();
 	HRESULT initShaders();
 	HRESULT initFonts();
 	HRESULT initGraphics();
 	HRESULT initPhysics();
-	HRESULT loadStartingFiles();
+	HRESULT initAssetLoaders();
 
 	void createMainWindow(HINSTANCE hInstance);
 

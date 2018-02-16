@@ -45,7 +45,7 @@ void Asset::draw(mat *mat_world, bool debug)
 
 	DrawMesh(&m_geometry, &w);
 
-	if (debug || true)
+	if (debug)
 	{
 		drawSkeleton(mat_world, false);
 

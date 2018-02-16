@@ -234,7 +234,7 @@ mat AnimationController::getMat(UINT index)
 bool AnimationController::loadCached(std::wstring file)
 {
 	std::wstring fullpath;
-	fullpath = Antimony::FilePath(L"\\Models\\", file);
+	fullpath = Antimony::filePath(L"\\Models\\", file);
 
 	char *fullpathFBX = new char[MAX_PATH];
 	FbxWCToUTF8(fullpath.c_str(), fullpathFBX);
@@ -262,7 +262,7 @@ bool AnimationController::loadCached(std::wstring file)
 bool AnimationController::saveCached(std::wstring file)
 {
 	std::wstring fullpath;
-	fullpath = Antimony::FilePath(L"\\Models\\", file);
+	fullpath = Antimony::filePath(L"\\Models\\", file);
 
 
 	/*std::ifstream ifs(fullpath, std::ios::in | std::ifstream::binary);

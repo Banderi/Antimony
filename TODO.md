@@ -7,14 +7,14 @@
         - [x] Basic 3D rendering, vertex/index buffering, vector/matrix management
         - [x] Basic 3D geometry
         - [ ] Basic texture rendering
-        - [ ] 3D lights
-        - [ ] Cel-shading HLSL shader
+        - [x] 3D lights
         - [ ] Advanced techniques and shaders
             - [ ] Normal mapping
             - [ ] Displacement mapping
             - [ ] God rays
             - [ ] Dynamic reflection
             - [ ] Ambient occlusion
+			- [ ] Cel-shading
     - [ ] Implement 2D/HUD graphics
         - [x] Basic 2D geometry
         - [ ] Font/text printing
@@ -32,8 +32,14 @@
 		- [ ] Quakes
     - [ ] Implement core asset file system
         - [ ] FBX models
-            - [x] Mesh container management/loading
-            - [x] 3D Animation
+            - [ ] Mesh container management/loading
+				- [x] Basic vertex loading
+				- [x] Per-vertex normal mapping
+				- [ ] Normal groups
+            - [ ] 3D Animation
+				- [x] Animation curves
+				- [ ] Skinning (HLSL)
+				- [ ] Vertex animation
         - [ ] 2D assets
         - [ ] World/map assets
 			- [ ] Scripts/triggers
@@ -45,6 +51,7 @@
 			- [x] Base layout
 			- [x] Commands system
 			- [ ] Autocomplete
+			- [ ] Better font rendering system
 		- [x] Log
 		- [x] Debug renderer
 		- [ ] Free camera

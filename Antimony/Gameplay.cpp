@@ -67,5 +67,5 @@ namespace Antimony
 	Player player;
 	Camera camera_main;
 
-	unsigned char subSystem;
+	unsigned char subSystem = SUBSYS_NONE;
 }

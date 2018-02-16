@@ -396,6 +396,51 @@ void Antimony::staticCallback(btDynamicsWorld *dynamicsWorld, btScalar timeStep)
 }
 void Antimony::addPhysEntity(btObject *obj)
 {
+	lastAddedPhysObj = obj;
+	physEntities.push_back(obj);
+}
+void Antimony::addPhysEntity(unsigned int k, unsigned int p, float m, float3 z, float4 q, float3 t, float3 i, btDiscreteDynamicsWorld *w)
+{
+	btDefaultMotionState *ms;
+	btObject *obj;
+
+	ms = new btDefaultMotionState(btTransform(btQuaternion(q.x, q.y, q.z, q.w), btVector3(t.x, t.y, t.z)));
+	obj = new btObject(k, p, m, z, ms, &btVector3(i.x, i.y, i.z), w);
+
+	lastAddedPhysObj = obj;
+	physEntities.push_back(obj);
+}
+void Antimony::addPhysEntity(unsigned int k, unsigned int p, float m, float3 z, float4 q, float3 t, btDiscreteDynamicsWorld *w)
+{
+	btDefaultMotionState *ms;
+	btObject *obj;
+
+	ms = new btDefaultMotionState(btTransform(btQuaternion(q.x, q.y, q.z, q.w), btVector3(t.x, t.y, t.z)));
+	obj = new btObject(k, p, m, z, ms, w);
+
+	lastAddedPhysObj = obj;
+	physEntities.push_back(obj);
+}
+void Antimony::addPhysEntity(unsigned int k, unsigned int p, float m, float3 z, float3 t, float3 i, btDiscreteDynamicsWorld *w)
+{
+	btDefaultMotionState *ms;
+	btObject *obj;
+
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(t.x, t.y, t.z)));
+	obj = new btObject(k, p, m, z, ms, &btVector3(i.x, i.y, i.z), w);
+
+	lastAddedPhysObj = obj;
+	physEntities.push_back(obj);
+}
+void Antimony::addPhysEntity(unsigned int k, unsigned int p, float m, float3 z, float3 t, btDiscreteDynamicsWorld *w)
+{
+	btDefaultMotionState *ms;
+	btObject *obj;
+
+	ms = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(t.x, t.y, t.z)));
+	obj = new btObject(k, p, m, z, ms, w);
+
+	lastAddedPhysObj = obj;
 	physEntities.push_back(obj);
 }
 void Antimony::resetPhysics()
@@ -403,19 +448,12 @@ void Antimony::resetPhysics()
 	for (int i = 0; i < physEntities.size(); i++)
 		physEntities.at(i)->reset();
 }
-//btDiscreteDynamicsWorld* Antimony::getBtWorld()
-//{
-//	return btWorld;
-//}
-//std::vector<btObject*>* Antimony::getEntities()
-//{
-//	return &physEntities;
-//}
 
 namespace Antimony
 {
 	btDiscreteDynamicsWorld* btWorld;
 	std::vector<btObject*> physEntities;
+	btObject *lastAddedPhysObj = nullptr;
 
 	std::map<const btCollisionObject*, std::vector<btManifoldPoint*>> m_objectsCollisionPoints;
 	std::map<const btCollisionObject*, std::vector<btPersistentManifold*>> m_objectsCollisions;

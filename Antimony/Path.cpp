@@ -5,7 +5,7 @@
 
 ///
 
-void Antimony::BuildPaths()
+void Antimony::buildPaths()
 {
 	WCHAR *temp = new WCHAR[MAX_PATH];
 
@@ -21,7 +21,7 @@ void Antimony::BuildPaths()
 	*(PathFindExtension(temp)) = 0;
 	process_modulename = temp;
 }
-std::wstring Antimony::FilePath(std::wstring relpath, std::wstring filename)
+std::wstring Antimony::filePath(std::wstring relpath, std::wstring filename)
 {
 	std::wstring fullpath;
 	if (!use_absolute_paths)
@@ -31,7 +31,7 @@ std::wstring Antimony::FilePath(std::wstring relpath, std::wstring filename)
 
 	return fullpath;
 }
-std::wstring Antimony::FilePath(std::wstring filename)
+std::wstring Antimony::filePath(std::wstring filename)
 {
 	std::wstring fullpath;
 	if (!use_absolute_paths)

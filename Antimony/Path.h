@@ -17,7 +17,7 @@ namespace Antimony
 	extern std::wstring process_fullpath;
 	extern std::wstring process_workingdir;
 
-	void BuildPaths();
-	std::wstring FilePath(std::wstring relpath, std::wstring filename);
-	std::wstring FilePath(std::wstring filename);
+	void buildPaths();
+	std::wstring filePath(std::wstring relpath, std::wstring filename);
+	std::wstring filePath(std::wstring filename);
 }
