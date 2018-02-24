@@ -555,28 +555,28 @@ HRESULT Antimony::initDirectX11(HWND hWnd)
 
 	return S_OK;
 }
-HRESULT Antimony::initControls()
+HRESULT Antimony::initAssetLoaders()
 {
-	// TODO: Register ALL keys and separate the gameplay with a second input collection
-	// TODO: Name keys automatically
+	FBXManager = FbxManager::Create();									// Prepare the FBX SDK.
 
-	hr = registerRID();
-	if (FAILED(hr))
-		return hr;
+	FbxIOSettings *ios = FbxIOSettings::Create(FBXManager, IOSROOT);	// Create the IO settings object.
+	FBXManager->SetIOSettings(ios);
 
-	keys.forward.set(controls.k_forward, GetKeyName(controls.k_forward));
-	keys.backward.set(controls.k_backward, GetKeyName(controls.k_backward));
-	keys.left.set(controls.k_left, GetKeyName(controls.k_left));
-	keys.right.set(controls.k_right, GetKeyName(controls.k_right));
+	FBXImporter = FbxImporter::Create(FBXManager, "");					// Create an importer using the SDK manager.
 
-	keys.sprint.set(controls.k_sprint, GetKeyName(controls.k_sprint));
-	keys.jump.set(controls.k_jump, GetKeyName(controls.k_jump));
-	keys.action.set(controls.k_action, GetKeyName(controls.k_action));
+	///
 
-	keys.console.set(controls.k_console, GetKeyName(controls.k_console));
-	keys.snapshot.set(controls.k_snapshot, GetKeyName(controls.k_snapshot));
-	keys.pause.set(controls.k_pause, GetKeyName(controls.k_pause));
+	return S_OK;
+}
+HRESULT Antimony::initGraphics()
+{
+	log(L"Loading starting engine graphics...", CSL_SYSTEM);
 
+
+	//
+
+
+	log(L" done!\n", CSL_SUCCESS, false);
 	return S_OK;
 }
 HRESULT Antimony::initShaders()
@@ -618,15 +618,28 @@ HRESULT Antimony::initFonts()
 	log(L" done!\n", CSL_SUCCESS, false);
 	return S_OK;
 }
-HRESULT Antimony::initGraphics()
+HRESULT Antimony::initControls()
 {
-	log(L"Loading starting engine graphics...", CSL_SYSTEM);
+	// TODO: Register ALL keys and separate the gameplay with a second input collection
+	// TODO: Name keys automatically
 
+	hr = registerRID();
+	if (FAILED(hr))
+		return hr;
 
-	//
+	keys.forward.set(controls.k_forward, GetKeyName(controls.k_forward));
+	keys.backward.set(controls.k_backward, GetKeyName(controls.k_backward));
+	keys.left.set(controls.k_left, GetKeyName(controls.k_left));
+	keys.right.set(controls.k_right, GetKeyName(controls.k_right));
 
+	keys.sprint.set(controls.k_sprint, GetKeyName(controls.k_sprint));
+	keys.jump.set(controls.k_jump, GetKeyName(controls.k_jump));
+	keys.action.set(controls.k_action, GetKeyName(controls.k_action));
 
-	log(L" done!\n", CSL_SUCCESS, false);
+	keys.console.set(controls.k_console, GetKeyName(controls.k_console));
+	keys.snapshot.set(controls.k_snapshot, GetKeyName(controls.k_snapshot));
+	keys.pause.set(controls.k_pause, GetKeyName(controls.k_pause));
+
 	return S_OK;
 }
 HRESULT Antimony::initPhysics()
@@ -667,19 +680,6 @@ HRESULT Antimony::initPhysics()
 	addSpawnable(L"cube", standardSpawn);
 
 	log(L" done!\n", CSL_SUCCESS, false);
-	return S_OK;
-}
-HRESULT Antimony::initAssetLoaders()
-{
-	FBXManager = FbxManager::Create();									// Prepare the FBX SDK.
-
-	FbxIOSettings *ios = FbxIOSettings::Create(FBXManager, IOSROOT);	// Create the IO settings object.
-	FBXManager->SetIOSettings(ios);
-
-	FBXImporter = FbxImporter::Create(FBXManager, "");					// Create an importer using the SDK manager.
-
-	///
-
 	return S_OK;
 }
 
