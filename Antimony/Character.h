@@ -45,15 +45,16 @@ protected:
 	bool m_moving;
 	char m_jumpState;
 	char m_actionState;
-	// TODO: 3D character asset
+
+	bool m_hasAsset;
+
+	Asset m_asset;
 
 public:
 	float m_movSpeed;
 	float m_jumpSpeed;
 	btVector3 m_linWorldVel;
 	btVector3 m_angWorldVel;
-
-	Asset asset;
 
 	//btVector3 rvel;
 
@@ -62,6 +63,9 @@ public:
 	void warp(Vector3 d);
 	void move(btVector3 *v, float s);
 	void attemptJump();
+
+	void load3DAsset(std::wstring file, float3 s);
+	Asset* getAsset();
 
 	void setCollisionObject(btObject *pc);
 	btObject* getColl();

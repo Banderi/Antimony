@@ -7,6 +7,7 @@
 #include "Debug.h"
 #include "Console.h"
 #include "Param.h"
+#include "Step.h"
 
 ///
 
@@ -63,36 +64,51 @@ void Antimony::unacquireDebugMonitor()
 }
 void Antimony::monitorLog()
 {
-	//static float c = 0.0f;
-	//c += delta;
+	static float c = 0.0f;
+	c += delta;
 
-	//if (c >= 0.1)
-	//{
-	//	/*log(L"\r                                    \r");
-	//	log(L"Mouse position: ");
-	//	log(to_wstring(mouse.GetCoord(xcoord).getPos()));
-	//	log(L" (X) ");
-	//	log(to_wstring(mouse.GetCoord(ycoord).getPos()));
-	//	log(L" (X)");*/
+	if (c >= 0.1)
+	{
+		/*log(L"\r                                    \r");
+		log(L"Mouse position: ");
+		log(to_wstring(mouse.GetCoord(xcoord).getPos()));
+		log(L" (X) ");
+		log(to_wstring(mouse.GetCoord(ycoord).getPos()));
+		log(L" (X)");*/
 
-	//	//log(L"\r                                                            \r");
-	//	////log(to_wstring(timer.GetFPSStamp()) + L" FPS (" + to_wstring(frames_count) + L") " + to_wstring(cpu_usage.lastUsage));
-	//	//log(to_wstring(mouse.X.getPos()));
-	//	//log(L" (X) ");
-	//	//log(to_wstring(mouse.Y.getPos()));
-	//	//log(L" (Y)");
+		//log(L"\r                                                            \r");
+		////log(to_wstring(timer.GetFPSStamp()) + L" FPS (" + to_wstring(frames_count) + L") " + to_wstring(cpu_usage.lastUsage));
+		//log(to_wstring(mouse.X.getPos()));
+		//log(L" (X) ");
+		//log(to_wstring(mouse.Y.getPos()));
+		//log(L" (Y)");
 
-	//	logVolatile(L"\r                                     \r");
-	//	logVolatile(L"Camera: ");
-	//	logVolatile(std::to_wstring(game.dbg_entityfollow));
-	//	logVolatile(L" (entity ");
-	//	logVolatile(std::to_wstring(game.dbg_entityfollow%physEntities.size()));
-	//	logVolatile(L") -- ");
+		logVolatile(L"\r                                     \r");
+		logVolatile(L"Cursor: ");
+		if (mouse.isExclusive())
+			logVolatile(L"E");
+		else
+			logVolatile(L"S");
 
-	//	//printf("\33[2K\r");
-	//	//system("CLS");
-	//	c = 0.0f;
-	//}
+		logVolatile(L" / Window: ");
+		if (GetActiveWindow() == window_main.hWnd)
+			logVolatile(L"A");
+		else
+			logVolatile(L"-");
+		logVolatile(L" ");
+		if (GetForegroundWindow() == window_main.hWnd)
+			logVolatile(L"F");
+		else
+			logVolatile(L"-");
+
+		/*logVolatile(L" (entity ");
+		logVolatile(std::to_wstring(game.dbg_entityfollow%physEntities.size()));
+		logVolatile(L") -- ");*/
+
+		//printf("\33[2K\r");
+		//system("CLS");
+		c = 0.0f;
+	}
 }
 HRESULT Antimony::log(std::wstring string, unsigned int col, bool timestamp)
 {

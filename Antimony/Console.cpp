@@ -37,9 +37,9 @@ bool Console::isClosed()
 	return !m_open;
 }
 
-void Console::parse(MSG msg, ControlParams *ctrls)
+void Console::parse(UINT message, WPARAM wParam, LPARAM lParam, ControlParams *ctrls)
 {
-	switch (msg.wParam)
+	switch (wParam)
 	{
 		case 0x08:		// Backspace
 		{
@@ -116,42 +116,20 @@ void Console::parse(MSG msg, ControlParams *ctrls)
 		}
 		default:
 		{
-			if (msg.wParam == ctrls->k_console)		// do not print console key
+			unsigned char scancode = ((unsigned char*)&lParam)[2];
+			unsigned int virtualKey = MapVirtualKey(scancode, MAPVK_VSC_TO_VK);
+
+			if (virtualKey == ctrls->k_console)		// do not print console key
 				break;
 			else
 			{
-				wchar_t c;
+				wchar_t c = wParam;
 
-				TranslateMessage(&msg);
-				DispatchMessageW(&msg);
+				if (message != WM_CHAR || (wParam <= 0xff && !isprint(c)))
+					break;
 
-				bool valid = false;
-
-				if (!valid)
-				{
-					if (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
-					{
-						if (msg.message == WM_CHAR)
-						{
-							c = msg.wParam;
-							valid = true;
-
-							if (c <= 0xff)
-							{
-								if (!isprint(c))
-									valid = false;
-							}
-						}
-						TranslateMessage(&msg);
-						DispatchMessageW(&msg);
-					}
-				}
-
-				if (valid)
-				{
-					m_cmdStr.insert(m_caretPos, 1, c);
-					m_caretPos++;
-				}
+				m_cmdStr.insert(m_caretPos, 1, c);
+				m_caretPos++;
 				break;
 			}
 		}

@@ -113,7 +113,7 @@ Camera::Camera()
 	zoom = 1;
 	dolly = 1;
 	minZoom = 0.1;
-	maxZoom = 3.9;
+	maxZoom = MATH_PI - 0.1;
 	minDolly = 0.1;
 	maxDolly = -1;
 	minPitch = 0.1;

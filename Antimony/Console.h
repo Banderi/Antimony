@@ -46,7 +46,7 @@ public:
 	bool isOpen();
 	bool isClosed();	// gee you're lazy
 
-	void parse(MSG msg, ControlParams *ctrls);		// parse messages (keys etc.)
+	void parse(UINT message, WPARAM wParam, LPARAM lParam, ControlParams *ctrls);		// parse messages (keys etc.)
 	bool send(std::wstring cmd);					// send command
 	void clear();
 	void purgeHistory();

@@ -32,7 +32,6 @@ color BtnStateColor(Input bt)
 
 void Antimony::render_Debug()
 {
-	//devcon->IASetVertexBuffers(0, 1, &vertexbuffer, (UINT*)sizeof(VERTEX_BASIC), (UINT*)(0));
 	setDepthBufferState(OFF);
 	setShader(SHADERS_PLAIN);
 
@@ -70,20 +69,6 @@ void Antimony::render_Debug()
 				Draw3DLineThin(p, p + 0.1 * n, COLOR_BLACK, COLOR_RED, &mat_identity);
 			}
 		}
-		/*auto &mf = objectsCollisions[player.getColl()->rb];
-		if (!mf.empty())
-		{
-			for (int i = 0; i < mf.size(); i++)
-			{
-				auto b0 = (btRigidBody*)mf.at(i)->getBody0();
-				auto b1 = (btRigidBody*)mf.at(i)->getBody1();
-
-				Vector3 p = btToFloat3(&b1->getWorldTransform().getOrigin());
-				Vector3 n = btToFloat3(&b1->getTotalTorque());
-
-				Draw3DLineThin(p, p + 0.1 * n, COLOR_RED, COLOR_RED, &mat_identity);
-			}
-		}*/
 	}
 
 	if (game.dbg_info)
@@ -92,7 +77,6 @@ void Antimony::render_Debug()
 		{
 			case DBGCHART_FPS:
 			{
-				//devcon->IASetVertexBuffers(0, 1, &vertexbuffer, (UINT*)sizeof(VERTEX_BASIC), (UINT*)(0));
 				setShader(SHADERS_PLAIN);
 
 				render_DebugFPS(float2(display.right, display.bottom));
@@ -105,7 +89,6 @@ void Antimony::render_Debug()
 			}
 			case DBGCHART_INPUT:
 			{
-				//devcon->IASetVertexBuffers(0, 1, &vertexbuffer, (UINT*)sizeof(VERTEX_BASIC), (UINT*)(0));
 				setShader(SHADERS_PLAIN);
 
 				render_DebugKeyboard(float2(0, -300));

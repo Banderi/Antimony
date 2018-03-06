@@ -23,49 +23,29 @@ void Antimony::detachCamera()
 	camera_main.zoom = 1;
 	camera_main.dolly = 1;
 }
-void Antimony::attachCamera(btObject *object, float3 displ, bool zoom, bool dolly)
+void Antimony::attachCamera(btObject *object, float3 displ, float zoom, float dolly, bool en_zoom, bool en_dolly)
 {
 	camera_main.object = object;
 	camera_main.displacement = displ;
-	camera_main.enableZoom(zoom);
-	camera_main.enableDolly(dolly);
+	camera_main.zoom = zoom;
+	camera_main.dolly = dolly;
+	camera_main.enableZoom(en_zoom);
+	camera_main.enableDolly(en_dolly);
 	camera_main.noclip(OFF);
-
-	camera_main.zoom = 1;
-	camera_main.dolly = 1;
 }
-void Antimony::attachCamera(float3 pos, bool zoom, bool dolly)
+void Antimony::attachCamera(float3 pos, float zoom, float dolly, bool en_zoom, bool en_dolly)
 {
 	camera_main.object = nullptr;
 	camera_main.displacement = pos;
-	camera_main.enableZoom(zoom);
-	camera_main.enableDolly(dolly);
+	camera_main.zoom = zoom;
+	camera_main.dolly = dolly;
+	camera_main.enableZoom(en_zoom);
+	camera_main.enableDolly(en_dolly);
 	camera_main.noclip(OFF);
-
-	camera_main.zoom = 1;
-	camera_main.dolly = 1;
-}
-
-void Antimony::setSubSystem(unsigned char subs)
-{
-	subSystem = subs;
-}
-unsigned char Antimony::getSubSystem()
-{
-	return subSystem;
-}
-bool Antimony::ifSubSystem(unsigned char subs)
-{
-	if (subSystem == subs)
-		return true;
-	else
-		return false;
 }
 
 namespace Antimony
 {
 	Player player;
 	Camera camera_main;
-
-	unsigned char subSystem = SUBSYS_NONE;
 }

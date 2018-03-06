@@ -145,6 +145,49 @@ void MouseController::reset()
 	Y.update();
 	Z.update();
 }
+void MouseController::acquire(bool persistent)
+{
+	while (ShowCursor(false) >= 0);
+	ClipCursor(&Antimony::window_main.plane);
+	GetCursorPos(&m_fixedPos);
+	if (persistent)
+	{
+		m_exclusive = true;
+	}
+}
+void MouseController::release(bool persistent)
+{
+	while (ShowCursor(true) < 0);
+	ClipCursor(NULL);
+	if (persistent)
+	{
+		m_exclusive = false;
+	}
+}
+bool MouseController::isExclusive()
+{
+	return m_exclusive;
+}
+void MouseController::clip(RECT r)
+{
+	m_clip = r;
+}
+void MouseController::resetCursor()
+{
+	SetCursorPos(m_fixedPos.x, m_fixedPos.y);
+}
+void MouseController::setCursor(unsigned int c)
+{
+	m_currentCursor = c;
+}
+void MouseController::show()
+{
+	m_visible = true;
+}
+void MouseController::hide()
+{
+	m_visible = false;
+}
 
 void KeysController::updateKeyboard(RAWKEYBOARD rkeys)
 {
@@ -766,52 +809,67 @@ HRESULT Antimony::registerRID()
 		return S_OK;
 	}
 }
-HRESULT Antimony::handleInput(MSG msg)
+HRESULT Antimony::handleInput(MSG *msg)
 {
-	if (msg.message == WM_KEYDOWN)
+	return handleInput(window_main.hWnd, msg->message, msg->wParam, msg->lParam);
+}
+HRESULT Antimony::handleInput(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	wm_message = true;
+
+	switch (message)
 	{
-		/*swprintf_s(buf, L" 0x%02X", msg.wParam);
-		logVolatile(buf);*/
-
-		if (devConsole.isOpen())
-			devConsole.parse(msg, &controls);
-
-		return S_OK;
-	}
-	else
-	{
-		UINT dwSize;
-
-		GetRawInputData((HRAWINPUT)msg.lParam, RID_INPUT, NULL, &dwSize, sizeof(RAWINPUTHEADER));
-		LPBYTE lpb = new BYTE[dwSize];
-		if (lpb == NULL)
-			return 0;
-
-		int readSize = GetRawInputData((HRAWINPUT)msg.lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER));
-		if (readSize != dwSize)
-			return HRESULT_FROM_WIN32(GetLastError());
-
-		RAWINPUT* raw = (RAWINPUT*)lpb;
-
-		if (raw->header.dwType == RIM_TYPEKEYBOARD)
+		case WM_KEYDOWN:
 		{
-			keys.updateKeyboard(raw->data.keyboard);
+			wm_keydown = true;
+			return S_OK;
 		}
-		else if (raw->header.dwType == RIM_TYPEMOUSE)
+		case WM_CHAR:
 		{
-			mouse.update(raw->data.mouse);
+			if (devConsole.isOpen())
+				devConsole.parse(message, wParam, lParam, &controls);
+			return S_OK;
 		}
-		else if (raw->header.dwType == RIM_TYPEHID)
+		case WM_INPUT:
 		{
-			for (unsigned char i = 0; i < XUSER_MAX_COUNT; i++)
+			SetActiveWindow(window_main.hWnd);
+			if (mouse.isExclusive())
+				mouse.resetCursor();
+			wm_input = true;
+			UINT dwSize;
+
+			GetRawInputData((HRAWINPUT)lParam, RID_INPUT, NULL, &dwSize, sizeof(RAWINPUTHEADER));
+			LPBYTE lpb = new BYTE[dwSize];
+			if (lpb == NULL)
+				return 0;
+
+			int readSize = GetRawInputData((HRAWINPUT)lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER));
+			if (readSize != dwSize)
+				return HRESULT_FROM_WIN32(GetLastError());
+
+			RAWINPUT* raw = (RAWINPUT*)lpb;
+
+			if (raw->header.dwType == RIM_TYPEKEYBOARD)
 			{
-				controller[i].update();
+				keys.updateKeyboard(raw->data.keyboard);
 			}
+			else if (raw->header.dwType == RIM_TYPEMOUSE)
+			{
+				mouse.update(raw->data.mouse);
+			}
+			else if (raw->header.dwType == RIM_TYPEHID)
+			{
+				for (unsigned char i = 0; i < XUSER_MAX_COUNT; i++)
+				{
+					controller[i].update();
+				}
+			}
+
+			delete[] lpb;
+			return S_OK;
 		}
-
-		delete[] lpb;
-
-		return S_OK;
+		default:
+			return S_OK;
 	}
 }
 
@@ -826,4 +884,9 @@ namespace Antimony
 	bool wm_message = false;
 	bool wm_input = false;
 	bool wm_keydown = false;
+
+	HCURSOR arrow = LoadCursorW(NULL, IDC_ARROW);
+	HCURSOR beam = LoadCursorW(NULL, IDC_IBEAM);
+	HCURSOR hand = LoadCursorW(NULL, IDC_HAND);
+	HCURSOR busy = LoadCursorW(NULL, IDC_WAIT);
 }

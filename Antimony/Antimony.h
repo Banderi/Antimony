@@ -31,6 +31,8 @@ namespace Antimony
 	HRESULT initAssetLoaders();
 
 	void createMainWindow(HINSTANCE hInstance);
+	void messageQueue(MSG *msg, bool *run);
+	LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 	void cleanUp();
 	void cleanD3D();

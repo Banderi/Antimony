@@ -138,11 +138,24 @@ public:
 	}
 };
 
+struct Cursor
+{
+	//Icon sprite;
+	bool animated;
+};
+
 class MouseController
 {
 private:
 	bool m_reset;
 	std::vector<Input_Mouse*> mouseArray;
+	bool m_exclusive;
+	RECT m_clip;
+	bool m_visible;
+	POINT m_fixedPos;
+
+	std::vector<Cursor> m_cursorSet;
+	unsigned int m_currentCursor;
 
 public:
 	Input_Mouse LMB;
@@ -153,10 +166,17 @@ public:
 	Axis Y;
 	Axis Z;
 
-	bool exclusive;
-
 	void update(RAWMOUSE rmouse);
 	void reset();
+
+	void acquire(bool persistent = true);
+	void release(bool persistent = true);
+	bool isExclusive();
+	void clip(RECT r);
+	void resetCursor();
+	void setCursor(unsigned int c);
+	void show();
+	void hide();
 
 	MouseController()
 	{
@@ -168,8 +188,10 @@ public:
 		mouseArray.push_back(&MMB);
 		mouseArray.push_back(&RMB);
 
-		exclusive = 1;
-		m_reset = 0;
+		m_exclusive = true;
+		m_reset = false;
+		m_visible = false;
+		m_currentCursor = 0;
 	}
 };
 class KeysController
@@ -348,6 +370,9 @@ namespace Antimony
 	extern bool wm_input;
 	extern bool wm_keydown;
 
+	extern HCURSOR arrow, beam, hand, busy;
+
 	HRESULT registerRID();
-	HRESULT handleInput(MSG msg);
+	HRESULT handleInput(MSG *msg);
+	HRESULT handleInput(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 }

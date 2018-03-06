@@ -36,7 +36,11 @@ void Character::update(double delta, std::map<const btCollisionObject*, std::vec
 	m_linWorldVel = bt_origin;
 	m_angWorldVel = bt_origin;
 
-	asset.update(delta);
+	if (m_jumpState == JUMPSTATE_ONGROUND)
+		m_collisionObject->getRigidBody()->setLinearVelocity(bt_origin);
+
+	if (m_hasAsset)
+		m_asset.update(delta);
 	updateContact(JS_NULL);
 
 	auto& mf = objectsCollisions[m_collisionObject->getRigidBody()];	// get current world manifolds
@@ -60,34 +64,17 @@ void Character::update(double delta, std::map<const btCollisionObject*, std::vec
 					m_angWorldVel.setX(0);
 					m_angWorldVel.setZ(0);
 					m_linWorldVel = b->getLinearVelocity() - d.cross(m_angWorldVel);			// linear vel. is object's vel. plus cross product of angular vel. and distance
-					//m_linWorldVel.setY(m_collisionObject->getRigidBody()->getLinearVelocity().getY());
-					m_linWorldVel.setY(0);
-
-					/*m_linWorldVel = m_collisionObject->getRigidBody()->getLinearVelocity();
-					m_linWorldVel.setX(0);
-					m_linWorldVel.setZ(0);*/
-					//m_linWorldVel = bt_origin;
+					//m_linWorldVel.setY(0);
 
 					updateContact(JS_CONTACT);
 
 					goto endloop;										// skip all other contact points/manifolds
 				}
-				//else if (a2 <= MATH_PI * 0.2 && b1 == physEntities.at(0)->rb) // infinite plane has inverted normals (why???)
-				//{
-				//	player.jumping = 0;
-				//	//p = b1->getLinearVelocity();
-
-				//	// no reason to calculate movement here
-
-				//	goto contact;
-				//}
 				else
 				{
-					//m_jumping = 1;
 					updateContact(JS_FREE);
 				}
 			}
-			//m_jumping = 1;
 		}
 		updateContact(JS_FREE);
 	endloop:;
@@ -95,7 +82,6 @@ void Character::update(double delta, std::map<const btCollisionObject*, std::vec
 	else
 	{
 		updateContact(JS_FREE);
-		//m_jumping = 1;
 	}
 
 	m_collisionObject->getRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
@@ -105,24 +91,24 @@ void Character::updateContact(char contact)
 	if (contact == JS_FREE)				// no contact
 	{
 		m_jumpState = JUMPSTATE_INAIR;
-		asset.animController()->current_anim = 0;
+		m_asset.animController()->current_anim = 0;
 		/*else
 		{
 			m_jumping = JUMPSTATE_INAIR;
-			asset.animController()->current_anim = 4;
+			m_asset.animController()->current_anim = 4;
 		}*/
 	}
 	if (contact == JS_JUMP)				// actively jumping
 	{
 		m_jumpState = JUMPSTATE_JUMPING;
-		asset.animController()->current_anim = 4;
+		m_asset.animController()->current_anim = 4;
 	}
 	else if (contact == JS_CONTACT)		// contact
 	{
 		if (m_jumpState != JUMPSTATE_ONGROUND)
 		{
 			m_jumpState = JUMPSTATE_LANDING;
-			asset.animController()->current_anim = 4;
+			m_asset.animController()->current_anim = 4;
 		}
 	}
 	else if (contact == JS_NULL)		// default (no changes)
@@ -130,12 +116,12 @@ void Character::updateContact(char contact)
 		if (m_jumpState == JUMPSTATE_JUMPING)
 		{
 			m_jumpState = JUMPSTATE_INAIR;
-			asset.animController()->current_anim = 0;
+			m_asset.animController()->current_anim = 0;
 		}
 		else if (m_jumpState == JUMPSTATE_LANDING)
 		{
 			m_jumpState = JUMPSTATE_ONGROUND;
-			asset.animController()->current_anim = 3;
+			m_asset.animController()->current_anim = 3;
 		}
 	}
 }
@@ -189,6 +175,15 @@ void Character::attemptJump()
 
 	updateContact(JS_JUMP);
 }
+void Character::load3DAsset(std::wstring file, float3 s)
+{
+	m_asset.loadFBX(file, s);
+	m_hasAsset = true;
+}
+Asset* Character::getAsset()
+{
+	return &m_asset;
+}
 void Character::setCollisionObject(btObject *pc)
 {
 	m_collisionObject = pc;
@@ -223,10 +218,10 @@ Character::Character()
 	m_moving = false;
 	m_jumpState = 0;
 	m_actionState = 0;
-	//rvel = btVector3(0, 0, 0);
 	m_movSpeed = 0.5f;
 	m_jumpSpeed = 5;
 	m_collisionObject = nullptr;
+	m_hasAsset = false;
 }
 Character::~Character()
 {

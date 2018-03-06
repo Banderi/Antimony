@@ -20,8 +20,6 @@
 
 ///
 
-LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-
 void Antimony::createMainWindow(HINSTANCE hInstance)
 {
 	log(L"Creating main window handle...", CSL_SYSTEM);
@@ -33,10 +31,13 @@ void Antimony::createMainWindow(HINSTANCE hInstance)
 	wc.style = CS_HREDRAW | CS_VREDRAW;
 	wc.lpfnWndProc = WindowProc;
 	wc.hInstance = hInstance;
-	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hCursor = arrow;
 	wc.hbrBackground = CreateSolidBrush(RGB(0, 0, 0));
 	wc.lpszClassName = L"WindowClass";
 	RegisterClassExW(&wc);
+
+	SetCursor(arrow);
+	//SetClassLong(window_main.hWnd, GCL_HCURSOR, (DWORD)arrow);
 
 	window_main.hWnd = CreateWindowExW(0,
 		L"WindowClass",
@@ -51,27 +52,130 @@ void Antimony::createMainWindow(HINSTANCE hInstance)
 
 	log(L" done!\n", CSL_SUCCESS, false);
 }
+void Antimony::messageQueue(MSG *msg, bool *run)
+{
+	wm_message = false;
+	wm_input = false;
+	wm_keydown = false;
+
+	while (PeekMessageW(msg, NULL, 0, 0, PM_REMOVE))
+	{
+		switch (msg->message)
+		{
+			case WM_DESTROY:
+			{
+				PostQuitMessage(0);
+				break;
+			}
+			case WM_QUIT:
+			{
+				*run = false;
+				break;
+			}
+		}
+		TranslateMessage(msg);
+		DispatchMessageW(msg);
+	}
+}
+LRESULT CALLBACK Antimony::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	handleInput(hWnd, message, wParam, lParam);
+
+	switch (message)
+	{
+		case WM_KEYDOWN:
+		{
+			if (Antimony::devConsole.isClosed())
+			{
+				switch (wParam)
+				{
+					case VK_F3:
+					{
+						Antimony::game.dbg_info = !Antimony::game.dbg_info;
+						break;
+					}
+					case VK_F4:
+					{
+						Antimony::game.dbg_infochart++;
+						if (Antimony::game.dbg_infochart > DBGCHART_PAGES_COUNT - 1)
+						{
+							Antimony::game.dbg_infochart = 0;
+						}
+						break;
+					}
+					case VK_F8:
+					{
+						Antimony::game.dbg_wireframe = !Antimony::game.dbg_wireframe;
+						break;
+					}
+					case VK_OEM_COMMA:
+					{
+						Antimony::game.dbg_entityfollow--;
+						if (Antimony::game.dbg_entityfollow < 0)
+							Antimony::game.dbg_entityfollow = Antimony::physEntities.size() - 1;
+						break;
+					}
+					case VK_OEM_PERIOD:
+					{
+						Antimony::game.dbg_entityfollow++;
+						if (Antimony::game.dbg_entityfollow > Antimony::physEntities.size() - 1)
+							Antimony::game.dbg_entityfollow = 0;
+						break;
+					}
+					case 0x52:
+					{
+						// TODO: fix platform momentum
+						Antimony::resetPhysics();
+						break;
+					}
+					case 0x46:
+					{
+						if (Antimony::devConsole.isClosed())
+						{
+							if (Antimony::camera_main.object == nullptr)
+							{
+								Antimony::setGameState(GAMESTATE_INGAME);
+								Antimony::attachCamera(Antimony::getPlayer()->getColl(), float3(0, 0.26, 0));
+							}
+							else
+							{
+								Antimony::setGameState(GAMESTATE_PAUSED);
+								Antimony::detachCamera();
+							}
+						}
+						break;
+					}
+				}
+			}
+
+
+			break;
+		}
+		default:
+		{
+			/*TranslateMessage(msg);
+			DispatchMessageW(msg);*/
+			break;
+		}
+	}
+	return DefWindowProcW(hWnd, message, wParam, lParam);
+}
 
 int Antimony::startUp(HINSTANCE hInstance, int nCmdShow)
 {
 	buildPaths();
+	logFile.open(filePath(L"log.txt"));
+	log(L"---> START OF DEBUG CONSOLE <---\n", CSL_SYSTEM);
+
 	readConfig();
 
 #ifdef _DEBUG
+	if (!handleErr(&hr, HRH_MAIN_DEBUGMONIOR, initDebugMonitor()))
+		return 0;
 	game.debug = true;
 #endif
 
-	logFile.open(filePath(L"log.txt"));
-	if (game.debug) // set by debugger
-	{
-		if (!handleErr(&hr, HRH_MAIN_DEBUGMONIOR, initDebugMonitor()))
-			return 0;
-	}
-	log(L"---> START OF DEBUG CONSOLE <---\n", CSL_SYSTEM);
-
-
-
-	if (game.debug) // set by config
+	if (game.debug)
 	{
 		devConsole.enable();
 
@@ -103,21 +207,11 @@ int Antimony::startUp(HINSTANCE hInstance, int nCmdShow)
 	if (!handleErr(nullptr, HRH_MAIN_INITPHYSICS, initPhysics()))
 		return 0;
 
-
-	ShowCursor(false);
-	ClipCursor(&window_main.plane);
-
 	///
 
 	setGameState(GAMESTATE_SPLASH);
 
 	///
-
-	if (ifSubSystem(SUBSYS_NONE))
-	{
-		handleErr(nullptr, HRH_MAIN_NOSUBSYSTEM, E_INVALIDARG);
-		return 0;
-	}
 
 	log(L"Entering main loop...\n", CSL_SYSTEM);
 
@@ -639,6 +733,8 @@ HRESULT Antimony::initControls()
 	keys.console.set(controls.k_console, GetKeyName(controls.k_console));
 	keys.snapshot.set(controls.k_snapshot, GetKeyName(controls.k_snapshot));
 	keys.pause.set(controls.k_pause, GetKeyName(controls.k_pause));
+
+	mouse.acquire();
 
 	return S_OK;
 }

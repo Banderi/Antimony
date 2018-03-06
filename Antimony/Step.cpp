@@ -28,10 +28,15 @@ void Antimony::step()
 
 	cpuUsage.GetUsage(0);
 
-	if (GetFocus() == window_main.hWnd)
+	if (GetForegroundWindow() == window_main.hWnd && mouse.isExclusive())
 	{
-		ShowCursor(false);
-		ClipCursor(&window_main.plane);
+		mouse.acquire(false);
+	}
+	else
+	{
+		mouse.release(false);
+		/*SetCursor(arrow);
+		SetClassLong(window_main.hWnd, GCL_HCURSOR, (DWORD)arrow);*/
 	}
 
 	updateGameState();
@@ -51,6 +56,7 @@ void Antimony::step()
 
 		updateAI(fstep);														// update AI/scripts etc. (TBI)
 		updateWorld(fstep);														// update moving objects, triggers etc. (TBI)
+		player.update(delta, m_objectsCollisions);
 		updatePlayerControls(&keys, &controller[0], fstep);						// update player inputs
 		updatePhysics(fstep);													// btWorld step
 		updateCameraControls(&mouse, &keys, &controller[0], fstep);				// update camera (--> mat_view)
@@ -59,7 +65,6 @@ void Antimony::step()
 	{
 		camera_main.unlock();
 
-		updatePlayerControls(&keys, &controller[0], fstep);						// update player inputs
 		updateCameraControls(&mouse, &keys, &controller[0], fstep);				// update camera (--> mat_view)
 	}
 
@@ -179,7 +184,7 @@ void Antimony::updatePlayerControls(KeysController *khandle, XInputController *x
 
 	//player.MoveToPoint(player.GetPosDest() + mov * speed * delta, .999999971);
 
-	player.update(delta, m_objectsCollisions);
+	//player.update(delta, m_objectsCollisions);
 
 	if (player.isFree() && camera_main.object == player.getColl())
 	{
@@ -289,7 +294,7 @@ void Antimony::updateCameraControls(MouseController *mhandle, KeysController *kh
 	}
 
 	mat_view = MLookAtLH(finalpos, camera_main.getLookAt(), float3(0, 1, 0));
-	mat_proj = MPerspFovLH(camera_main.zoom * MATH_PI / 4, window_main.aspect, 0.001f, 10000.0f);
+	mat_proj = MPerspFovLH(camera_main.zoom, window_main.aspect, 0.001f, 10000.0f);
 }
 void Antimony::updateAI(double delta)
 {
@@ -297,34 +302,14 @@ void Antimony::updateAI(double delta)
 }
 void Antimony::updatePhysics(double delta)
 {
+	/*for (unsigned int e = 0; e < physEntities.size(); e++)
+		physEntities.at(e)->updateKinematic(delta);*/
 	btWorld->stepSimulation(delta, 10, 1.f / 240.f);
 }
 void Antimony::updateWorld(double delta)
 {
 	// TODO: Implement world mechanics
 	// TODO: Implement triggers
-
-	static double h = 0;
-	if (ifGameState(GAMESTATE_INGAME))
-		h += 0.5f * MATH_PI * delta;
-	if (h >= 2 * MATH_PI)
-		h = 0;
-
-	if (0)
-	{
-		unsigned int f = 0;
-		f = abs(50 * cosf(h) - 40);
-		Sleep(f);
-	}
-
-	physEntities.at(3)->setMatTransform(&(MTranslation( 0, 0.5, 0) * MRotY(h)));
-	physEntities.at(4)->setMatTransform(&(MTranslation( 3, 1, sinf(h))));
-	physEntities.at(4)->updateKinematic(delta);
-	physEntities.at(5)->setMatTransform(&(MTranslation( 3, (1 - 0.5 * sinf(h)), 2)));
-	//physEntities.at(5)->updateKinematic(delta);
-	//physEntities.at(5)->getRigidBody()->setLinearVelocity(btVector3(0, (sinf(h)), 0));
-	//physEntities.at(5)->getRigidBody()->setLinearFactor(btVector3(0, (sinf(h)), 0));
-	//physEntities.at(5)->getRigidBody()->setLinearVelocity(bt_origin);
 }
 void Antimony::updateGameState()
 {
@@ -377,9 +362,15 @@ void Antimony::updateGameState()
 		if (devConsole.isEnabled())
 		{
 			if (devConsole.isOpen())
+			{
 				devConsole.close();
+				mouse.acquire();
+			}
 			else
+			{
 				devConsole.open();
+				mouse.release();
+			}
 		}
 	}
 }

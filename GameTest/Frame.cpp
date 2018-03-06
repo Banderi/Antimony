@@ -33,6 +33,76 @@ void Frame()
 	RenderHUD();														// render HUD
 }
 
+void Update_FPS()
+{
+	static double h = 0;
+	double h_sp = 0.5f;
+	if (Antimony::ifGameState(GAMESTATE_INGAME))
+		h += h_sp * MATH_PI * Antimony::delta;
+	if (h >= 2 * MATH_PI)
+		h = 0;
+
+	if (0)
+	{
+		unsigned int f = 0;
+		f = abs(50 * cosf(h) - 40);
+		Sleep(f);
+	}
+
+	Antimony::physEntities.at(3)->setMatTransform(&(MTranslation(0, 0.5, 0) * MRotY(h)));
+	Antimony::physEntities.at(4)->setMatTransform(&(MTranslation(3, 1, sinf(h))));
+	Antimony::physEntities.at(5)->setMatTransform(&(MTranslation(3, (1 - 0.5 * sinf(h)), 2)));
+}
+void Update_TPS()
+{
+	static double h = 0;
+	double h_sp = 0.5f;
+	if (Antimony::ifGameState(GAMESTATE_INGAME))
+		h += h_sp * MATH_PI * Antimony::delta;
+	if (h >= 2 * MATH_PI)
+		h = 0;
+
+	if (0)
+	{
+		unsigned int f = 0;
+		f = abs(50 * cosf(h) - 40);
+		Sleep(f);
+	}
+
+	Antimony::physEntities.at(3)->setMatTransform(&(MTranslation(0, 0.5, 0) * MRotY(h)));
+	Antimony::physEntities.at(4)->setMatTransform(&(MTranslation(3, 1, sinf(h))));
+	//physEntities.at(4)->updateKinematic(delta);
+	Antimony::physEntities.at(5)->setMatTransform(&(MTranslation(3, (1 - 0.5 * sinf(h)), 2)));
+	//physEntities.at(5)->updateKinematic(delta);
+	//physEntities.at(5)->getRigidBody()->setLinearVelocity(btVector3(0, (sinf(h)), 0));
+	//physEntities.at(5)->getRigidBody()->setLinearFactor(btVector3(0, (sinf(h)), 0));
+	//physEntities.at(5)->getRigidBody()->setLinearVelocity(bt_origin);
+}
+void Update_Scroller()
+{
+
+}
+void Update_RTS()
+{
+
+}
+void Update_Tiled()
+{
+
+}
+void Update_Visual()
+{
+
+}
+void Update_Fisheye()
+{
+
+}
+void Update_Adventure()
+{
+
+}
+
 void RenderWorld()
 {
 	//devcon->IASetVertexBuffers(0, 1, &vertexbuffer, (UINT*)sizeof(VERTEX_BASIC), (UINT*)(0));
@@ -134,7 +204,7 @@ void RenderEntities()
 
 	//Antimony::setShader(SHADERS_PLAIN);
 
-	Antimony::getPlayer()->asset.draw(&(mat_world), Antimony::game.dbg_info);
+	Antimony::getPlayer()->getAsset()->draw(&(mat_world), Antimony::game.dbg_info);
 	/*if (Antimony::game.dbg_wireframe)
 	{
 		mat_world = Antimony::getPlayer()->getColl()->getMatTransform();
