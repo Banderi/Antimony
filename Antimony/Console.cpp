@@ -219,11 +219,11 @@ void Console::draw(DisplayParams *display, double delta, FontWrapper *font)
 		//devcon->IASetVertexBuffers(0, 1, &vertexbuffer, (UINT*)sizeof(VERTEX_BASIC), (UINT*)(0));
 		Antimony::setDepthBufferState(OFF);
 		Antimony::setShader(SHADERS_PLAIN);
-		Draw2DFullRect(
+		Antimony::Draw2DFullRect(
 			display->width - cpadding, lheight * m_historyMaxLineCount,
 			display->left + cpadding * 0.5, display->top + (lheight * m_historyMaxLineCount) * m_drawerTimout,
 			2, color(0, 0, 0, 0.75), color(0.3, 0.1, 0.1, 1));
-		Draw2DFullRect(
+		Antimony::Draw2DFullRect(
 			display->width - cpadding, 25,
 			display->left + cpadding * 0.5, display->top + (lheight * m_historyMaxLineCount + 21) * m_drawerTimout,
 			2, color(0, 0, 0, 0.75), color(0.3, 0.1, 0.1, 1));

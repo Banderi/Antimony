@@ -23,7 +23,7 @@ public:
 	VertexCompound getGeometry();
 	TextureBundle getTextures();
 
-	void draw(mat *mat_world = &mat_world, bool debug = false);
+	void draw(mat *mat_world = &Antimony::mat_world, bool debug = false);
 	void drawSkeleton(mat *mat_world, bool names);
 
 	void update(double delta);

@@ -53,7 +53,7 @@ void Antimony::render_Debug()
 
 			Draw3DLineThin(p, p + 0.1 * n, COLOR_RED, COLOR_RED, &mat_identity);
 
-			float3 sp = WorldToScreen(p, &(mat_view * mat_proj), float2(window_main.width, window_main.height));
+			float3 sp = WorldToScreen(p);
 			if (sp.z > 0)
 				Draw2DDot(float2(sp.x, sp.y), 10, color(1,0,0,1));
 		}
@@ -80,6 +80,12 @@ void Antimony::render_Debug()
 				setShader(SHADERS_PLAIN);
 
 				render_DebugFPS(float2(display.right, display.bottom));
+
+				//render_DebugPie(float2(display.right, display.bottom), 100, )
+
+				mat_world = mat_orthoview;
+				//Draw3DCube(1, COLOR_WHITE);
+				Draw3DEllipses(2, 2, color(0, 0.3, 0.5, 0.3), 2 * MATH_PI, true);
 
 				break;
 			}
@@ -783,4 +789,8 @@ void Antimony::render_DebugFPS(float2 pos)
 
 	swprintf_s(buf, L"M/I/K:");
 	Consolas.render(buf, 10, pos.x - 260, pos.y - 33, 0xffffffff, 0);
+}
+void Antimony::render_DebugPie(float2 pos, float total, std::wstring name, std::vector<float*> data, std::vector<std::wstring*> labels)
+{
+	Draw2DEllipses(9.9, 9.9, pos.x, pos.y, COLOR_WHITE);
 }

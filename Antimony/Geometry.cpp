@@ -7,48 +7,9 @@
 
 ///
 
-IDXGISwapChain *swapchain;
-ID3D11Device *dev;
-ID3D11DeviceContext *devcon;
-
-ID3D11RenderTargetView *targettview;
-ID3D11DepthStencilView *depthstencilview;
-
-ID3D11RasterizerState *rss_standard, *rss_wireframe;
-ID3D11BlendState *blendstate;
-ID3D11DepthStencilState *dss_enabled, *dss_disabled;
-
-ID3D11Buffer *indexbuffer, *constantbuffer;
-
-SHADER sh_main, sh_debug, sh_plain, sh_plain3D;
-SHADER *sh_current = nullptr;
-
-mat mat_identity, mat_temp, mat_temp2, mat_world, mat_view, mat_proj, mat_orthoview, mat_orthoproj;
+mat mat_identity;
 float2 v2_origin = float2(0, 0);
 float3 v3_origin = float3(0, 0, 0);
-
-D3D11_INPUT_ELEMENT_DESC ied_basic[] = {
-	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-};
-D3D11_INPUT_ELEMENT_DESC ied_basic_animated[] = {
-	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "BLENDWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-};
-D3D11_INPUT_ELEMENT_DESC ied_main[] = {
-	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-};
-D3D11_INPUT_ELEMENT_DESC ied_main_skinned[] = {
-	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "BLENDWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-};
 
 ///
 
@@ -177,9 +138,9 @@ void VertexCompound::destroyDumps()
 
 ///
 
-unsigned long RGBA2DWORD(int iR, int iG, int iB, int iA)
+unsigned long RGBA2DWORD(int iR, int iG, int indexbuffer, int iA)
 {
-	return ((iA * 256 + iB) * 256 + iG) * 256 + iR;
+	return ((iA * 256 + indexbuffer) * 256 + iG) * 256 + iR;
 }
 
 mat TransposeMatrix(const mat &mIn)
@@ -195,8 +156,10 @@ float3 MatToFloat3(mat *m)
 	return float3(f._41, f._42, f._43);
 }
 
-float3 WorldToScreen(float3 p, mat *viewproj, float2 screen)
+float3 WorldToScreen(float3 p)
 {
+	mat *viewproj = &(Antimony::mat_view * Antimony::mat_proj);
+	float2 screen = float2(Antimony::display.width, Antimony::display.height);
 	float3 temp;
 	temp = XMVector3Transform(p, *viewproj);
 
@@ -403,58 +366,119 @@ void CalculateSmoothNormals(VERTEX_MAIN vin[], UINT vcount, UINT iin[], UINT ico
 		vin[v].normal = n;
 	}
 }
-void DrawNormals(VERTEX_MAIN vin[], int vcount, std::vector<std::vector<float3>> *normalgroups, bool components = false)
+
+HRESULT Antimony::FillBuffer(ID3D11Device *dev, ID3D11DeviceContext *devcon, ID3D11Buffer **out, void *in, UINT size)
 {
-	auto sh_temp = sh_current;
-	Antimony::setShader(SHADERS_PLAIN);
+	HRESULT hr;
 
-	for (int v = 0; v < vcount; v++)
+	D3D11_MAPPED_SUBRESOURCE ms;
+	hr = devcon->Map(*out, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms);
+	if (!handleErr(&hr, HRH_BUFFER_MAPPING, hr))
+		return hr;
+	D3D11_BUFFER_DESC bd;
+	(*out)->GetDesc(&bd);
+	UINT buffsize = bd.ByteWidth;
+	if (size > buffsize)
 	{
-		auto p = vin[v].position;
-		auto n = vin[v].normal * 0.1;
-		color c = color(n.x, n.y, n.z, 1);
-		c = color(0.5, 0.5, 1, 1);
-
-		XMVECTOR sv, rv, tv;
-		XMMatrixDecompose(&sv, &rv, &tv, mat_world);
-		mat r = XMMatrixRotationQuaternion(rv);
-
-		p = (float3)XMVector3Transform(p, mat_world);
-		n = (float3)XMVector3Transform(n, r);
-
-		Draw3DLineThin(p, p + n, c, c, &mat_identity);
-		auto _p = WorldToScreen(p + n, &(mat_view * mat_proj), float2(Antimony::display.width, Antimony::display.height));
-		if (_p.z > 0)
-		{
-			if (true)
-			{
-				Draw2DDot(float2(_p.x, _p.y), 2, c);
-				auto cfade = 255 * v / vcount;
-				auto color = RGBA2DWORD(cfade, 0, 0, 255);
-				color = RGBA2DWORD(128, 128, 255, 255);
-				//auto txt = std::to_wstring(n.Length());
-				auto txt = std::to_wstring(v);
-				Antimony::Consolas.render(txt.c_str(), 12, Antimony::display.width / 2 + _p.x + 1, Antimony::display.height / 2 + _p.y + 1, color, NULL);
-			}
-		}
-
-		if (components)
-			for (UINT nc = 0; nc < normalgroups->at(v).size(); nc++)
-			{
-				Draw3DLineThin(vin[v].position, vin[v].position + normalgroups->at(v).at(nc), COLOR_RED, COLOR_RED);
-			}
+		handleErr(&hr, HRH_BUFFER_OVERFLOW, DISP_E_BUFFERTOOSMALL);
+		return DISP_E_BUFFERTOOSMALL;
 	}
-	Antimony::setShader(sh_temp);
-};
+	memcpy(ms.pData, (UINT*)in, size);
+	devcon->Unmap(*out, NULL);
 
-void Draw2DDot(float2 p, float t, color c, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, SHADER* sh, ID3D11Buffer *ib, ID3D11Buffer *cb)
+	return S_OK;
+}
+bool Antimony::compileShader(HRESULT *hr, ::std::wstring shader, Shader *sh, D3D11_INPUT_ELEMENT_DESC ied[], UINT elems, UINT stride, UINT size)
+{
+	ID3D10Blob *blob = nullptr;
+
+	std::wstring fullpath = filePath(L"\\Shaders\\", shader + L".hlsl");
+	LPCWSTR file = fullpath.c_str();
+
+	if (!handleErr(hr, HRH_SHADER_COMPILE, D3DCompileFromFile(file, 0, 0, "VShader", "vs_4_0", 0, 0, &blob, 0)))
+		return 0;
+	if (!handleErr(hr, HRH_SHADER_CREATE, dev->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &sh->vs)))
+		return 0;
+	if (!handleErr(hr, HRH_SHADER_INPUTLAYOUT, dev->CreateInputLayout(ied, elems, blob->GetBufferPointer(), blob->GetBufferSize(), &sh->il)))
+		return 0;
+	if (!handleErr(hr, HRH_SHADER_COMPILE, D3DCompileFromFile(file, 0, 0, "PShader", "ps_4_0", 0, 0, &blob, 0)))
+		return 0;
+	if (!handleErr(hr, HRH_SHADER_CREATE, dev->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &sh->ps)))
+		return 0;
+
+	D3D11_BUFFER_DESC bd; // buffer description
+	ZeroMemory(&bd, sizeof(bd));
+
+	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	bd.Usage = D3D11_USAGE_DYNAMIC;
+	bd.ByteWidth = stride * size;
+	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	if (!handleErr(hr, HRH_SHADER_VERTEXBUFFER, dev->CreateBuffer(&bd, NULL, &sh->vb)))
+		return 0;
+
+	sh->vbstride = stride;
+	sh->vbsize = size;
+
+	sh->ied = ied;
+
+	sh->ready = true;
+
+	return 1; // all ok
+}
+bool Antimony::setShader(Shader *sh, ID3D11DeviceContext *devcon)
+{
+	if (sh->ready)
+	{
+		if (sh_current == sh)
+			return 1; // already set
+		sh_current = sh;
+
+		devcon->IASetVertexBuffers(0, 1, &sh->vb, &sh->vbstride, &sh->vboffset);
+		devcon->VSSetShader(sh->vs, 0, 0);
+		devcon->PSSetShader(sh->ps, 0, 0);
+		devcon->IASetInputLayout(sh->il);
+		devcon->GSSetShader(sh->gs, 0, 0);
+		devcon->HSSetShader(sh->hs, 0, 0);
+		devcon->CSSetShader(sh->cs, 0, 0);
+		devcon->DSSetShader(sh->ds, 0, 0);
+		return 1; // all ok
+	}
+	return 0; // NOPE
+}
+void Antimony::setDepthBufferState(bool state)
+{
+	if (state == true)
+		devcon->OMSetDepthStencilState(dss_enabled, 1);
+	else
+		devcon->OMSetDepthStencilState(dss_disabled, 1);
+}
+HRESULT Antimony::setView(mat *m_world, mat *view, mat *proj, color diffuse, ID3D11Device *dev, ID3D11DeviceContext *devcon, ID3D11Buffer *constantbuffer)
+{
+	ConstantBuffer buffer;
+
+	buffer.world = TransposeMatrix(*m_world);
+	buffer.view = TransposeMatrix(*view);
+	buffer.projection = TransposeMatrix(*proj);
+
+	XMVECTOR sv, rv, tv;
+	XMMatrixDecompose(&sv, &rv, &tv, *m_world);
+	mat r = XMMatrixRotationQuaternion(rv);
+
+	buffer.normal = TransposeMatrix(r);
+	buffer.diffuse = diffuse;
+	buffer.camera = float4(camera_main.getPos());
+
+	return FillBuffer(dev, devcon, &constantbuffer, &buffer, sizeof(buffer));
+}
+
+void Antimony::Draw2DDot(float2 p, float t, color c, color diffuse)
 {
 	float half_t = t * 0.5;
-	return Draw2DRectangle(t, t, p.x - half_t, p.y + half_t, c, diffuse, dv, devc, sh, ib, cb);
+	return Draw2DRectangle(t, t, p.x - half_t, p.y + half_t, c, diffuse);
 }
-void Draw2DLineThin(float2 p1, float2 p2, color c1, color c2, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, SHADER* sh, ID3D11Buffer *ib, ID3D11Buffer *cb)
+void Antimony::Draw2DLineThin(float2 p1, float2 p2, color c1, color c2, color diffuse)
 {
-	assert(sh->ied == ied_basic);
+	assert(sh_current->ied == ied_basic);
 
 	p1.y = -p1.y;
 	p2.y = -p2.y;
@@ -468,16 +492,16 @@ void Draw2DLineThin(float2 p1, float2 p2, color c1, color c2, color diffuse, ID3
 		{ p1.x, p1.y, 0, c1 },
 		{ p2.x, p2.y, 0, c2 }
 	};*/
-	//Antimony::FillBuffer<VERTEX_BASIC[]>(dv, devc, &sh->vb, vertices, sizeof(vertices));
-	Antimony::FillBuffer(dv, devc, &sh->vb, &vertices, sizeof(vertices));
+	//FillBuffer<VERTEX_BASIC[]>(dev, devcon, &sh_current->vb, vertices, sizeof(vertices));
+	FillBuffer(dev, devcon, &sh_current->vb, &vertices, sizeof(vertices));
 
-	Antimony::setView(&mat_identity, &mat_orthoview, &mat_orthoproj, diffuse, dv, devc, cb);
-	devc->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-	devc->Draw(2, 0);
+	setView(&mat_identity, &mat_orthoview, &mat_orthoproj, diffuse, dev, devcon, constantbuffer);
+	devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+	devcon->Draw(2, 0);
 }
-void Draw2DLineThick(float2 p1, float2 p2, float t, color c1, color c2, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, SHADER* sh, ID3D11Buffer *ib, ID3D11Buffer *cb)
+void Antimony::Draw2DLineThick(float2 p1, float2 p2, float t, color c1, color c2, color diffuse)
 {
-	assert(sh->ied == ied_basic);
+	assert(sh_current->ied == ied_basic);
 
 	p1.y = -p1.y;
 	p2.y = -p2.y;
@@ -497,22 +521,22 @@ void Draw2DLineThick(float2 p1, float2 p2, float t, color c1, color c2, color di
 		{ dist, -0.5 * t, 0, c2 },
 		{ dist, 0.5 * t, 0, c2 }
 	};*/
-	Antimony::FillBuffer(dv, devc, &sh->vb, &vertices, sizeof(vertices));
+	FillBuffer(dev, devcon, &sh_current->vb, &vertices, sizeof(vertices));
 	UINT indices[] =
 	{
 		0, 3, 2,
 		0, 1, 3
 	};
-	//Antimony::FillBuffer<UINT[]>(dv, devc, &ib, indices, sizeof(indices));
-	Antimony::FillBuffer(dv, devc, &ib, &indices, sizeof(indices));
+	//FillBuffer<UINT[]>(dev, devcon, &indexbuffer, indices, sizeof(indices));
+	FillBuffer(dev, devcon, &indexbuffer, &indices, sizeof(indices));
 
-	Antimony::setView(&(MRotZ(atan2(p2.y - p1.y, p2.x - p1.x)) * MTranslation(p1.x, p1.y, 0)), &mat_orthoview, &mat_orthoproj, diffuse, dv, devc, cb);
-	devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	devc->DrawIndexed(6, 0, 0);
+	setView(&(MRotZ(atan2(p2.y - p1.y, p2.x - p1.x)) * MTranslation(p1.x, p1.y, 0)), &mat_orthoview, &mat_orthoproj, diffuse, dev, devcon, constantbuffer);
+	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	devcon->DrawIndexed(6, 0, 0);
 }
-void Draw2DRectangle(float w, float h, float x, float y, color c, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, SHADER* sh, ID3D11Buffer *ib, ID3D11Buffer *cb)
+void Antimony::Draw2DRectangle(float w, float h, float x, float y, color c, color diffuse)
 {
-	assert(sh->ied == ied_basic);
+	assert(sh_current->ied == ied_basic);
 
 	y = -y;
 	VERTEX_BASIC vertices[] =
@@ -529,36 +553,36 @@ void Draw2DRectangle(float w, float h, float x, float y, color c, color diffuse,
 		{ w, h, 0, c },
 		{ 0, h, 0, c }
 	};*/
-	Antimony::FillBuffer(dv, devc, &sh->vb, &vertices, sizeof(vertices));
+	FillBuffer(dev, devcon, &sh_current->vb, &vertices, sizeof(vertices));
 	UINT indices[] =
 	{
 		0, 2, 1,
 		0, 3, 2
 	};
-	Antimony::FillBuffer(dv, devc, &ib, &indices, sizeof(indices));
+	FillBuffer(dev, devcon, &indexbuffer, &indices, sizeof(indices));
 
-	Antimony::setView(&MTranslation(x, y, 0), &mat_orthoview, &mat_orthoproj, diffuse, dv, devc, cb);
-	devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	devc->DrawIndexed(6, 0, 0);
+	setView(&MTranslation(x, y, 0), &mat_orthoview, &mat_orthoproj, diffuse, dev, devcon, constantbuffer);
+	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	devcon->DrawIndexed(6, 0, 0);
 }
-void Draw2DRectBorderThick(float w, float h, float x, float y, float t, color c, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, SHADER* sh, ID3D11Buffer *ib, ID3D11Buffer *cb)
+void Antimony::Draw2DRectBorderThick(float w, float h, float x, float y, float t, color c, color diffuse)
 {
-	assert(sh->ied == ied_basic);
+	assert(sh_current->ied == ied_basic);
 
 	h = -h;
-	Draw2DLineThick(float2(x - 0.5 * t, y), float2(x + w + 0.5 * t, y), t, c, c, diffuse, dv, devc, sh, ib, cb);
-	Draw2DLineThick(float2(x + w, y + 0.5 * t), float2(x + w, y + h - 0.5 * t), t, c, c, diffuse, dv, devc, sh, ib, cb);
-	Draw2DLineThick(float2(x + w + 0.5 * t, y + h), float2(x - 0.5 * t, y + h), t, c, c, diffuse, dv, devc, sh, ib, cb);
-	Draw2DLineThick(float2(x, y + h - 0.5 * t), float2(x, y + 0.5 * t), t, c, c, diffuse, dv, devc, sh, ib, cb);
+	Draw2DLineThick(float2(x - 0.5 * t, y), float2(x + w + 0.5 * t, y), t, c, c, diffuse);
+	Draw2DLineThick(float2(x + w, y + 0.5 * t), float2(x + w, y + h - 0.5 * t), t, c, c, diffuse);
+	Draw2DLineThick(float2(x + w + 0.5 * t, y + h), float2(x - 0.5 * t, y + h), t, c, c, diffuse);
+	Draw2DLineThick(float2(x, y + h - 0.5 * t), float2(x, y + 0.5 * t), t, c, c, diffuse);
 }
-void Draw2DFullRect(float w, float h, float x, float y, float t, color c1, color c2, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, SHADER* sh, ID3D11Buffer *ib, ID3D11Buffer *cb)
+void Antimony::Draw2DFullRect(float w, float h, float x, float y, float t, color c1, color c2, color diffuse)
 {
-	Draw2DRectangle(w, h, x, y, c1, diffuse, dv, devc, sh, ib, cb);
-	Draw2DRectBorderThick(w, h, x, y, t, c2, diffuse, dv, devc, sh, ib, cb);
+	Draw2DRectangle(w, h, x, y, c1, diffuse);
+	Draw2DRectBorderThick(w, h, x, y, t, c2, diffuse);
 }
-void Draw2DEllipses(float w, float h, float x, float y, color c, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, SHADER* sh, ID3D11Buffer *ib, ID3D11Buffer *cb)
+void Antimony::Draw2DEllipses(float w, float h, float x, float y, color c, color diffuse)
 {
-	assert(sh->ied == ied_basic);
+	assert(sh_current->ied == ied_basic);
 
 	y = -y;
 	VERTEX_BASIC vertices[] =
@@ -651,7 +675,7 @@ void Draw2DEllipses(float w, float h, float x, float y, color c, color diffuse, 
 		{ cosf(39 * MATH_PI / 20), sinf(39 * MATH_PI / 20), 0, c },
 		{ cosf(40 * MATH_PI / 20), sinf(40 * MATH_PI / 20), 0, c }
 	};*/
-	Antimony::FillBuffer(dv, devc, &sh->vb, &vertices, sizeof(vertices));
+	FillBuffer(dev, devcon, &sh_current->vb, &vertices, sizeof(vertices));
 	UINT indices[] =
 	{
 		1, 2, 0,
@@ -695,37 +719,37 @@ void Draw2DEllipses(float w, float h, float x, float y, color c, color diffuse, 
 		39, 40, 0,
 		40, 1, 0
 	};
-	Antimony::FillBuffer(dv, devc, &ib, &indices, sizeof(indices));
+	FillBuffer(dev, devcon, &indexbuffer, &indices, sizeof(indices));
 
-	Antimony::setView(&(MScaling(-w, h, 1) * MTranslation(x, y, 0)), &mat_orthoview, &mat_orthoproj, diffuse, dv, devc, cb);
-	devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	devc->DrawIndexed(120, 0, 0);
+	setView(&(MScaling(-w, h, 1) * MTranslation(x, y, 0)), &mat_orthoview, &mat_orthoproj, diffuse, dev, devcon, constantbuffer);
+	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	devcon->DrawIndexed(120, 0, 0);
 }
 
-void Draw3DLineThin(float3 p1, float3 p2, color c1, color c2, mat *mat_world, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, SHADER* sh, ID3D11Buffer *ib, ID3D11Buffer *cb)
+void Antimony::Draw3DLineThin(float3 p1, float3 p2, color c1, color c2, mat *m_world, color diffuse)
 {
-	assert(sh->ied == ied_basic);
+	assert(sh_current->ied == ied_basic);
 
 	VERTEX_BASIC vertices[] =
 	{
 		{ p1, c1 },
 		{ p2, c2 }
 	};
-	Antimony::FillBuffer(dv, devc, &sh->vb, &vertices, sizeof(vertices));
+	FillBuffer(dev, devcon, &sh_current->vb, &vertices, sizeof(vertices));
 
-	Antimony::setView(mat_world, &mat_view, &mat_proj, diffuse, dv, devc, cb);
-	devc->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-	devc->Draw(2, 0);
+	setView(m_world, &mat_view, &mat_proj, diffuse, dev, devcon, constantbuffer);
+	devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+	devcon->Draw(2, 0);
 }
-void Draw3DLineThick()
+void Antimony::Draw3DLineThick()
 {
-	//assert(sh->ied == ied_main);
+	//assert(sh_current->ied == ied_main);
 
 	// TODO: Implement bill-boarding
 }
-void Draw3DTriangle(float3 p1, float3 p2, float3 p3, color c, bool dd, mat *mat_world, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, SHADER* sh, ID3D11Buffer *ib, ID3D11Buffer *cb)
+void Antimony::Draw3DTriangle(float3 p1, float3 p2, float3 p3, color c, bool dd, mat *m_world, color diffuse)
 {
-	assert(sh->ied == ied_main);
+	assert(sh_current->ied == ied_main);
 
 	VERTEX_MAIN vertices[] =
 	{
@@ -739,24 +763,24 @@ void Draw3DTriangle(float3 p1, float3 p2, float3 p3, color c, bool dd, mat *mat_
 		{ p2.x, p2.y, p2.z, c },
 		{ p3.x, p3.y, p3.z, c }
 	};*/
-	Antimony::FillBuffer(dv, devc, &sh->vb, &vertices, sizeof(vertices));
+	FillBuffer(dev, devcon, &sh_current->vb, &vertices, sizeof(vertices));
 	UINT indices[] =
 	{
 		0, 2, 1,
 		0, 1, 2
 	};
-	Antimony::FillBuffer(dv, devc, &ib, &indices, sizeof(indices));
+	FillBuffer(dev, devcon, &indexbuffer, &indices, sizeof(indices));
 
-	Antimony::setView(mat_world, &mat_view, &mat_proj, c * diffuse, dv, devc, cb);
-	devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	setView(m_world, &mat_view, &mat_proj, c * diffuse, dev, devcon, constantbuffer);
+	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	if (!dd)
-		devc->DrawIndexed(3, 0, 0);
+		devcon->DrawIndexed(3, 0, 0);
 	else
-		devc->DrawIndexed(6, 0, 0);
+		devcon->DrawIndexed(6, 0, 0);
 }
-void Draw3DRectangle(float w, float h, color c, bool dd, mat *mat_world, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, SHADER* sh, ID3D11Buffer *ib, ID3D11Buffer *cb)
+void Antimony::Draw3DRectangle(float w, float h, color c, bool dd, mat *m_world, color diffuse)
 {
-	assert(sh->ied == ied_main);
+	assert(sh_current->ied == ied_main);
 
 	VERTEX_MAIN vertices[] =
 	{
@@ -772,7 +796,7 @@ void Draw3DRectangle(float w, float h, color c, bool dd, mat *mat_world, color d
 		{ w, h, 0, c },
 		{ 0, h, 0, c }
 	};*/
-	Antimony::FillBuffer(dv, devc, &sh->vb, &vertices, sizeof(vertices));
+	FillBuffer(dev, devcon, &sh_current->vb, &vertices, sizeof(vertices));
 	UINT indices[] =
 	{
 		0, 2, 1,
@@ -780,18 +804,18 @@ void Draw3DRectangle(float w, float h, color c, bool dd, mat *mat_world, color d
 		0, 1, 2,
 		0, 2, 3
 	};
-	Antimony::FillBuffer(dv, devc, &ib, &indices, sizeof(indices));
+	FillBuffer(dev, devcon, &indexbuffer, &indices, sizeof(indices));
 
-	Antimony::setView(mat_world, &mat_view, &mat_proj, diffuse, dv, devc, cb);
-	devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	setView(m_world, &mat_view, &mat_proj, diffuse, dev, devcon, constantbuffer);
+	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	if (!dd)
-		devc->DrawIndexed(6, 0, 0);
+		devcon->DrawIndexed(6, 0, 0);
 	else
-		devc->DrawIndexed(12, 0, 0);
+		devcon->DrawIndexed(12, 0, 0);
 
 	//DrawNormals(vertices, sizeof(vertices) / sizeof(VERTEX_MAIN), nullptr);
 }
-void Draw3DEllipses(float w, float h, color c, bool dd, mat *mat_world, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, SHADER* sh, ID3D11Buffer *ib, ID3D11Buffer *cb)
+void Antimony::Draw3DEllipses(float w, float h, color c, float sec, bool dd, mat *m_world, color diffuse)
 {
 	VERTEX_BASIC vertices[] =
 	{
@@ -838,7 +862,7 @@ void Draw3DEllipses(float w, float h, color c, bool dd, mat *mat_world, color di
 		{ float3(cosf(39 * MATH_PI / 20), sinf(39 * MATH_PI / 20), 0), c },
 		{ float3(cosf(40 * MATH_PI / 20), sinf(40 * MATH_PI / 20), 0), c }
 	};
-	Antimony::FillBuffer(dv, devc, &sh->vb, &vertices, sizeof(vertices));
+	FillBuffer(dev, devcon, &sh_current->vb, &vertices, sizeof(vertices));
 	UINT indices[] =
 	{
 		1, 2, 0,
@@ -882,64 +906,36 @@ void Draw3DEllipses(float w, float h, color c, bool dd, mat *mat_world, color di
 		39, 40, 0,
 		40, 1, 0
 	};
-	Antimony::FillBuffer(dv, devc, &ib, &indices, sizeof(indices));
+	FillBuffer(dev, devcon, &indexbuffer, &indices, sizeof(indices));
 
 	if (!dd)
 	{
-		Antimony::setView(&(MScaling(-w, h, 1) * (*mat_world)), &mat_view, &mat_proj, diffuse, dv, devc, cb);
-		devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		devc->DrawIndexed(120, 0, 0);
+		setView(&(MScaling(-w, h, 1) * (*m_world)), &mat_view, &mat_proj, diffuse, dev, devcon, constantbuffer);
+		devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		devcon->DrawIndexed(120, 0, 0);
 	}
 	else
 	{
-		Antimony::setView(&(MScaling(-w, h, 1) * (*mat_world)), &mat_view, &mat_proj, diffuse, dv, devc, cb);
-		devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		devc->DrawIndexed(120, 0, 0);
-		Antimony::setView(&(MScaling(w, h, 1) * (*mat_world)), &mat_view, &mat_proj, diffuse, dv, devc, cb);
-		devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		devc->DrawIndexed(120, 0, 0);
+		setView(&(MScaling(-w, h, 1) * (*m_world)), &mat_view, &mat_proj, diffuse, dev, devcon, constantbuffer);
+		devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		devcon->DrawIndexed(120, 0, 0);
+		setView(&(MScaling(w, h, 1) * (*m_world)), &mat_view, &mat_proj, diffuse, dev, devcon, constantbuffer);
+		devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		devcon->DrawIndexed(120, 0, 0);
 	}
 }
-void Draw3DBox(float w, float h, float b, color c, mat *mat_world, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, SHADER* sh, ID3D11Buffer *ib, ID3D11Buffer *cb)
+void Antimony::DrawCylinderSide(float r, float h, color c, float sec, bool dd, mat *m_world, color diffuse)
 {
-	assert(sh->ied == ied_main);
 
-	VERTEX_MAIN vertices[] =
-	{
-		{ float3(-w, -h, -b), float3(0, 0, 0), float2(0, 0) },	//			7 o
-		{ float3(w, -h, -b), float3(0, 0, 0), float2(0, 0) },	//			  |		  6 o
-		{ float3(w, h, -b), float3(0, 0, 0), float2(0, 0) },	//	  3 o	  |			|
-		{ float3(-w, h, -b), float3(0, 0, 0), float2(0, 0) },	//		|	  |	2 o		|
-		{ float3(-w, -h, b), float3(0, 0, 0), float2(0, 0) },	//		|	4 o   |		|
-		{ float3(w, -h, b), float3(0, 0, 0), float2(0, 0) },	//		|		  |   5 o
-		{ float3(w, h, b), float3(0, 0, 0), float2(0, 0) },		//	  0 o		  |
-		{ float3(-w, h, b), float3(0, 0, 0), float2(0, 0) }		//				1 o
-	};
-	Antimony::FillBuffer(dv, devc, &sh->vb, &vertices, sizeof(vertices));
-	UINT indices[] =
-	{
-		0, 3, 2,
-		0, 2, 1,
-		0, 4, 7,
-		0, 7, 3,
-		0, 1, 5,
-		0, 5, 4,
-		6, 2, 3,
-		6, 3, 7,
-		6, 5, 1,
-		6, 1, 2,
-		6, 4, 5,
-		4, 6, 7
-	};
-	Antimony::FillBuffer(dv, devc, &ib, &indices, sizeof(indices));
-
-	Antimony::setView(mat_world, &mat_view, &mat_proj, c * diffuse, dv, devc, cb);
-	devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	devc->DrawIndexed(36, 0, 0);
 }
-void Draw3DBox(Vector3 l, color c, mat *mat_world, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, SHADER* sh, ID3D11Buffer *ib, ID3D11Buffer *cb)
+void Antimony::DrawCylinder(float r, float h, color c, float sec, bool dd, mat *m_world, color diffuse)
 {
-	assert(sh->ied == ied_main);
+
+}
+
+void Antimony::Draw3DBox(float3 l, color c, mat *m_world, color diffuse)
+{
+	assert(sh_current->ied == ied_main);
 
 	float w = l.x;
 	float h = l.y;
@@ -971,29 +967,33 @@ void Draw3DBox(Vector3 l, color c, mat *mat_world, color diffuse, ID3D11Device *
 		6, 4, 5,
 		4, 6, 7
 	};
-	Antimony::FillBuffer(dv, devc, &ib, &indices, sizeof(indices));
+	FillBuffer(dev, devcon, &indexbuffer, &indices, sizeof(indices));
 
 	//CalculateSmoothNormals(vertices, sizeof(vertices) / sizeof(VERTEX_MAIN), indices, sizeof(indices) / sizeof(UINT));
 
-	Antimony::FillBuffer(dv, devc, &sh->vb, &vertices, sizeof(vertices));
+	FillBuffer(dev, devcon, &sh_current->vb, &vertices, sizeof(vertices));
 
 	diffuse = c * diffuse;
-	Antimony::setView(mat_world, &mat_view, &mat_proj, diffuse, dv, devc, cb);
-	devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	devc->DrawIndexed(36, 0, 0);
+	setView(m_world, &mat_view, &mat_proj, diffuse, dev, devcon, constantbuffer);
+	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	devcon->DrawIndexed(36, 0, 0);
 
 	//DrawNormals(vertices, sizeof(vertices) / sizeof(VERTEX_MAIN), nullptr);
 }
-void Draw3DCube(float r, color c, mat *mat_world, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, SHADER* sh, ID3D11Buffer *ib, ID3D11Buffer *cb)
+void Antimony::Draw3DBox(float w, float h, float b, color c, mat *m_world, color diffuse)
 {
-	Draw3DBox(r, r, r, c, mat_world, diffuse, dv, devc, sh, ib, cb);
+	Draw3DBox(float3(w, h, b), c, m_world, diffuse);
+}
+void Antimony::Draw3DCube(float r, color c, mat *m_world, color diffuse)
+{
+	Draw3DBox(r, r, r, c, m_world, diffuse);
 }
 
-void DrawMeshPlain(VertexCompound *mesh, mat *mat_world, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, SHADER* sh, ID3D11Buffer *ib, ID3D11Buffer *cb)
+void Antimony::DrawMeshPlain(VertexCompound *mesh, mat *m_world, color diffuse)
 {
 	auto sh_temp = sh_current;
-	Antimony::setShader(SHADERS_PLAIN);
-	assert(sh->ied == ied_basic);
+	setShader(SHADERS_PLAIN);
+	assert(sh_current->ied == ied_basic);
 
 	UINT vcount = mesh->position.size();
 	UINT icount = mesh->index.size();
@@ -1004,152 +1004,137 @@ void DrawMeshPlain(VertexCompound *mesh, mat *mat_world, color diffuse, ID3D11De
 	auto vsize = sizeof(VERTEX_BASIC) * vcount;
 	auto isize = sizeof(UINT) * icount;
 
-	Antimony::FillBuffer(dv, devc, &sh->vb, vertices, vsize);
-	Antimony::FillBuffer(dv, devc, &ib, indices, isize);
+	FillBuffer(dev, devcon, &sh_current->vb, vertices, vsize);
+	FillBuffer(dev, devcon, &indexbuffer, indices, isize);
 
-	Antimony::setView(mat_world, &mat_view, &mat_proj, diffuse, dv, devc, cb);
-	devc->DrawIndexed(icount, 0, 0);
+	setView(m_world, &mat_view, &mat_proj, diffuse, dev, devcon, constantbuffer);
+	devcon->DrawIndexed(icount, 0, 0);
 
-	Antimony::setShader(sh_temp);
+	setShader(sh_temp);
 }
-void DrawMesh(VertexCompound *mesh, mat *mat_world, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, SHADER* sh, ID3D11Buffer *ib, ID3D11Buffer *cb)
+void Antimony::DrawMesh(VertexCompound *mesh, mat *m_world, color diffuse)
 {
-	assert(sh->ied == ied_main);
+	assert(sh_current->ied == ied_main);
 
 	UINT vcount = mesh->position.size();
 	UINT icount = mesh->index.size();
 
-	//VERTEX_BASIC *vertices = mesh->dumpBASIC();
+	//VERTEX_BASIC *vertices = mesh_current->dumpBASIC();
 	VERTEX_MAIN *vertices = mesh->dumpMAIN();
 	UINT *indices = mesh->dumpIndices();
 
 	auto vsize = sizeof(VERTEX_MAIN) * vcount;
 	auto isize = sizeof(UINT) * icount;
 
-	Antimony::FillBuffer(dv, devc, &sh->vb, vertices, vsize);
-	Antimony::FillBuffer(dv, devc, &ib, indices, isize);
+	FillBuffer(dev, devcon, &sh_current->vb, vertices, vsize);
+	FillBuffer(dev, devcon, &indexbuffer, indices, isize);
 
-	Antimony::setView(mat_world, &mat_view, &mat_proj, diffuse, dv, devc, cb);
-	devc->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	devc->DrawIndexed(icount, 0, 0);
+	setView(m_world, &mat_view, &mat_proj, diffuse, dev, devcon, constantbuffer);
+	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	devcon->DrawIndexed(icount, 0, 0);
 
 	if (false)
 	{
+		auto tempsh = sh_current;
+		setShader(SHADERS_PLAIN);
+
 		ID3D11RasterizerState *rss_curr;
-		devc->RSGetState(&rss_curr);
-		devc->RSSetState(rss_wireframe);
-		Antimony::setDepthBufferState(OFF);
-		DrawMeshPlain(mesh, mat_world, color(1, 1, 1, 0.3), dv, devc, SHADERS_PLAIN, ib, cb);
-		Antimony::setDepthBufferState(ON);
-		DrawMeshPlain(mesh, mat_world, color(1, 1, 1, 1), dv, devc, SHADERS_PLAIN, ib, cb);
-		devc->RSSetState(rss_curr);
+		devcon->RSGetState(&rss_curr);
+		devcon->RSSetState(rss_wireframe);
+		setDepthBufferState(OFF);
+		DrawMeshPlain(mesh, m_world, color(1, 1, 1, 0.3));
+		setDepthBufferState(ON);
+		DrawMeshPlain(mesh, m_world, color(1, 1, 1, 1));
+		devcon->RSSetState(rss_curr);
 
 		DrawNormals(vertices, vcount, &mesh->normalgroups, true);
+		setShader(tempsh);
 	}
 }
-
-///
-
-HRESULT Antimony::FillBuffer(ID3D11Device *dev, ID3D11DeviceContext *devcon, ID3D11Buffer **out, void *in, UINT size)
+void Antimony::DrawNormals(VERTEX_MAIN vin[], int vcount, ::std::vector<::std::vector<float3>> *normalgroups, bool components)
 {
-	HRESULT hr;
+	auto sh_temp = sh_current;
+	setShader(SHADERS_PLAIN);
 
-	D3D11_MAPPED_SUBRESOURCE ms;
-	hr = devcon->Map(*out, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms);
-	if (!handleErr(&hr, HRH_BUFFER_MAPPING, hr))
-		return hr;
-	D3D11_BUFFER_DESC bd;
-	(*out)->GetDesc(&bd);
-	UINT buffsize = bd.ByteWidth;
-	if (size > buffsize)
+	for (int v = 0; v < vcount; v++)
 	{
-		handleErr(&hr, HRH_BUFFER_OVERFLOW, DISP_E_BUFFERTOOSMALL);
-		return DISP_E_BUFFERTOOSMALL;
+		auto p = vin[v].position;
+		auto n = vin[v].normal * 0.1;
+		color c = color(n.x, n.y, n.z, 1);
+		c = color(0.5, 0.5, 1, 1);
+
+		XMVECTOR sv, rv, tv;
+		XMMatrixDecompose(&sv, &rv, &tv, mat_world);
+		mat r = XMMatrixRotationQuaternion(rv);
+
+		p = (float3)XMVector3Transform(p, mat_world);
+		n = (float3)XMVector3Transform(n, r);
+
+		Draw3DLineThin(p, p + n, c, c, &mat_identity);
+		auto _p = WorldToScreen(p + n);
+		if (_p.z > 0)
+		{
+			if (true)
+			{
+				Draw2DDot(float2(_p.x, _p.y), 2, c);
+				auto cfade = 255 * v / vcount;
+				auto color = RGBA2DWORD(cfade, 0, 0, 255);
+				color = RGBA2DWORD(128, 128, 255, 255);
+				//auto txt = std::to_wstring(n.Length());
+				auto txt = std::to_wstring(v);
+				Consolas.render(txt.c_str(), 12, display.width / 2 + _p.x + 1, display.height / 2 + _p.y + 1, color, NULL);
+			}
+		}
+
+		if (components)
+			for (UINT nc = 0; nc < normalgroups->at(v).size(); nc++)
+			{
+				Draw3DLineThin(vin[v].position, vin[v].position + normalgroups->at(v).at(nc), COLOR_RED, COLOR_RED);
+			}
 	}
-	memcpy(ms.pData, (UINT*)in, size);
-	devcon->Unmap(*out, NULL);
+	setShader(sh_temp);
+};
 
-	return S_OK;
-}
-bool Antimony::compileShader(HRESULT *hr, std::wstring shader, SHADER *sh, D3D11_INPUT_ELEMENT_DESC ied[], UINT elems, UINT stride, UINT size)
+namespace Antimony
 {
-	ID3D10Blob *blob = nullptr;
+	IDXGISwapChain *swapchain;
+	ID3D11Device *dev;
+	ID3D11DeviceContext *devcon;
 
-	std::wstring fullpath = filePath(L"\\Shaders\\", shader + L".hlsl");
-	LPCWSTR file = fullpath.c_str();
+	ID3D11RenderTargetView *targettview;
+	ID3D11DepthStencilView *depthstencilview;
 
-	if (!handleErr(hr, HRH_SHADER_COMPILE, D3DCompileFromFile(file, 0, 0, "VShader", "vs_4_0", 0, 0, &blob, 0)))
-		return 0;
-	if (!handleErr(hr, HRH_SHADER_CREATE, dev->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &sh->vs)))
-		return 0;
-	if (!handleErr(hr, HRH_SHADER_INPUTLAYOUT, dev->CreateInputLayout(ied, elems, blob->GetBufferPointer(), blob->GetBufferSize(), &sh->il)))
-		return 0;
-	if (!handleErr(hr, HRH_SHADER_COMPILE, D3DCompileFromFile(file, 0, 0, "PShader", "ps_4_0", 0, 0, &blob, 0)))
-		return 0;
-	if (!handleErr(hr, HRH_SHADER_CREATE, dev->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &sh->ps)))
-		return 0;
+	ID3D11RasterizerState *rss_standard, *rss_wireframe;
+	ID3D11BlendState *blendstate;
+	ID3D11DepthStencilState *dss_enabled, *dss_disabled;
 
-	D3D11_BUFFER_DESC bd; // buffer description
-	ZeroMemory(&bd, sizeof(bd));
+	ID3D11Buffer *indexbuffer, *constantbuffer;
 
-	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	bd.Usage = D3D11_USAGE_DYNAMIC;
-	bd.ByteWidth = stride * size;
-	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	if (!handleErr(hr, HRH_SHADER_VERTEXBUFFER, dev->CreateBuffer(&bd, NULL, &sh->vb)))
-		return 0;
+	Shader sh_main, sh_debug, sh_plain, sh_plain3D;
+	Shader *sh_current = nullptr;
 
-	sh->vbstride = stride;
-	sh->vbsize = size;
+	mat mat_temp, mat_temp2, mat_world, mat_view, mat_proj, mat_orthoview, mat_orthoproj;
 
-	sh->ied = ied;
-
-	sh->ready = true;
-
-	return 1; // all ok
-}
-bool Antimony::setShader(SHADER *sh, ID3D11DeviceContext *devc)
-{
-	if (sh->ready)
-	{
-		if (sh_current == sh)
-			return 1; // already set
-		sh_current = sh;
-
-		devc->IASetVertexBuffers(0, 1, &sh_current->vb, &sh_current->vbstride, &sh_current->vboffset);
-		devc->VSSetShader(sh_current->vs, 0, 0);
-		devc->PSSetShader(sh_current->ps, 0, 0);
-		devc->IASetInputLayout(sh_current->il);
-		devc->GSSetShader(sh_current->gs, 0, 0);
-		devc->HSSetShader(sh_current->hs, 0, 0);
-		devc->CSSetShader(sh_current->cs, 0, 0);
-		devc->DSSetShader(sh_current->ds, 0, 0);
-		return 1; // all ok
-	}
-	return 0; // NOPE
-}
-void Antimony::setDepthBufferState(bool state)
-{
-	if (state == true)
-		devcon->OMSetDepthStencilState(dss_enabled, 1);
-	else
-		devcon->OMSetDepthStencilState(dss_disabled, 1);
-}
-HRESULT Antimony::setView(mat *mat_world, mat *view, mat *proj, color diffuse, ID3D11Device *dv, ID3D11DeviceContext *devc, ID3D11Buffer *cb)
-{
-	ConstantBuffer buffer;
-
-	buffer.world = TransposeMatrix(*mat_world);
-	buffer.view = TransposeMatrix(*view);
-	buffer.projection = TransposeMatrix(*proj);
-
-	XMVECTOR sv, rv, tv;
-	XMMatrixDecompose(&sv, &rv, &tv, *mat_world);
-	mat r = XMMatrixRotationQuaternion(rv);
-
-	buffer.normal = TransposeMatrix(r);
-	buffer.diffuse = diffuse;
-	buffer.camera = float4(camera_main.getPos());
-
-	return Antimony::FillBuffer(dv, devc, &cb, &buffer, sizeof(buffer));
+	D3D11_INPUT_ELEMENT_DESC ied_basic[] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	};
+	D3D11_INPUT_ELEMENT_DESC ied_basic_animated[] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BLENDWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	};
+	D3D11_INPUT_ELEMENT_DESC ied_main[] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	};
+	D3D11_INPUT_ELEMENT_DESC ied_main_skinned[] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BLENDWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	};
 }

@@ -58,9 +58,9 @@ public:
 	HRESULT buildFW1(wchar_t *fname, IFW1Factory *fw1f);
 
 	float getWidth(const wchar_t *str, float s, RECT r, UINT f);
-	void render(const wchar_t *str, float s, float x, float y, UINT32 c, UINT flags, ID3D11DeviceContext *con = devcon);
-	void clearFW1(ID3D11DeviceContext *con = devcon);
-	void presentFW1(ID3D11DeviceContext *con = devcon);
+	void render(const wchar_t *str, float s, float x, float y, UINT32 c, UINT flags, ID3D11DeviceContext *con = Antimony::devcon);
+	void clearFW1(ID3D11DeviceContext *con = Antimony::devcon);
+	void presentFW1(ID3D11DeviceContext *con = Antimony::devcon);
 
 	FontWrapper()
 	{

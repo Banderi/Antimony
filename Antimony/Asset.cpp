@@ -43,7 +43,7 @@ void Asset::draw(mat *mat_world, bool debug)
 	mat r = MRotAxis(float3(1, 0, 0), -MATH_PI / 2);
 	mat w = s * r * *mat_world;
 
-	DrawMesh(&m_geometry, &w);
+	Antimony::DrawMesh(&m_geometry, &w);
 
 	if (debug)
 	{
@@ -73,7 +73,7 @@ void Asset::draw(mat *mat_world, bool debug)
 }
 void Asset::drawSkeleton(mat *mat_world, bool names)
 {
-	auto sh_temp = sh_current;
+	auto sh_temp = Antimony::sh_current;
 	Antimony::setShader(SHADERS_PLAIN);
 
 	if (!m_animcontroller.skeleton.valid)
@@ -90,30 +90,30 @@ void Asset::drawSkeleton(mat *mat_world, bool names)
 		mat s = MScalVector(m_scale * 0.01);									// asset's scale
 		mat w = s * *mat_world;													// final world transform
 
-		auto p_parent = WorldToScreen(V3Transform(v3_origin, mat_parent * w), &(mat_view * mat_proj));
-		auto p_origin = WorldToScreen(V3Transform(v3_origin, mat_bone * w), &(mat_view * mat_proj));
-		auto p_offset = WorldToScreen(V3Transform(v3_origin, MTranslation(0, 0.1, 0) * mat_bone * w), &(mat_view * mat_proj));
+		auto p_parent = WorldToScreen(V3Transform(v3_origin, mat_parent * w));
+		auto p_origin = WorldToScreen(V3Transform(v3_origin, mat_bone * w));
+		auto p_offset = WorldToScreen(V3Transform(v3_origin, MTranslation(0, 0.1, 0) * mat_bone * w));
 
 		if (!joint->parent)
 		{
-			auto p = WorldToScreen(V3Transform(v3_origin, *mat_world), &(mat_view * mat_proj));
+			auto p = WorldToScreen(V3Transform(v3_origin, *mat_world));
 			if (p.z > 0)
-				Draw2DDot(float2(p.x, p.y), 4, COLOR_BLUE);									// blue dot for origin
+				Antimony::Draw2DDot(float2(p.x, p.y), 4, COLOR_BLUE);									// blue dot for origin
 		}
 		else
 		{
 			if (joint->children.size() == 0)
 			{
-				Draw2DDot(float2(p_origin.x, p_origin.y), 4, COLOR_GREEN);					// green dot for dangling bone
+				Antimony::Draw2DDot(float2(p_origin.x, p_origin.y), 4, COLOR_GREEN);					// green dot for dangling bone
 			}
 			else
 			{
-				Draw2DDot(float2(p_origin.x, p_origin.y), 4, COLOR_BLUE);					// blue dot for joint between bones
+				Antimony::Draw2DDot(float2(p_origin.x, p_origin.y), 4, COLOR_BLUE);					// blue dot for joint between bones
 				if (p_offset.z > 0 && names)
 					Antimony::Consolas.render(joint->name.c_str(), 12, Antimony::display.right + p_offset.x + 1, Antimony::display.bottom + p_offset.y + 1, RGBA2DWORD(128, 128, 255, 255), NULL);
 			}
 
-			Draw2DLineThin((float2)p_parent, (float2)p_origin, COLOR_BLUE, COLOR_BLUE);		// bone (blue line)
+			Antimony::Draw2DLineThin((float2)p_parent, (float2)p_origin, COLOR_BLUE, COLOR_BLUE);		// bone (blue line)
 		}
 	}
 

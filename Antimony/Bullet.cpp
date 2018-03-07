@@ -243,7 +243,7 @@ void DXDebugDrawer::drawLine(const btVector3& from, const btVector3& to, const b
 {
 	btVector3 p1 = from;
 	btVector3 p2 = to;
-	Draw3DLineThin(
+	Antimony::Draw3DLineThin(
 		btToFloat3(&p1),
 		btToFloat3(&p2),
 		color(fromColor.getX(), fromColor.getY(), fromColor.getZ(), 1),
@@ -270,7 +270,7 @@ void DXDebugDrawer::drawLine(const btVector3& from, const btVector3& to, const b
 	btVector3 p1 = from;
 	btVector3 p2 = to;
 	color c = color(col.getX(), col.getY(), col.getZ(), 1);
-	Draw3DLineThin(
+	Antimony::Draw3DLineThin(
 		btToFloat3(&p1),
 		btToFloat3(&p2),
 		c,

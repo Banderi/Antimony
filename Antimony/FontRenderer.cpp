@@ -15,7 +15,7 @@ HRESULT FontWrapper::buildFW1(wchar_t *fname, IFW1Factory *fw1f)
 	m_isfw1 = true;
 	m_fname = fname;
 	HRESULT hr;
-	hr = fw1f->CreateFontWrapper(dev, fname, &m_FW1Wrapper);
+	hr = fw1f->CreateFontWrapper(Antimony::dev, fname, &m_FW1Wrapper);
 	if (hr != S_OK)
 		return hr;
 	hr = m_FW1Wrapper->GetDWriteFactory(&m_FW1WriteFactory);
@@ -162,7 +162,7 @@ void FontWrapper::presentFW1(ID3D11DeviceContext *con)
 	if (m_isfw1)
 	{
 		m_FW1Wrapper->Flush(con);
-		m_FW1Wrapper->DrawGeometry(devcon, m_FW1TextGeometry, NULL, NULL, FW1_RESTORESTATE);
+		m_FW1Wrapper->DrawGeometry(Antimony::devcon, m_FW1TextGeometry, NULL, NULL, FW1_RESTORESTATE);
 
 		m_FW1LineIndex = 0;
 

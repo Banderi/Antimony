@@ -14,6 +14,7 @@
 ///
 
 using namespace std;
+using namespace Antimony;
 
 ///
 
@@ -37,7 +38,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	int nCmdShow)
 {
 
-	if (Antimony::startUp(hInstance, nCmdShow) == 0)
+	if (startUp(hInstance, nCmdShow) == 0)
 		return 0;
 
 	///
@@ -79,8 +80,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 	while (run)
 	{
-		Antimony::messageQueue(&msg, &run);
-		Antimony::step();
+		messageQueue(&msg, &run);
+		step();
 
 		switch (ENGINETEST)
 		{
@@ -111,10 +112,10 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		}
 
 		Frame();
-		Antimony::endStep();
+		endStep();
 	}
 
-	Antimony::cleanUp();
+	cleanUp();
 
 	return msg.wParam;
 }
@@ -122,33 +123,33 @@ int WINAPI WinMain(HINSTANCE hInstance,
 void Init_FPS()
 {
 	// test walls
-	Antimony::addPhysEntity(BTOBJECT_STATICWORLD, BTSOLID_BOX, 0.0f, float3(0.3, 2, 5), float4(0, 0, 0, 1), float3(-3, 1, -1), float3(0, 0, 0), Antimony::btWorld);
+	addPhysEntity(BTOBJECT_STATICWORLD, BTSOLID_BOX, 0.0f, float3(0.3, 2, 5), float4(0, 0, 0, 1), float3(-3, 1, -1), float3(0, 0, 0), btWorld);
 
 	// moving platforms
-	Antimony::addPhysEntity(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), float3(0, 0.5, 0), float3(0, 0, 0), Antimony::btWorld);
-	Antimony::addPhysEntity(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), float3(3, 1, 0), float3(0, 0, 0), Antimony::btWorld);
-	Antimony::addPhysEntity(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), float3(3, 2, 2), float3(0, 0, 0), Antimony::btWorld);
+	addPhysEntity(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), float3(0, 0.5, 0), float3(0, 0, 0), btWorld);
+	addPhysEntity(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), float3(3, 1, 0), float3(0, 0, 0), btWorld);
+	addPhysEntity(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), float3(3, 2, 2), float3(0, 0, 0), btWorld);
 
-	Antimony::attachCamera(Antimony::getPlayer()->getColl(), float3(0.0), 1, 0);
+	attachCamera(getPlayer()->getColl(), float3(0.0), 1, 0);
 }
 void Init_TPS()
 {
 	// test walls
-	Antimony::addPhysEntity(BTOBJECT_STATICWORLD, BTSOLID_BOX, 0.0f, float3(0.3, 2, 5), float4(0, 0, 0, 1), float3(-3, 1, -1), float3(0, 0, 0), Antimony::btWorld);
+	addPhysEntity(BTOBJECT_STATICWORLD, BTSOLID_BOX, 0.0f, float3(0.3, 2, 5), float4(0, 0, 0, 1), float3(-3, 1, -1), float3(0, 0, 0), btWorld);
 
 	// moving platforms
-	Antimony::addPhysEntity(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), float3(0, 0.5, 0), float3(0, 0, 0), Antimony::btWorld);
-	Antimony::addPhysEntity(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), float3(3, 1, 0), float3(0, 0, 0), Antimony::btWorld);
-	Antimony::addPhysEntity(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), float3(3, 2, 2), float3(0, 0, 0), Antimony::btWorld);
+	addPhysEntity(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), float3(0, 0.5, 0), float3(0, 0, 0), btWorld);
+	addPhysEntity(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), float3(3, 1, 0), float3(0, 0, 0), btWorld);
+	addPhysEntity(BTOBJECT_KINEMATICWORLD, BTSOLID_BOX, 0.0f, float3(0.45, 0.15, 0.45), float3(3, 2, 2), float3(0, 0, 0), btWorld);
 
 	// test cubes
-	Antimony::addPhysEntity(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), float3(0, 6, 0), Antimony::btWorld);
-	Antimony::addPhysEntity(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), float3(0, 40, 0), Antimony::btWorld);
-	Antimony::addPhysEntity(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), float3(0, 80, 0), Antimony::btWorld);
-	Antimony::addPhysEntity(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), float3(3, 4, 2), Antimony::btWorld);
+	addPhysEntity(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), float3(0, 6, 0), btWorld);
+	addPhysEntity(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), float3(0, 40, 0), btWorld);
+	addPhysEntity(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), float3(0, 80, 0), btWorld);
+	addPhysEntity(BTOBJECT_DYNAMIC, BTSOLID_BOX, 10.0f, float3(0.3, 0.3, 0.3), float3(3, 4, 2), btWorld);
 
-	Antimony::getPlayer()->load3DAsset(L"chibi_wolf_anim.fbx", float3(0.2));
-	Antimony::attachCamera(Antimony::getPlayer()->getColl(), float3(0, 0.26, 0), 1, 1, false, true);
+	getPlayer()->load3DAsset(L"chibi_wolf_anim.fbx", float3(0.2));
+	attachCamera(getPlayer()->getColl(), float3(0, 0.26, 0), 1, 1, false, true);
 }
 void Init_RTS()
 {
