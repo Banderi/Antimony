@@ -5,40 +5,70 @@
 
 ///
 
-void Timer::catchTime(unsigned short d)
+void Timer::catchTime(int d)
 {
-	if (d > TIMER_MAXSTAMPS - 1)
-		d = TIMER_MAXSTAMPS - 1;
-	if (m_stampsCount < d)
-		m_stampsCount = d;
+	if (d == TIMER_FRAME_GLOBAL)
+	{
+		catchTime(TIMER_END);
+		for (int i = 0; i < m_currentClock.size(); i++)
+		{
+			m_previousClock.at(i) = m_currentClock.at(i);
+		}
+	}
 
-	m_previousClock[d] = m_currentClock[d];
-	m_currentClock[d] = clock();
-	delta[d] = abs((long)(m_currentClock[d] - m_previousClock[d])) / m_clocksPerSecond;
+	m_currentClock.at(d) = clock();
 
-	static double clockLastSecond = m_currentClock[d] - m_clocksPerSecond;
+	static clock_t clockLastSecond = m_currentClock.at(d) - m_clocksPerSecond;
+
+	if (d == TIMER_END)
+	{
+		float den = m_derivClock.at(0);
+		for (int i = 0; i < m_derivClock.size(); i++)
+		{
+			m_derivClock.at(i) -= den;
+		}
+	}
 
 	if (d == TIMER_FRAME_GLOBAL)
 	{
+		double delta = getDelta();
+
+		float sm = 5.0f * delta;
+		lastDelta += (delta - lastDelta) * sm;
+		for (int i = 0; i < m_derivClock.size(); i++)
+		{
+			m_derivClock.at(i) += (double(m_previousClock.at(i)) - m_derivClock.at(i)) * sm;
+		}
+
+		///
+
+		double stamp = delta * 1000;
+
+		if (stamp < 0)
+			stamp = 0;
+		if (stamp > 100)
+			stamp = 100;
+		fps_history.push_back(stamp);
+		if (fps_history.size() > 100)
+			fps_history.erase(fps_history.begin());
+
+		///
+
 		m_framesCount++;
 
-		if (m_currentClock[d] >= clockLastSecond + m_clocksPerSecond)
+		if (m_currentClock.at(d) >= clockLastSecond + m_clocksPerSecond)
 		{
-			/*float fdiff = (m_currentClock[d] - (m_clockLastSecond + m_clocksPerSecond))
-				/ (m_currentClock[d] - m_previousClock[d]);
-			m_fpsStamp = m_framesCount - fdiff;*/
-
 			m_framesCount = 0;
 			clockLastSecond += m_clocksPerSecond;
 		}
 
-		static double clockLastStamp = m_currentClock[d] - 200;
+		static double clockLastStamp = m_currentClock.at(d) - 200;
 		static int frames200Stamp = 0;
 		frames200Stamp++;
 
-		if (m_currentClock[d] >= clockLastStamp + 200)
+		if (m_currentClock.at(d) >= clockLastStamp + 200)
 		{
-			auto frameAverageTime = frames200Stamp / (m_currentClock[d] - clockLastStamp);
+			auto frameAverageTime = frames200Stamp / (m_currentClock.at(d) - clockLastStamp);
 			m_currentFPS = m_clocksPerSecond * frameAverageTime;
 
 			if (maxFps < m_currentFPS)
@@ -48,42 +78,26 @@ void Timer::catchTime(unsigned short d)
 			if (minFps == -1)
 				minFps = 60;
 
-			clockLastStamp = m_currentClock[d];
+			clockLastStamp = m_currentClock.at(d);
 			frames200Stamp = 0;
 		}
-
-		double last_delta = delta[d] * 1000;
-		if (last_delta<0)
-			last_delta = 0;
-		if (last_delta>100)
-			last_delta = 100;
-		fps_history.push_back(last_delta);
-		if (fps_history.size() > 100)
-			fps_history.erase(fps_history.begin());
 	}
 }
 void Timer::setCorrection(float c)
 {
 	m_clocksPerSecond = c;
 }
-double Timer::getDelta(unsigned short d)
-{
-	if (d > TIMER_MAXSTAMPS - 1)
-		d = TIMER_MAXSTAMPS - 1;
-	return delta[d];
-}
-double Timer::getLocalDelta(unsigned short d)
-{
-	if (d > TIMER_MAXSTAMPS - 1)
-		d = TIMER_MAXSTAMPS - 1;
 
-	unsigned short d_prev = 0;
-
-	if (d == TIMER_FRAME_GLOBAL)
-		d_prev = m_stampsCount;
+double Timer::getStep(int d1, int d2, bool smooth)
+{
+	if (smooth)
+		return abs(double(m_derivClock.at(d1) - m_derivClock.at(d2))) / double(m_clocksPerSecond);
 	else
-		d_prev = d - 1;
-	return abs((long)(m_currentClock[d] - m_currentClock[d_prev])) / m_clocksPerSecond;
+		return abs(double(m_previousClock.at(d1) - m_previousClock.at(d2))) / double(m_clocksPerSecond);
+}
+double Timer::getDelta(int d1, int d2)
+{
+	return abs(double(m_currentClock.at(d1) - m_previousClock.at(d2))) / double(m_clocksPerSecond);
 }
 int Timer::getFramesCount()
 {
@@ -95,7 +109,12 @@ float Timer::getFPSStamp()
 }
 Timer::Timer()
 {
-	m_stampsCount = 0;
+	for (unsigned int i = 0; i < TIMER_MAXSTAMPS; i++)
+	{
+		m_currentClock.push_back(0);
+		m_previousClock.push_back(0);
+		m_derivClock.push_back(0);
+	}
 	for (unsigned int i = 0; i < 100; i++)
 	{
 		fps_history.push_back(0);

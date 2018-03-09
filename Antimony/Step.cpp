@@ -23,7 +23,7 @@ char BoolToSign(bool b)
 void Antimony::step()
 {
 	timer.catchTime(TIMER_FRAME_GLOBAL);
-	delta = timer.getDelta(TIMER_FRAME_GLOBAL);
+	delta = timer.getDelta();
 	double fstep = delta * worldSpeed;
 
 	cpuUsage.GetUsage(0);
@@ -75,7 +75,7 @@ void Antimony::endStep()
 	devConsole.draw(&display, getDelta(), &Consolas);					// Draw the dev console
 	if (game.debug)
 		render_Debug();													// render debug info
-	Antimony::timer.catchTime(TIMER_RENDER_DEBUG);
+	timer.catchTime(TIMER_RENDER_DEBUG);
 
 	presentFrame();														// present frame to the GPU
 

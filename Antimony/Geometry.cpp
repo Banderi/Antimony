@@ -546,13 +546,6 @@ void Antimony::Draw2DRectangle(float w, float h, float x, float y, color c, colo
 		{ float3(w, h, 0), c },
 		{ float3(0, h, 0), c }
 	};
-	/*VERTEX_BASIC vertices[] =
-	{
-		{ 0, 0, 0, c },
-		{ w, 0, 0, c },
-		{ w, h, 0, c },
-		{ 0, h, 0, c }
-	};*/
 	FillBuffer(dev, devcon, &sh_current->vb, &vertices, sizeof(vertices));
 	UINT indices[] =
 	{
@@ -747,7 +740,7 @@ void Antimony::Draw3DLineThick()
 
 	// TODO: Implement bill-boarding
 }
-void Antimony::Draw3DTriangle(float3 p1, float3 p2, float3 p3, color c, bool dd, mat *m_world, color diffuse)
+void Antimony::Draw3DTriangle(float3 p1, float3 p2, float3 p3, color c, bool dd, mat *m_world, bool ortho, color diffuse)
 {
 	assert(sh_current->ied == ied_main);
 
@@ -757,12 +750,6 @@ void Antimony::Draw3DTriangle(float3 p1, float3 p2, float3 p3, color c, bool dd,
 		{ float3(p2.x, p2.y, p2.z), float3(0, 0, 0), float2(0, 1) },
 		{ float3(p3.x, p3.y, p3.z), float3(0, 0, 0), float2(1, 1) }
 	};
-	/*VERTEX_BASIC vertices[] =
-	{
-		{ p1.x, p1.y, p1.z, c },
-		{ p2.x, p2.y, p2.z, c },
-		{ p3.x, p3.y, p3.z, c }
-	};*/
 	FillBuffer(dev, devcon, &sh_current->vb, &vertices, sizeof(vertices));
 	UINT indices[] =
 	{
@@ -771,14 +758,17 @@ void Antimony::Draw3DTriangle(float3 p1, float3 p2, float3 p3, color c, bool dd,
 	};
 	FillBuffer(dev, devcon, &indexbuffer, &indices, sizeof(indices));
 
-	setView(m_world, &mat_view, &mat_proj, c * diffuse, dev, devcon, constantbuffer);
+	if (ortho)
+		setView(m_world, &mat_orthoview, &mat_orthoproj, c * diffuse, dev, devcon, constantbuffer);
+	else
+		setView(m_world, &mat_view, &mat_proj, c * diffuse, dev, devcon, constantbuffer);
 	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	if (!dd)
 		devcon->DrawIndexed(3, 0, 0);
 	else
 		devcon->DrawIndexed(6, 0, 0);
 }
-void Antimony::Draw3DRectangle(float w, float h, color c, bool dd, mat *m_world, color diffuse)
+void Antimony::Draw3DRectangle(float w, float h, color c, bool dd, mat *m_world, bool ortho, color diffuse)
 {
 	assert(sh_current->ied == ied_main);
 
@@ -789,13 +779,6 @@ void Antimony::Draw3DRectangle(float w, float h, color c, bool dd, mat *m_world,
 		{ float3(w * 0.5, 0, h * 0.5), float3(0, 1, 0), float2(1, 1) },
 		{ float3(-w * 0.5, 0, h * 0.5), float3(0, 1, 0), float2(1, 0) }
 	};
-	/*VERTEX_BASIC vertices[] =
-	{
-		{ 0, 0, 0, c },
-		{ w, 0, 0, c },
-		{ w, h, 0, c },
-		{ 0, h, 0, c }
-	};*/
 	FillBuffer(dev, devcon, &sh_current->vb, &vertices, sizeof(vertices));
 	UINT indices[] =
 	{
@@ -806,7 +789,10 @@ void Antimony::Draw3DRectangle(float w, float h, color c, bool dd, mat *m_world,
 	};
 	FillBuffer(dev, devcon, &indexbuffer, &indices, sizeof(indices));
 
-	setView(m_world, &mat_view, &mat_proj, diffuse, dev, devcon, constantbuffer);
+	if (ortho)
+		setView(m_world, &mat_orthoview, &mat_orthoproj, c * diffuse, dev, devcon, constantbuffer);
+	else
+		setView(m_world, &mat_view, &mat_proj, c * diffuse, dev, devcon, constantbuffer);
 	devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	if (!dd)
 		devcon->DrawIndexed(6, 0, 0);
@@ -815,8 +801,15 @@ void Antimony::Draw3DRectangle(float w, float h, color c, bool dd, mat *m_world,
 
 	//DrawNormals(vertices, sizeof(vertices) / sizeof(VERTEX_MAIN), nullptr);
 }
-void Antimony::Draw3DEllipses(float w, float h, color c, float sec, bool dd, mat *m_world, color diffuse)
+void Antimony::Draw3DEllipses(float w, float h, color c, float sec, bool dd, mat *m_world, bool ortho, color diffuse)
 {
+	if (sec > 100)
+		sec = 100;
+	if (sec <= 0)
+		return;
+
+	float sec_rad = sec / 50.0f * MATH_PI;
+
 	VERTEX_BASIC vertices[] =
 	{
 		{ float3(0, 0, 0), c },
@@ -860,11 +853,15 @@ void Antimony::Draw3DEllipses(float w, float h, color c, float sec, bool dd, mat
 		{ float3(cosf(37 * MATH_PI / 20), sinf(37 * MATH_PI / 20), 0), c },
 		{ float3(cosf(38 * MATH_PI / 20), sinf(38 * MATH_PI / 20), 0), c },
 		{ float3(cosf(39 * MATH_PI / 20), sinf(39 * MATH_PI / 20), 0), c },
-		{ float3(cosf(40 * MATH_PI / 20), sinf(40 * MATH_PI / 20), 0), c }
+		{ float3(cosf(sec_rad), sinf(sec_rad), 0), c }
 	};
 	FillBuffer(dev, devcon, &sh_current->vb, &vertices, sizeof(vertices));
+
+	UINT n = floor(sec * 40 / 100.1f + 1);
+
 	UINT indices[] =
 	{
+		n, 41, 0,
 		1, 2, 0,
 		2, 3, 0,
 		3, 4, 0,
@@ -903,37 +900,46 @@ void Antimony::Draw3DEllipses(float w, float h, color c, float sec, bool dd, mat
 		36, 37, 0,
 		37, 38, 0,
 		38, 39, 0,
-		39, 40, 0,
-		40, 1, 0
+		39, 40, 0
+		//40, 1, 0
 	};
 	FillBuffer(dev, devcon, &indexbuffer, &indices, sizeof(indices));
 
 	if (!dd)
 	{
-		setView(&(MScaling(-w, h, 1) * (*m_world)), &mat_view, &mat_proj, diffuse, dev, devcon, constantbuffer);
+		if (ortho)
+			setView(&(MScaling(-w, h, 1) * (*m_world)), &mat_orthoview, &mat_orthoproj, diffuse, dev, devcon, constantbuffer);
+		else
+			setView(&(MScaling(-w, h, 1) * (*m_world)), &mat_view, &mat_proj, diffuse, dev, devcon, constantbuffer);
 		devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		devcon->DrawIndexed(120, 0, 0);
+		devcon->DrawIndexed(3 * n, 0, 0);
 	}
 	else
 	{
-		setView(&(MScaling(-w, h, 1) * (*m_world)), &mat_view, &mat_proj, diffuse, dev, devcon, constantbuffer);
+		if (ortho)
+			setView(&(MScaling(-w, h, 1) * (*m_world)), &mat_orthoview, &mat_orthoproj, diffuse, dev, devcon, constantbuffer);
+		else
+			setView(&(MScaling(-w, h, 1) * (*m_world)), &mat_view, &mat_proj, diffuse, dev, devcon, constantbuffer);
 		devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		devcon->DrawIndexed(120, 0, 0);
-		setView(&(MScaling(w, h, 1) * (*m_world)), &mat_view, &mat_proj, diffuse, dev, devcon, constantbuffer);
+		devcon->DrawIndexed(3 * n, 0, 0);
+		if (ortho)
+			setView(&(MScaling(-w, h, 1) * (*m_world)), &mat_orthoview, &mat_orthoproj, diffuse, dev, devcon, constantbuffer);
+		else
+			setView(&(MScaling(-w, h, 1) * (*m_world)), &mat_view, &mat_proj, diffuse, dev, devcon, constantbuffer);
 		devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		devcon->DrawIndexed(120, 0, 0);
+		devcon->DrawIndexed(3 * n, 0, 0);
 	}
 }
-void Antimony::DrawCylinderSide(float r, float h, color c, float sec, bool dd, mat *m_world, color diffuse)
+void Antimony::DrawCylinderSide(float r, float h, color c, float sec, bool dd, mat *m_world, bool ortho, color diffuse)
 {
 
 }
-void Antimony::DrawCylinder(float r, float h, color c, float sec, bool dd, mat *m_world, color diffuse)
+void Antimony::DrawCylinder(float r, float h, color c, float sec, bool dd, mat *m_world, bool ortho, color diffuse)
 {
 
 }
 
-void Antimony::Draw3DBox(float3 l, color c, mat *m_world, color diffuse)
+void Antimony::Draw3DBox(float3 l, color c, mat *m_world, bool ortho, color diffuse)
 {
 	assert(sh_current->ied == ied_main);
 
@@ -980,16 +986,16 @@ void Antimony::Draw3DBox(float3 l, color c, mat *m_world, color diffuse)
 
 	//DrawNormals(vertices, sizeof(vertices) / sizeof(VERTEX_MAIN), nullptr);
 }
-void Antimony::Draw3DBox(float w, float h, float b, color c, mat *m_world, color diffuse)
+void Antimony::Draw3DBox(float w, float h, float b, color c, mat *m_world, bool ortho, color diffuse)
 {
-	Draw3DBox(float3(w, h, b), c, m_world, diffuse);
+	Draw3DBox(float3(w, h, b), c, m_world, ortho, diffuse);
 }
-void Antimony::Draw3DCube(float r, color c, mat *m_world, color diffuse)
+void Antimony::Draw3DCube(float r, color c, mat *m_world, bool ortho, color diffuse)
 {
-	Draw3DBox(r, r, r, c, m_world, diffuse);
+	Draw3DBox(r, r, r, c, m_world, ortho, diffuse);
 }
 
-void Antimony::DrawMeshPlain(VertexCompound *mesh, mat *m_world, color diffuse)
+void Antimony::DrawMeshPlain(VertexCompound *mesh, mat *m_world, bool ortho, color diffuse)
 {
 	auto sh_temp = sh_current;
 	setShader(SHADERS_PLAIN);
@@ -1012,7 +1018,7 @@ void Antimony::DrawMeshPlain(VertexCompound *mesh, mat *m_world, color diffuse)
 
 	setShader(sh_temp);
 }
-void Antimony::DrawMesh(VertexCompound *mesh, mat *m_world, color diffuse)
+void Antimony::DrawMesh(VertexCompound *mesh, mat *m_world, bool ortho, color diffuse)
 {
 	assert(sh_current->ied == ied_main);
 
@@ -1042,9 +1048,9 @@ void Antimony::DrawMesh(VertexCompound *mesh, mat *m_world, color diffuse)
 		devcon->RSGetState(&rss_curr);
 		devcon->RSSetState(rss_wireframe);
 		setDepthBufferState(OFF);
-		DrawMeshPlain(mesh, m_world, color(1, 1, 1, 0.3));
+		DrawMeshPlain(mesh, m_world, ortho, color(1, 1, 1, 0.3));
 		setDepthBufferState(ON);
-		DrawMeshPlain(mesh, m_world, color(1, 1, 1, 1));
+		DrawMeshPlain(mesh, m_world, ortho, color(1, 1, 1, 1));
 		devcon->RSSetState(rss_curr);
 
 		DrawNormals(vertices, vcount, &mesh->normalgroups, true);

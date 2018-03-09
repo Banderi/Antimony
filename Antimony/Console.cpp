@@ -39,6 +39,25 @@ bool Console::isClosed()
 
 void Console::parse(UINT message, WPARAM wParam, LPARAM lParam, ControlParams *ctrls)
 {
+	if (message == WM_CHAR)
+	{
+		unsigned char scancode = ((unsigned char*)&lParam)[2];
+		unsigned int virtualKey = MapVirtualKey(scancode, MAPVK_VSC_TO_VK);
+
+		if (virtualKey == ctrls->k_console)		// do not print console key
+			return;
+		else
+		{
+			wchar_t c = wParam;
+
+			if ((wParam <= 0xff && !isprint(c)))
+				return;
+
+			m_cmdStr.insert(m_caretPos, 1, c);
+			m_caretPos++;
+			return;
+		}
+	}
 	switch (wParam)
 	{
 		case 0x08:		// Backspace
@@ -113,25 +132,6 @@ void Console::parse(UINT message, WPARAM wParam, LPARAM lParam, ControlParams *c
 			if (m_caretPos > m_cmdStr.length())
 				m_caretPos = m_cmdStr.length();
 			break;
-		}
-		default:
-		{
-			unsigned char scancode = ((unsigned char*)&lParam)[2];
-			unsigned int virtualKey = MapVirtualKey(scancode, MAPVK_VSC_TO_VK);
-
-			if (virtualKey == ctrls->k_console)		// do not print console key
-				break;
-			else
-			{
-				wchar_t c = wParam;
-
-				if (message != WM_CHAR || (wParam <= 0xff && !isprint(c)))
-					break;
-
-				m_cmdStr.insert(m_caretPos, 1, c);
-				m_caretPos++;
-				break;
-			}
 		}
 	}
 }

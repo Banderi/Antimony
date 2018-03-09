@@ -4,36 +4,36 @@
 
 ///
 
-#define TIMER_FRAME_GLOBAL		0x00000000
-#define TIMER_PRESTEP			0x00000001
-#define TIMER_RENDER_ENTITIES	0x00000010
-#define TIMER_RENDER_WORLD		0x00000011
-#define TIMER_RENDER_HUD		0x00000012
-#define TIMER_RENDER_DEBUG		0x00000013
-#define TIMER_AFTERSTEP			0x00000020
+#define TIMER_FRAME_GLOBAL		0
+#define TIMER_PRESTEP			1
+#define TIMER_RENDER_ENTITIES	2
+#define TIMER_RENDER_WORLD		3
+#define TIMER_RENDER_HUD		4
+#define TIMER_RENDER_DEBUG		5
+#define TIMER_AFTERSTEP			6
 
-#define TIMER_MAXSTAMPS		512
+#define TIMER_MAXSTAMPS			128
+#define TIMER_END				TIMER_MAXSTAMPS - 1
 
 ///
 
 class Timer
 {
-	double m_previousClock[TIMER_MAXSTAMPS];
-	double m_currentClock[TIMER_MAXSTAMPS];
-	double delta[TIMER_MAXSTAMPS];
-	unsigned short m_stampsCount;
-	double m_clocksPerSecond;
-	//double m_clockLastSecond;
+	std::vector<clock_t> m_previousClock;
+	std::vector<clock_t> m_currentClock;
+	std::vector<double> m_derivClock;
+	clock_t m_clocksPerSecond;
 	int m_framesCount;
 	float m_currentFPS;
 
 public:
+	double lastDelta;
 	std::vector<double> fps_history;
 
-	void catchTime(unsigned short d);
+	void catchTime(int d);
 	void setCorrection(float c);
-	double getDelta(unsigned short d);
-	double getLocalDelta(unsigned short d);
+	double getStep(int d1, int d2, bool smooth = true);
+	double getDelta(int d1 = TIMER_FRAME_GLOBAL, int d2 = TIMER_FRAME_GLOBAL);
 	int getFramesCount();
 	float getFPSStamp();
 

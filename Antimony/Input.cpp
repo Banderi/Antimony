@@ -822,6 +822,8 @@ HRESULT Antimony::handleInput(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 		case WM_KEYDOWN:
 		{
 			wm_keydown = true;
+			if (devConsole.isOpen())
+				devConsole.parse(message, wParam, lParam, &controls);
 			return S_OK;
 		}
 		case WM_CHAR:

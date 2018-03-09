@@ -182,17 +182,17 @@ namespace Antimony
 
 	void Draw3DLineThin(float3 p1, float3 p2, color c1, color c2, mat *m_world = &mat_world, color diffuse = COLOR_WHITE);
 	void Draw3DLineThick();
-	void Draw3DTriangle(float3 p1, float3 p2, float3 p3, color c, bool dd = false, mat *m_world = &mat_world, color diffuse = COLOR_WHITE);
-	void Draw3DRectangle(float w, float h, color c, bool dd = false, mat *m_world = &mat_world, color diffuse = COLOR_WHITE);
-	void Draw3DEllipses(float w, float h, color c, float sec = 2.0f * MATH_PI, bool dd = false, mat *m_world = &mat_world, color diffuse = COLOR_WHITE);
-	void DrawCylinderSide(float r, float h, color c, float sec = 2.0f * MATH_PI, bool dd = false, mat *m_world = &mat_world, color diffuse = COLOR_WHITE);
-	void DrawCylinder(float r, float h, color c, float sec = 2.0f * MATH_PI, bool dd = false, mat *m_world = &mat_world, color diffuse = COLOR_WHITE);
+	void Draw3DTriangle(float3 p1, float3 p2, float3 p3, color c, bool dd = false, mat *m_world = &mat_world, bool ortho = false, color diffuse = COLOR_WHITE);
+	void Draw3DRectangle(float w, float h, color c, bool dd = false, mat *m_world = &mat_world, bool ortho = false, color diffuse = COLOR_WHITE);
+	void Draw3DEllipses(float w, float h, color c, float sec = 2.0f * MATH_PI, bool dd = false, mat *m_world = &mat_world, bool ortho = false, color diffuse = COLOR_WHITE);
+	void DrawCylinderSide(float r, float h, color c, float sec = 2.0f * MATH_PI, bool dd = false, mat *m_world = &mat_world, bool ortho = false, color diffuse = COLOR_WHITE);
+	void DrawCylinder(float r, float h, color c, float sec = 2.0f * MATH_PI, bool dd = false, mat *m_world = &mat_world, bool ortho = false, color diffuse = COLOR_WHITE);
 
-	void Draw3DBox(float w, float h, float b, color c, mat *m_world = &mat_world, color diffuse = COLOR_WHITE);
-	void Draw3DBox(float3 l, color c, mat *m_world = &mat_world, color diffuse = COLOR_WHITE);
-	void Draw3DCube(float r, color c, mat *m_world = &mat_world, color diffuse = COLOR_WHITE);
+	void Draw3DBox(float w, float h, float b, color c, mat *m_world = &mat_world, bool ortho = false, color diffuse = COLOR_WHITE);
+	void Draw3DBox(float3 l, color c, mat *m_world = &mat_world, bool ortho = false, color diffuse = COLOR_WHITE);
+	void Draw3DCube(float r, color c, mat *m_world = &mat_world, bool ortho = false, color diffuse = COLOR_WHITE);
 
-	void DrawMeshPlain(VertexCompound *mesh, mat *m_world = &mat_world, color diffuse = COLOR_WHITE);
-	void DrawMesh(VertexCompound *mesh, mat *m_world = &mat_world, color diffuse = COLOR_WHITE);
+	void DrawMeshPlain(VertexCompound *mesh, mat *m_world = &mat_world, bool ortho = false, color diffuse = COLOR_WHITE);
+	void DrawMesh(VertexCompound *mesh, mat *m_world = &mat_world, bool ortho = false, color diffuse = COLOR_WHITE);
 	void DrawNormals(VERTEX_MAIN vin[], int vcount, ::std::vector<::std::vector<float3>> *normalgroups, bool components = false);
 }

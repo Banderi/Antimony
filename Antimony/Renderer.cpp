@@ -6,6 +6,7 @@
 #include "Gameplay.h"
 #include "CpuUsage.h"
 #include "FontRenderer.h"
+#include "Step.h"
 
 ///
 
@@ -81,16 +82,69 @@ void Antimony::render_Debug()
 
 				render_DebugFPS(float2(display.right, display.bottom));
 
-				//render_DebugPie(float2(display.right, display.bottom), 100, )
+				///
 
-				mat_world = mat_orthoview;
-				//Draw3DCube(1, COLOR_WHITE);
-				Draw3DEllipses(2, 2, color(0, 0.3, 0.5, 0.3), 2 * MATH_PI, true);
+				//devcon->RSSetState(rss_wireframe);
+
+				/*static float data[] =
+				{
+					0,0,0,0,0,0,-1
+				};
+				if (c >= 1.5)
+				{
+					data[0] = 0.001,
+						data[1] = timer.getStep(TIMER_PRESTEP, TIMER_RENDER_ENTITIES);
+					data[2] = timer.getStep(TIMER_RENDER_ENTITIES, TIMER_RENDER_WORLD);
+					data[3] = timer.getStep(TIMER_RENDER_WORLD, TIMER_RENDER_HUD);
+					data[4] = timer.getStep(TIMER_RENDER_HUD, TIMER_RENDER_DEBUG);
+					data[5] = timer.getStep(TIMER_RENDER_DEBUG, TIMER_AFTERSTEP);
+					data[6] = -1;
+					c = 0.0f;
+				}*/
+				float data[] =
+				{
+					timer.getStep(TIMER_FRAME_GLOBAL, TIMER_PRESTEP),
+					timer.getStep(TIMER_PRESTEP, TIMER_RENDER_ENTITIES),
+					timer.getStep(TIMER_RENDER_ENTITIES, TIMER_RENDER_WORLD),
+					timer.getStep(TIMER_RENDER_WORLD, TIMER_RENDER_HUD),
+					timer.getStep(TIMER_RENDER_HUD, TIMER_RENDER_DEBUG),
+					timer.getStep(TIMER_RENDER_DEBUG, TIMER_AFTERSTEP),
+					timer.getStep(TIMER_AFTERSTEP, TIMER_END),
+					//-1
+				};
+				color colors[] =
+				{
+					color(0.0, 0.4, 1.0, 1),
+					color(0.1, 0.6, 0.0, 1),
+					color(0.3, 0.8, 0.1, 1),
+					color(0.4, 1.0, 0.3, 1),
+					color(0.6, 0.0, 0.4, 1),
+					color(0.8, 0.1, 0.6, 1),
+					color(1.0, 0.3, 0.8, 1)
+				};
+				std::wstring labels[] =
+				{
+					L"Global",
+					L"Pre-step",
+					L"Entities",
+					L"World",
+					L"HUD",
+					L"Debug",
+					L"After-step"
+				};
+
+				render_DebugPie(float2(display.right - 160, -display.bottom + 300), L"Frame time", data, colors, labels, 7);
+
+				/*mat_world = MRotX(0.33 * MATH_PI) * MTranslation(display.right - 160, -display.bottom + 300, 0);
+				Draw3DEllipses(90, 90, color(0, 0.3, 0.5, 0.3), timer.getStep(TIMER_PRESTEP) / prop, true, &mat_world, true);*/
+
+				//devcon->RSSetState(rss_standard);
 
 				break;
 			}
 			case DBGCHART_PIE:
 			{
+				//render_DebugPie(float2(display.right, display.bottom), 100, )
 				break;
 			}
 			case DBGCHART_INPUT:
@@ -790,7 +844,29 @@ void Antimony::render_DebugFPS(float2 pos)
 	swprintf_s(buf, L"M/I/K:");
 	Consolas.render(buf, 10, pos.x - 260, pos.y - 33, 0xffffffff, 0);
 }
-void Antimony::render_DebugPie(float2 pos, float total, std::wstring name, std::vector<float*> data, std::vector<std::wstring*> labels)
+void Antimony::render_DebugPie(float2 pos, std::wstring name, float* data, color* colors, std::wstring* labels, int n)
 {
-	Draw2DEllipses(9.9, 9.9, pos.x, pos.y, COLOR_WHITE);
+	float total = 0.0f;
+	for (int i = 0; i < n; i++)
+	{
+		total += data[i];
+	}
+
+	float prop = total / 100.0f;
+	float cumul = 0.0f;
+	mat_world = MRotZ(-0.5 * MATH_PI) * MRotX(0.33 * MATH_PI) * MTranslation(pos.x, pos.y, 0);
+	for (int i = 0; i < n; i++)
+	{
+		float cumul_pi = -cumul / total * 2 * MATH_PI;
+		if (data[i] == -1)
+			data[i] = total - cumul;
+		Draw3DEllipses(90, 90, colors[i], data[i] / prop, true, &(MRotZ(cumul_pi) * mat_world), true);
+		//Draw2DRectangle(10, data[i] * 1000.0f, pos.x + 10*i, pos.y + 600, colors[i]);
+		//Draw2DRectangle(10, data[i] * 1000.0f, pos.x + 100, pos.y + 600 - cumul * 1000.0f, colors[i]);
+		Draw2DRectangle(10, data[i] * 1000.0f, pos.x - 100 + 25 * i, pos.y + 500, colors[i]);
+		cumul += data[i];
+	}
+
+	/*swprintf_s(buf, L"M/I/K:");
+	Consolas.render(buf, 10, pos.x - 260, pos.y - 33, 0xffffffff, 0);*/
 }
